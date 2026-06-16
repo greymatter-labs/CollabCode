@@ -27,6 +27,97 @@ const CodeExecutor = (function() {
     return [];
   }
 
+  function executeJavaScriptLocally(code, input = '') {
+    return new Promise((resolve) => {
+      const workerSource = `
+        function formatValue(value) {
+          if (typeof value === 'string') return value;
+          if (value === undefined) return 'undefined';
+          try {
+            return JSON.stringify(value);
+          } catch (error) {
+            return String(value);
+          }
+        }
+
+        self.onmessage = function(event) {
+          const logs = [];
+          const originalConsole = self.console || {};
+          self.stdin = event.data.input || '';
+          self.input = self.stdin;
+          self.console = {
+            log: function() { logs.push(Array.from(arguments).map(formatValue).join(' ')); },
+            warn: function() { logs.push(Array.from(arguments).map(formatValue).join(' ')); },
+            error: function() { logs.push(Array.from(arguments).map(formatValue).join(' ')); }
+          };
+
+          try {
+            const result = new Function('stdin', 'input', event.data.code).call(self, self.stdin, self.input);
+            Promise.resolve(result).then(function(value) {
+              if (value !== undefined) logs.push(formatValue(value));
+              self.postMessage({ success: true, output: logs.join('\\n'), code: 0 });
+            }).catch(function(error) {
+              self.postMessage({
+                success: false,
+                output: logs.join('\\n'),
+                error: error && error.stack ? error.stack : String(error),
+                code: 1
+              });
+            });
+          } catch (error) {
+            self.console = originalConsole;
+            self.postMessage({
+              success: false,
+              output: logs.join('\\n'),
+              error: error && error.stack ? error.stack : String(error),
+              code: 1
+            });
+          }
+        };
+      `;
+      const blob = new Blob([workerSource], { type: 'application/javascript' });
+      const workerUrl = URL.createObjectURL(blob);
+      const worker = new Worker(workerUrl);
+      const timeout = setTimeout(() => {
+        worker.terminate();
+        URL.revokeObjectURL(workerUrl);
+        resolve({
+          success: false,
+          output: '',
+          error: 'Execution timed out after 3 seconds',
+          exitCode: 1
+        });
+      }, 3000);
+
+      worker.onmessage = (event) => {
+        clearTimeout(timeout);
+        worker.terminate();
+        URL.revokeObjectURL(workerUrl);
+        resolve({
+          success: event.data.success,
+          output: event.data.output || '',
+          error: event.data.error || '',
+          exitCode: event.data.code || 0,
+          executionTime: 0
+        });
+      };
+
+      worker.onerror = (error) => {
+        clearTimeout(timeout);
+        worker.terminate();
+        URL.revokeObjectURL(workerUrl);
+        resolve({
+          success: false,
+          output: '',
+          error: error.message || 'JavaScript execution failed',
+          exitCode: 1
+        });
+      };
+
+      worker.postMessage({ code, input });
+    });
+  }
+
   // Execute code
   async function execute(language, code, input = '') {
     const langConfig = languageMap[language];
@@ -37,6 +128,10 @@ const CodeExecutor = (function() {
         error: `Language ${language} is not supported for execution`,
         output: ''
       };
+    }
+
+    if (language === 'javascript') {
+      return executeJavaScriptLocally(code, input);
     }
 
     try {
@@ -67,7 +162,7 @@ const CodeExecutor = (function() {
         return {
           success: false,
           output: '',
-          error: result.error || result.details || 'Execution failed',
+          error: result.details || result.error || 'Execution failed',
           exitCode: result.code || -1
         };
       }

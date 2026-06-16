@@ -306,6 +306,7 @@ FIREBASE_DATABASE_URL=https://your-project-default-rtdb.firebaseio.com
 # Optional
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK
 APP_DOMAIN=https://your-domain.com
+PISTON_API_URL=https://your-private-piston.example.com/api/v2/piston
 ```
 
 ### Firebase Setup

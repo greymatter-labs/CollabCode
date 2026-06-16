@@ -201,9 +201,23 @@
     
     // If creating a new session (admin only), mark it as active
     if (isNew && currentUser.isAdmin) {
-      sessionRef.child('created').set(firebase.database.ServerValue.TIMESTAMP);
-      sessionRef.child('createdBy').set(currentUser.name);
-      console.log('Created new session in Firebase:', currentSessionCode);
+      sessionRef.once('value').then(function(snapshot) {
+        const sessionData = snapshot.val() || {};
+        const updates = {};
+
+        if (!sessionData.created) updates.created = firebase.database.ServerValue.TIMESTAMP;
+        if (!sessionData.createdBy) updates.createdBy = currentUser.name;
+        if (!sessionData.status) updates.status = 'active';
+
+        if (Object.keys(updates).length) {
+          return sessionRef.update(updates);
+        }
+        return null;
+      }).then(function() {
+        console.log('Session metadata ready in Firebase:', currentSessionCode);
+      }).catch(function(error) {
+        console.warn('Could not update session metadata:', error);
+      });
     }
 
     console.log('Creating Firepad instance...');
@@ -600,7 +614,7 @@
   }
   
   // End session (admin only)
-  function endSession() {
+  async function endSession() {
     if (!currentUser || !currentUser.isAdmin) {
       console.error('Only admins can end sessions');
       return;
@@ -612,56 +626,37 @@
     const finalCode = editor ? editor.getValue() : '';
     const language = document.getElementById('language-selector')?.value || 'javascript';
     
-    // Set a termination flag and save code in Firebase
-    if (sessionRef) {
-      // First preserve current participants
-      sessionRef.child('users').once('value').then(snapshot => {
-        const currentUsers = snapshot.val() || {};
-        
-        // Save participants data permanently
-        const participantsData = {};
-        Object.keys(currentUsers).forEach(userId => {
-          const user = currentUsers[userId];
-          participantsData[userId] = {
-            name: user.name || 'Unknown',
-            joinedAt: user.timestamp || Date.now()
-          };
-        });
-        
-        // Save the code and participants
-        return sessionRef.child('finalCode').set({
-          content: finalCode,
-          language: language,
-          savedAt: firebase.database.ServerValue.TIMESTAMP,
-          lineCount: finalCode.split('\n').length,
-          characterCount: finalCode.length,
-          savedBy: currentUser.name
-        }).then(() => {
-          // Save preserved participants
-          return sessionRef.child('preservedParticipants').set(participantsData);
-        }).then(() => {
-          // Then set the termination flag
-          return sessionRef.child('terminated').set({
-            terminated: true,
-            terminatedBy: currentUser.name,
-            terminatedAt: firebase.database.ServerValue.TIMESTAMP
-          });
-        });
-      }).then(function() {
-        console.log('Session terminated successfully with code and participants saved');
-        
-        // Show termination message to admin
-        alert('Interview ended. Code has been saved. All participants have been disconnected.');
-        
-        // Reload the page for the admin immediately
-        location.reload();
-      }).catch(function(error) {
-        console.error('Error terminating session:', error);
-        alert('Failed to end the interview. Please try again.');
-      });
-    } else {
+    if (!sessionRef) {
       console.error('No session reference available');
       alert('Unable to end session - no active session found');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/sessions/end', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...Auth.getAuthHeaders()
+        },
+        body: JSON.stringify({
+          sessionId: currentSessionCode,
+          finalCode,
+          language
+        })
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to end session');
+      }
+
+      console.log('Session terminated successfully with code and participants saved');
+      alert('Interview ended. Code has been saved. All participants have been disconnected.');
+      setTimeout(() => location.reload(), 800);
+    } catch (error) {
+      console.error('Error terminating session:', error);
+      alert('Failed to end the interview: ' + error.message);
     }
   }
   

@@ -42,7 +42,7 @@
     <!-- Firepad -->
     <script src="https://cdn.firebase.com/libs/firepad/1.4.0/firepad.min.js"></script>
     <!-- Code Executor -->
-    <script src="scripts/code-executor.js?v=2"></script>
+    <script src="scripts/code-executor.js?v=3"></script>
     <!-- Authentication -->
     <script src="scripts/auth-api.js"></script>
     
@@ -164,7 +164,7 @@
         
         <div class="form-group">
           <label>Session Code</label>
-          <input type="text" id="candidateSessionCode" placeholder="6-digit code (e.g., 123456)" maxlength="6">
+          <input type="text" id="candidateSessionCode" placeholder="8-character code (e.g., ABCD2345)" maxlength="8">
           <small>Your interviewer will provide this code</small>
         </div>
         
@@ -299,7 +299,7 @@
                 <h4>Join Existing Session</h4>
                 <p>Enter a session code to join</p>
                 <div class="join-session-group">
-                  <input type="text" id="adminSessionCode" class="session-code-input" placeholder="000000" maxlength="6">
+                  <input type="text" id="adminSessionCode" class="session-code-input" placeholder="ABCD2345" maxlength="8">
                   <button id="adminJoinBtn" class="action-btn-secondary">Join</button>
                 </div>
               </div>
@@ -707,13 +707,13 @@
 
     <!-- Simple Templates (must load before firepad.js) -->
     <script src="scripts/simple-templates.js?v=2"></script>
-    <script src="scripts/custom-dialogs.js?v=2"></script>
-    <script src="scripts/firepad.js?v=3"></script>
+    <script src="scripts/custom-dialogs.js?v=3"></script>
+    <script src="scripts/firepad.js?v=4"></script>
     <script src="scripts/interview-notes.js?v=3"></script>
     <script src="scripts/slack-integration.js?v=4"></script>
     <script src="scripts/posthog-tracking.js?v=2"></script>
     <script src="scripts/session-tracking.js?v=1"></script>
     <script src="scripts/activity-monitor.js?v=1"></script>
-    <script src="scripts/app.js?v=3"></script>
+    <script src="scripts/app.js?v=4"></script>
   </body>
 </html>

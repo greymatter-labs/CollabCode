@@ -1,5 +1,66 @@
 // Main Application Controller
 (function() {
+  const SESSION_CODE_LENGTH = 8;
+  const SESSION_CODE_PATTERN = /^[A-Z0-9]{8}$/;
+
+  function normalizeSessionCode(value) {
+    return String(value || '')
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '')
+      .slice(0, SESSION_CODE_LENGTH);
+  }
+
+  function isValidSessionCode(value) {
+    return SESSION_CODE_PATTERN.test(normalizeSessionCode(value));
+  }
+
+  async function createSessionViaApi() {
+    const response = await fetch('/api/sessions/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...Auth.getAuthHeaders()
+      }
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok || !data.success || !data.sessionId) {
+      throw new Error(data.error || 'Failed to create session');
+    }
+
+    return data;
+  }
+
+  async function endSessionViaApi(sessionCode, payload = {}) {
+    const response = await fetch('/api/sessions/end', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...Auth.getAuthHeaders()
+      },
+      body: JSON.stringify({
+        sessionId: normalizeSessionCode(sessionCode),
+        ...payload
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'Failed to end session');
+    }
+
+    return data;
+  }
+
+  function getAdminDisplayName() {
+    const currentUser = Auth.getCurrentUser();
+    const interviewerName = document.getElementById('interviewerName')?.value.trim();
+    return interviewerName
+      ? `${interviewerName} (${currentUser.email})`
+      : currentUser.email || 'Interviewer';
+  }
+
   // Initialize the application
   function init() {
     setupLandingPage();
@@ -46,13 +107,13 @@
       const privacyConsent = document.getElementById('candidatePrivacyConsent');
       candidateJoinBtn.disabled = 
         !candidateName.value.trim() || 
-        candidateSessionCode.value.length !== 6 ||
+        !isValidSessionCode(candidateSessionCode.value) ||
         !privacyConsent.checked;
     }
 
     candidateName.addEventListener('input', updateJoinButton);
     candidateSessionCode.addEventListener('input', function() {
-      this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+      this.value = normalizeSessionCode(this.value);
       updateJoinButton();
     });
     
@@ -65,9 +126,9 @@
     // Join session
     candidateJoinBtn.addEventListener('click', async function() {
       const name = candidateName.value.trim();
-      const sessionCode = candidateSessionCode.value;
+      const sessionCode = normalizeSessionCode(candidateSessionCode.value);
 
-      if (name && sessionCode.length === 6) {
+      if (name && isValidSessionCode(sessionCode)) {
         // Show loading state
         candidateJoinBtn.disabled = true;
         candidateJoinBtn.textContent = 'Validating...';
@@ -262,50 +323,68 @@
         return;
       }
       
-      const sessionCode = Math.floor(100000 + Math.random() * 900000).toString();
-      console.log('CREATE SESSION: Generated code:', sessionCode);
-      console.trace('CREATE SESSION: Stack trace for debugging');
-      
-      // Show active session
-      document.getElementById('activeSessionCode').textContent = sessionCode;
-      document.getElementById('activeSession').style.display = 'block';
-      console.log('CREATE SESSION: Set activeSessionCode display to:', sessionCode);
-      
-      // Hide the dashboard modal immediately
-      document.getElementById('adminDashboardModal').style.display = 'none';
-      
-      // Now set the hash (this might trigger hashchange/load events)
-      window.location.hash = sessionCode;
-      console.log('CREATE SESSION: Current URL hash:', window.location.hash);
-      
-      // Track interviewer creating and joining session
-      const currentUser = Auth.getCurrentUser();
-      const interviewerName = document.getElementById('interviewerName')?.value.trim();
-      const adminName = interviewerName ? 
-        `${interviewerName} (${currentUser.email})` : 
-        currentUser.email || 'Interviewer';
-      
-      // Initialize activity monitor in observer mode for interviewer
-      if (window.initActivityMonitor) {
-        console.log('Starting activity monitor in observer mode for interviewer');
-        window.initActivityMonitor(sessionCode, adminName, 'interviewer');
+      const createSessionLabel = createSessionBtn.querySelector('span');
+      const originalText = createSessionLabel ? createSessionLabel.textContent : createSessionBtn.textContent;
+      createSessionBtn.disabled = true;
+      if (createSessionLabel) {
+        createSessionLabel.textContent = 'Creating...';
+      } else {
+        createSessionBtn.textContent = 'Creating...';
       }
-      
-      // Start session - DON'T set sessionStarting here, let startSession handle it
-      startSession(adminName, sessionCode, true);
+
+      try {
+        const session = await createSessionViaApi();
+        const sessionCode = normalizeSessionCode(session.sessionId);
+        console.log('CREATE SESSION: Created code:', sessionCode);
+        
+        // Show active session
+        document.getElementById('activeSessionCode').textContent = sessionCode;
+        document.getElementById('activeSession').style.display = 'block';
+        
+        // Hide the dashboard modal immediately
+        document.getElementById('adminDashboardModal').style.display = 'none';
+        
+        // Now set the hash (this might trigger hashchange/load events)
+        window.location.hash = sessionCode;
+        console.log('CREATE SESSION: Current URL hash:', window.location.hash);
+        
+        // Track interviewer creating and joining session
+        const adminName = getAdminDisplayName();
+        
+        // Initialize activity monitor in observer mode for interviewer
+        if (window.initActivityMonitor) {
+          console.log('Starting activity monitor in observer mode for interviewer');
+          window.initActivityMonitor(sessionCode, adminName, 'interviewer');
+        }
+        
+        // Start session - DON'T set sessionStarting here, let startSession handle it
+        startSession(adminName, sessionCode, true);
+      } catch (error) {
+        console.error('CREATE SESSION: Failed:', error);
+        alert(error.message || 'Failed to create session. Please try again.');
+      } finally {
+        createSessionBtn.disabled = false;
+        if (createSessionLabel) {
+          createSessionLabel.textContent = originalText;
+        } else {
+          createSessionBtn.textContent = originalText;
+        }
+      }
     });
 
     // Join existing session
     adminJoinBtn.addEventListener('click', async function() {
-      const sessionCode = adminSessionCode.value.trim();
+      const sessionCode = normalizeSessionCode(adminSessionCode.value);
       
-      if (sessionCode.length === 6) {
+      if (isValidSessionCode(sessionCode)) {
+        const validation = await validateSession(sessionCode);
+        if (!validation.valid) {
+          alert(validation.error || 'Invalid session code. Please check with your candidate.');
+          return;
+        }
+
         // Track interviewer joining session
-        const currentUser = Auth.getCurrentUser();
-        const interviewerName = document.getElementById('interviewerName')?.value.trim();
-        const adminName = interviewerName ? 
-          `${interviewerName} (${currentUser.email})` : 
-          currentUser.email || 'Interviewer';
+        const adminName = getAdminDisplayName();
         
         // Initialize activity monitor in observer mode for interviewer
         if (window.initActivityMonitor) {
@@ -315,12 +394,14 @@
         
         window.location.hash = sessionCode;
         startSession(adminName, sessionCode, false);
+      } else {
+        alert('Please enter a valid 8-character session code.');
       }
     });
 
     // Format session code input
     adminSessionCode.addEventListener('input', function() {
-      this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+      this.value = normalizeSessionCode(this.value);
     });
 
     // Copy session code
@@ -347,6 +428,11 @@
 
   // Validate session before joining
   async function validateSession(sessionCode, isCandidate = false) {
+    sessionCode = normalizeSessionCode(sessionCode);
+    if (!isValidSessionCode(sessionCode)) {
+      return { valid: false, error: 'Please enter a valid 8-character session code.' };
+    }
+
     // Wait for Firebase if not ready
     if (!window.firebase || !window.firebase.database) {
       console.log('Waiting for Firebase to validate session...');
@@ -364,19 +450,17 @@
       const sessionData = snapshot.val();
       
       console.log('Validating session:', sessionCode, 'Data:', sessionData);
+
+      if (!sessionData) {
+        return { valid: false, error: 'Session code not found. Please verify the code with your interviewer.' };
+      }
+
+      if (!sessionData.created || !sessionData.createdBy) {
+        return { valid: false, error: 'Invalid session. This session was not created by an interviewer.' };
+      }
       
       // For candidates, session MUST exist with proper structure
       if (isCandidate) {
-        // Check if session exists and was created by an admin
-        if (!sessionData) {
-          return { valid: false, error: 'Session code not found. Please verify the code with your interviewer.' };
-        }
-        
-        // Check if session was properly created (has creation metadata)
-        if (!sessionData.created || !sessionData.createdBy) {
-          return { valid: false, error: 'Invalid session. This session was not created by an interviewer.' };
-        }
-        
         // Check if session has been archived (older than 2 hours)
         const sessionAge = Date.now() - (sessionData.created || 0);
         const twoHours = 2 * 60 * 60 * 1000;
@@ -1026,11 +1110,12 @@
   }
   
   // End session - mark as ended (not deleted)
-  function terminateSessionFromDashboard(sessionCode) {
+  async function terminateSessionFromDashboard(sessionCode) {
+    sessionCode = normalizeSessionCode(sessionCode);
     console.log('Ending session:', sessionCode);
     
-    if (!window.firebase || !window.firebase.database) {
-      alert('Database connection not ready');
+    if (!isValidSessionCode(sessionCode)) {
+      alert('Invalid session code');
       return;
     }
     
@@ -1039,39 +1124,14 @@
       window.trackSessionEnd('admin_ended');
     }
     
-    const sessionRef = window.firebase.database().ref('sessions/' + sessionCode);
-    
-    // First, preserve the current participants before ending
-    sessionRef.child('users').once('value').then(function(snapshot) {
-      const currentUsers = snapshot.val() || {};
-      
-      // Save participants data permanently
-      const participantsData = {};
-      Object.keys(currentUsers).forEach(userId => {
-        const user = currentUsers[userId];
-        participantsData[userId] = {
-          name: user.name || 'Unknown',
-          joinedAt: user.timestamp || Date.now()
-        };
-      });
-      
-      // Now terminate the session with preserved participant data
-      sessionRef.update({
-        terminated: {
-          terminated: true,
-          terminatedBy: 'Admin Dashboard',
-          terminatedAt: window.firebase.database.ServerValue.TIMESTAMP
-        },
-        preservedParticipants: participantsData
-      }).then(function() {
-        console.log('Session ' + sessionCode + ' ended successfully with preserved participants');
-        // Show feedback
-        showNotification('Session ' + sessionCode + ' has been ended');
-      }).catch(function(error) {
-        console.error('Error ending session:', error);
-        alert('Failed to end session: ' + error.message);
-      });
-    });
+    try {
+      await endSessionViaApi(sessionCode);
+      console.log('Session ' + sessionCode + ' ended successfully');
+      showNotification('Session ' + sessionCode + ' has been ended');
+    } catch (error) {
+      console.error('Error ending session:', error);
+      alert('Failed to end session: ' + error.message);
+    }
   }
   
   // Show notification helper
@@ -1607,6 +1667,8 @@
   
   // Start coding session
   async function startSession(userName, sessionCode, isNew) {
+    sessionCode = normalizeSessionCode(sessionCode);
+
     // Prevent duplicate session starts
     if (sessionStarting) {
       console.warn('Session already starting, preventing duplicate');
@@ -1614,11 +1676,18 @@
     }
     sessionStarting = true;
     
+    if (!isValidSessionCode(sessionCode)) {
+      sessionStarting = false;
+      alert('Please enter a valid 8-character session code.');
+      return;
+    }
+
     console.log('START SESSION:', userName, sessionCode, 'isNew:', isNew);
     // Validate session first (for existing sessions)
     if (!isNew) {
       const validation = await validateSession(sessionCode);
       if (!validation.valid) {
+        sessionStarting = false;
         alert(validation.error || 'Invalid session');
         location.reload();
         return;
@@ -1639,6 +1708,7 @@
       console.log('Main container shown, display:', mainContainer.style.display);
     } else {
       console.error('CRITICAL: main-container element not found in DOM!');
+      sessionStarting = false;
       alert('Error: Unable to load editor interface. Please refresh the page.');
       return;
     }

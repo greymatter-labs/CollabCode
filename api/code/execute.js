@@ -1,6 +1,8 @@
-// Secure API endpoint for code execution
-// Proxies requests to Piston API to hide endpoint and add security
-export default async function handler(req, res) {
+// Secure API endpoint for code execution.
+// Non-JavaScript languages require a private Piston-compatible API configured
+// with PISTON_API_URL. JavaScript is executed client-side in a Web Worker.
+
+module.exports = async function handler(req, res) {
   // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -18,9 +20,6 @@ export default async function handler(req, res) {
     if (code.length > 100000) {
       return res.status(400).json({ error: 'Code too large (max 100KB)' });
     }
-
-    // Get Piston API URL from environment or use default
-    const PISTON_API = process.env.PISTON_API_URL || 'https://emkc.org/api/v2/piston';
 
     // Language mappings for Piston
     const languageMap = {
@@ -47,6 +46,14 @@ export default async function handler(req, res) {
     };
 
     const pistonLanguage = languageMap[language] || language;
+    const PISTON_API = process.env.PISTON_API_URL;
+
+    if (!PISTON_API) {
+      return res.status(503).json({
+        error: 'Execution provider not configured',
+        details: `Execution for ${language} requires a private Piston-compatible API in PISTON_API_URL. JavaScript runs in the browser.`
+      });
+    }
 
     // Execute code via Piston API
     const response = await fetch(`${PISTON_API}/execute`, {
@@ -80,9 +87,12 @@ export default async function handler(req, res) {
 
     const result = await response.json();
 
+    const runCode = result.run?.code ?? 0;
+    const compileCode = result.compile?.code ?? 0;
+
     // Return execution result
     return res.status(200).json({
-      success: true,
+      success: runCode === 0 && compileCode === 0 && !result.run?.signal,
       output: result.run?.output || '',
       stdout: result.run?.stdout || '',
       stderr: result.run?.stderr || '',
@@ -98,4 +108,4 @@ export default async function handler(req, res) {
       details: error.message 
     });
   }
-}
+};

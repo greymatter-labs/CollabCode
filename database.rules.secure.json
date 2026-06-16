@@ -14,7 +14,7 @@
         ".write": true,
         
         // Structure validation
-        ".validate": "$sessionId.matches(/^[0-9]{6}$/)",
+        ".validate": "$sessionId.matches(/^[A-Z0-9]{8}$/)",
         
         "users": {
           "$userId": {

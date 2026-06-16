@@ -89,7 +89,7 @@ const Auth = (function() {
           isAuthenticated: true,
           isAdmin: true,
           userName: 'Admin',
-          email: email,
+          email: data.user?.email || email,
           token: data.token,
           expiresAt: expiresAt.toISOString()
         };
@@ -224,9 +224,12 @@ const Auth = (function() {
   // Get current session (compatibility with app.js)
   function getCurrentSession() {
     return {
+      isLoggedIn: session.isAuthenticated,
+      isAuthenticated: session.isAuthenticated,
       isAdmin: session.isAdmin,
       userName: session.userName,
-      email: session.email
+      email: session.email,
+      token: session.token
     };
   }
   

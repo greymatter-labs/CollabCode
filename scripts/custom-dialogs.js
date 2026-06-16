@@ -112,24 +112,8 @@
   };
 
   window.confirm = function(message) {
-    // Determine type based on message content
-    let type = 'question';
-    let title = 'Confirm Action';
-    
-    if (message.toLowerCase().includes('delete') || message.toLowerCase().includes('terminate') || message.toLowerCase().includes('end')) {
-      type = 'danger';
-      title = 'Confirm Termination';
-    } else if (message.toLowerCase().includes('sure')) {
-      type = 'warning';
-      title = 'Are You Sure?';
-    }
-    
-    // Return a promise-like object that works with sync code
-    // This is a bit hacky but maintains compatibility
-    const result = customConfirm(message, title, type);
-    
-    // For synchronous confirm calls, we need to show a blocking dialog
-    // Use the original confirm as fallback for now
+    // Synchronous callers need the native blocking result. Opening the custom
+    // modal here leaves a second unresolved dialog on screen.
     return originalConfirm(message);
   };
 
