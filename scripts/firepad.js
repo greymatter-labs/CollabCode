@@ -6,6 +6,7 @@
   let currentUser = null;
   let usersRef = null;
   let sessionRef = null;
+  let lastRunRef = null;
   let firepadRef = null;
   let languageModes = {};
   let currentSessionCode = null;
@@ -13,6 +14,13 @@
   let isInitialized = false;
   let firepadReady = false;
   let isEndingSession = false;
+  let isNewSession = false;
+  let activeFileId = null;
+  let activeFileMeta = null;
+  let firepadGeneration = 0;
+  let snapshotSaveTimer = null;
+  let suppressSnapshotSave = false;
+  let joinedNotificationShown = false;
   
   // Session termination modal HTML
   const terminationModalHTML = `
@@ -82,6 +90,7 @@
     console.log('User:', userName, 'Code:', sessionCode, 'New:', isNew, 'Admin:', isAdmin);
     
     currentSessionCode = sessionCode;
+    isNewSession = !!isNew;
     currentUser = {
       name: userName,
       id: 'user_' + Math.random().toString(36).substr(2, 9),
@@ -154,6 +163,17 @@
 
     // Update cursor position
     editor.on('changeSelection', updateCursorPosition);
+    editor.on('change', scheduleActiveSnapshotSave);
+    editor.container.addEventListener('pointerdown', function() {
+      if (activeFileMeta && isWritableWorkspaceFile(activeFileMeta)) {
+        applyEditorAccessForFile(activeFileMeta);
+      }
+    });
+    editor.container.addEventListener('focusin', function() {
+      if (activeFileMeta && isWritableWorkspaceFile(activeFileMeta)) {
+        applyEditorAccessForFile(activeFileMeta);
+      }
+    });
     
     console.log('Editor initialized - ReadOnly:', editor.getReadOnly());
   }
@@ -171,6 +191,10 @@
       firepad = null;
       firepadReady = false;
     }
+
+    if (window.CollabWorkspace && window.CollabWorkspace.destroy) {
+      window.CollabWorkspace.destroy();
+    }
     
     // Clear any existing Firebase listeners
     if (sessionRef) {
@@ -178,6 +202,10 @@
     }
     if (usersRef) {
       usersRef.off();
+    }
+    if (lastRunRef) {
+      lastRunRef.off();
+      lastRunRef = null;
     }
     
     // For non-admins joining, verify session exists first
@@ -196,9 +224,9 @@
     
     // Create new Firebase references
     const ref = firebase.database().ref('sessions').child(currentSessionCode);
-    firepadRef = ref.child('firepad');
     sessionRef = ref;
     usersRef = ref.child('users');
+    lastRunRef = ref.child('lastRun');
     
     // If creating a new session (admin only), mark it as active
     if (isNew && currentUser.isAdmin) {
@@ -221,7 +249,7 @@
       });
     }
 
-    console.log('Creating Firepad instance...');
+    console.log('Creating workspace-backed Firepad instance...');
     console.log('User info:', { 
       id: currentUser.id, 
       name: currentUser.name, 
@@ -231,43 +259,32 @@
     try {
       // Ensure editor is editable for all users
       editor.setReadOnly(false);
-      
-      // Create Firepad with minimal options
-      const currentLanguage = document.getElementById('language-selector')?.value || 'javascript';
-      firepad = Firepad.fromACE(firepadRef, editor, {
-        defaultText: isNew ? getDefaultCode(currentLanguage) : '',
-        userId: currentUser.id
-      });
-      
-      console.log('✅ Firepad instance created');
-      console.log('Editor read-only status:', editor.getReadOnly());
-      
-      // Setup ready handler ONCE
-      firepad.on('ready', function() {
-        if (firepadReady) {
-          console.warn('Firepad ready already triggered, ignoring duplicate');
-          return;
-        }
-        firepadReady = true;
-        
-        console.log('🟢 Firepad READY! Session', currentSessionCode, 'is active');
-        
-        // Ensure editor stays editable after Firepad initialization
-        if (editor.getReadOnly()) {
-          console.warn('Editor was read-only after Firepad init, fixing...');
-          editor.setReadOnly(false);
-        }
-        
-        // Check if there's existing content
-        const content = editor.getValue();
-        console.log('Session content length:', content.length);
-        console.log('Final editor state - ReadOnly:', editor.getReadOnly());
-        
-        if (!isNew) {
-          // Announce joining for existing session
-          showUserNotification(`You joined session ${currentSessionCode}`, 'join');
-        }
-      });
+
+      if (window.CollabWorkspace && window.CollabWorkspace.init) {
+        window.CollabWorkspace.init({
+          sessionRef,
+          currentUser,
+          isNew,
+          editor,
+          getDefaultCode,
+          getCurrentLanguage: () => document.getElementById('language-selector')?.value || 'javascript',
+          focusEditor: () => {
+            if (activeFileMeta) {
+              applyEditorAccessForFile(activeFileMeta, true);
+            } else {
+              editor.focus();
+            }
+          },
+          beforeActiveFileChange: saveActiveSnapshotNow,
+          onActiveFileChange: openWorkspaceFile,
+          onWorkspaceChange: () => {}
+        }).catch(function(error) {
+          console.error('Workspace initialization failed, falling back to legacy Firepad:', error);
+          createLegacyFirepad(isNew);
+        });
+      } else {
+        createLegacyFirepad(isNew);
+      }
       
       // Setup presence AFTER Firepad is ready
       setTimeout(() => setupPresenceOnce(), 100);
@@ -277,9 +294,167 @@
       
       // Setup settings sync
       setupSettingsSync();
+
+      // Share the latest run result with every participant.
+      setupLastRunSync();
       
     } catch (error) {
       console.error('❌ Failed to create Firepad:', error);
+    }
+  }
+
+  function createLegacyFirepad(isNew) {
+    firepadRef = sessionRef.child('firepad');
+    const currentLanguage = document.getElementById('language-selector')?.value || 'javascript';
+    firepad = Firepad.fromACE(firepadRef, editor, {
+      defaultText: isNew ? getDefaultCode(currentLanguage) : '',
+      userId: currentUser.id
+    });
+
+    console.log('✅ Legacy Firepad instance created');
+
+    firepad.on('ready', function() {
+      if (firepadReady) {
+        console.warn('Firepad ready already triggered, ignoring duplicate');
+        return;
+      }
+      firepadReady = true;
+
+      console.log('🟢 Firepad READY! Session', currentSessionCode, 'is active');
+      if (editor.getReadOnly()) {
+        editor.setReadOnly(false);
+      }
+
+      if (!isNew && !joinedNotificationShown) {
+        joinedNotificationShown = true;
+        showUserNotification(`You joined session ${currentSessionCode}`, 'join');
+      }
+    });
+  }
+
+  function isWritableWorkspaceFile(file) {
+    return !!file && file.readonly !== true && file.role !== 'runtime';
+  }
+
+  function applyEditorAccessForFile(file, shouldFocus = false) {
+    if (!editor || !file) return;
+
+    const writable = isWritableWorkspaceFile(file);
+    editor.setReadOnly(!writable);
+
+    const textInput = editor.textInput?.getElement?.();
+    if (textInput) {
+      textInput.disabled = false;
+      textInput.readOnly = !writable;
+      textInput.tabIndex = 0;
+    }
+
+    if (writable && shouldFocus) {
+      editor.focus();
+      const textInput = editor.textInput?.getElement?.();
+      if (textInput && document.activeElement !== textInput) {
+        textInput.focus({ preventScroll: true });
+      }
+    }
+  }
+
+  async function openWorkspaceFile(file, snapshot) {
+    if (!file || !editor) return;
+    if (activeFileId === file.id && (firepad || file.readonly || file.role === 'runtime')) return;
+
+    if (firepad) {
+      try {
+        firepad.dispose();
+      } catch (error) {
+        console.error('Error disposing Firepad while switching files:', error);
+      }
+      firepad = null;
+    }
+
+    const generation = ++firepadGeneration;
+    firepadReady = false;
+    activeFileId = file.id;
+    activeFileMeta = file;
+
+    const languageSelector = document.getElementById('language-selector');
+    if (languageSelector && languageSelector.value !== file.language) {
+      languageSelector.value = file.language;
+    }
+    changeLanguage(file.language);
+
+    const defaultText = typeof snapshot?.content === 'string'
+      ? snapshot.content
+      : getDefaultCode(file.language);
+    const padRef = window.CollabWorkspace?.getPadRef?.(file);
+
+    suppressSnapshotSave = true;
+    editor.setValue(defaultText, -1);
+    applyEditorAccessForFile(file);
+    suppressSnapshotSave = false;
+
+    if (!padRef) {
+      console.log('Opened read-only workspace file:', file.path);
+      firepadReady = true;
+      applyEditorAccessForFile(file);
+      updateCursorPosition();
+      return;
+    }
+
+    firepadRef = padRef;
+    firepad = Firepad.fromACE(firepadRef, editor, {
+      defaultText,
+      userId: currentUser.id
+    });
+
+    firepad.on('ready', function() {
+      if (generation !== firepadGeneration) {
+        console.warn('Ignoring stale Firepad ready event for file:', file.path);
+        return;
+      }
+
+      firepadReady = true;
+      applyEditorAccessForFile(file, true);
+      setTimeout(() => {
+        if (generation === firepadGeneration && activeFileId === file.id) {
+          applyEditorAccessForFile(file, true);
+        }
+      }, 50);
+      updateCursorPosition();
+      scheduleActiveSnapshotSave();
+
+      console.log('🟢 Firepad READY for file:', file.path);
+
+      if (!isNewSession && !joinedNotificationShown) {
+        joinedNotificationShown = true;
+        showUserNotification(`You joined session ${currentSessionCode}`, 'join');
+      }
+    });
+
+    setTimeout(function() {
+      if (generation !== firepadGeneration || activeFileId !== file.id) return;
+      applyEditorAccessForFile(file, true);
+    }, 1200);
+  }
+
+  function scheduleActiveSnapshotSave() {
+    if (suppressSnapshotSave || !editor || !activeFileId || !window.CollabWorkspace?.isEnabled?.()) return;
+    if (activeFileMeta?.readonly || activeFileMeta?.role === 'runtime') return;
+
+    clearTimeout(snapshotSaveTimer);
+    snapshotSaveTimer = setTimeout(() => {
+      saveActiveSnapshotNow();
+    }, 900);
+  }
+
+  async function saveActiveSnapshotNow() {
+    clearTimeout(snapshotSaveTimer);
+    if (suppressSnapshotSave || !editor || !activeFileId || !window.CollabWorkspace?.isEnabled?.()) return;
+    if (activeFileMeta?.readonly || activeFileMeta?.role === 'runtime') return;
+
+    try {
+      await window.CollabWorkspace.saveActiveSnapshot(editor.getValue());
+    } catch (error) {
+      console.warn('Could not save active file snapshot:', error);
     }
   }
 
@@ -461,6 +636,72 @@
     }
   }
 
+  function setupLastRunSync() {
+    if (!lastRunRef) return;
+
+    lastRunRef.off();
+    lastRunRef.on('value', function(snapshot) {
+      const run = snapshot.val();
+      if (!run) return;
+      renderSharedRun(run);
+    });
+  }
+
+  function formatRunTime(timestamp) {
+    if (!timestamp) return '';
+    try {
+      return new Date(timestamp).toLocaleTimeString([], {
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function renderSharedRun(run) {
+    const outputPanel = document.getElementById('output-panel');
+    const outputText = document.getElementById('output-text');
+    const lastRunSummary = document.getElementById('last-run-summary');
+    if (!outputPanel || !outputText) return;
+
+    const status = run.status === 'success' ? 'success' : run.status === 'running' ? 'info' : 'error';
+    const runner = run.runByName || 'Someone';
+    const entry = run.entryPath ? ` ${run.entryPath}` : '';
+    const language = run.language ? ` ${run.language}` : '';
+    const when = formatRunTime(run.updatedAt);
+    const runtimeFiles = run.runtimeFileCount
+      ? ` | generated ${run.runtimeFileCount} file${run.runtimeFileCount === 1 ? '' : 's'}`
+      : '';
+    const summary = `${run.status || 'run'} by ${runner}${language}${entry}${when ? ` at ${when}` : ''}${runtimeFiles}`;
+
+    outputPanel.style.display = 'flex';
+    if (lastRunSummary) {
+      lastRunSummary.textContent = summary;
+      lastRunSummary.className = status;
+    }
+    outputText.textContent = run.output || run.error || '(No output)';
+    outputText.className = status;
+  }
+
+  function publishRunResult(status, details = {}) {
+    if (!lastRunRef) return Promise.resolve();
+
+    return lastRunRef.set({
+      status,
+      language: details.language || null,
+      entryPath: details.entryPath || null,
+      output: details.output || '',
+      error: details.error || '',
+      runtimeFileCount: details.runtimeFileCount || 0,
+      executionTime: details.executionTime || null,
+      runById: currentUser?.id || null,
+      runByName: currentUser?.name || null,
+      updatedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+  }
+
   // Settings sync (simplified)
   function setupSettingsSync() {
     const settingsRef = sessionRef.child('settings');
@@ -474,7 +715,13 @@
       
       newLanguageSelector.addEventListener('change', function() {
         const language = this.value;
-        settingsRef.child('language').set(language);
+        if (window.CollabWorkspace?.isEnabled?.()) {
+          window.CollabWorkspace.updateActiveFileLanguage(language).catch(function(error) {
+            console.warn('Could not update file language:', error);
+          });
+        } else {
+          settingsRef.child('language').set(language);
+        }
         changeLanguage(language);
         
         // Only load template if editor is empty or has default content
@@ -506,7 +753,7 @@
     settingsRef.on('value', function(snapshot) {
       const settings = snapshot.val();
       if (settings) {
-        if (settings.language) {
+        if (settings.language && !window.CollabWorkspace?.isEnabled?.()) {
           const selector = document.getElementById('language-selector');
           if (selector && selector.value !== settings.language) {
             selector.value = settings.language;
@@ -624,9 +871,17 @@
     console.log('Admin ending session:', currentSessionCode);
     isEndingSession = true;
     
-    // Save the final code before ending the session
-    const finalCode = editor ? editor.getValue() : '';
-    const language = document.getElementById('language-selector')?.value || 'javascript';
+    await saveActiveSnapshotNow();
+
+    // Save the final code and workspace snapshot before ending the session.
+    const projectSnapshot = window.CollabWorkspace?.isEnabled?.()
+      ? window.CollabWorkspace.getCurrentProjectSnapshot(editor ? editor.getValue() : '')
+      : null;
+    const entryFile = projectSnapshot?.files?.find(file => file.id === projectSnapshot.entryFileId)
+      || projectSnapshot?.files?.[0]
+      || null;
+    const finalCode = entryFile?.content || (editor ? editor.getValue() : '');
+    const language = entryFile?.language || document.getElementById('language-selector')?.value || 'javascript';
     
     if (!sessionRef) {
       console.error('No session reference available');
@@ -645,7 +900,11 @@
         body: JSON.stringify({
           sessionId: currentSessionCode,
           finalCode,
-          language
+          language,
+          finalFiles: projectSnapshot?.files || null,
+          entryFileId: projectSnapshot?.entryFileId || null,
+          entryPath: projectSnapshot?.entryPath || null,
+          workspaceSource: projectSnapshot?.source || null
         })
       });
       const result = await response.json().catch(() => ({}));
@@ -719,35 +978,64 @@
   // Run code execution
   async function runCode() {
     const runBtn = document.getElementById('run-btn');
-    const language = document.getElementById('language-selector').value;
+    const selectedLanguage = document.getElementById('language-selector').value;
     const code = editor.getValue();
     const input = document.getElementById('stdin-input').value;
+    const projectSnapshot = window.CollabWorkspace?.isEnabled?.()
+      ? window.CollabWorkspace.getCurrentProjectSnapshot(code)
+      : null;
+    const language = projectSnapshot?.entryLanguage || selectedLanguage;
+    const entryPath = projectSnapshot?.entryPath || activeFileMeta?.path || 'current file';
 
     // Check if language supports execution
     if (!CodeExecutor.isSupported(language)) {
-      showOutput(`Language '${language}' does not support execution yet.`, 'error');
+      const message = `Language '${language}' does not support execution yet.`;
+      showOutput(message, 'error');
+      await publishRunResult('error', { language, entryPath, error: message, output: message });
       return;
     }
 
     // Show output panel
     showOutput('Running...', 'info');
+    await publishRunResult('running', { language, entryPath, output: 'Running...' });
     runBtn.disabled = true;
     runBtn.textContent = 'Running...';
 
     try {
-      const result = await CodeExecutor.execute(language, code, input);
+      await saveActiveSnapshotNow();
+
+      const result = projectSnapshot && CodeExecutor.executeProject
+        ? await CodeExecutor.executeProject(language, projectSnapshot.files, projectSnapshot.entryPath, input)
+        : await CodeExecutor.execute(language, code, input);
       
       if (result.success) {
         let output = result.output || '(No output)';
+        let runtimeFileCount = 0;
+        if (Array.isArray(result.runtimeFiles) && result.runtimeFiles.length && window.CollabWorkspace?.saveRuntimeFiles) {
+          await window.CollabWorkspace.saveRuntimeFiles(result.runtimeFiles);
+          runtimeFileCount = result.runtimeFiles.length;
+          output += `\n\nGenerated ${result.runtimeFiles.length} session file${result.runtimeFiles.length === 1 ? '' : 's'}.`;
+        }
         if (result.executionTime) {
           output += `\n\nExecution time: ${result.executionTime}ms`;
         }
         showOutput(output, 'success');
+        await publishRunResult('success', {
+          language,
+          entryPath,
+          output,
+          runtimeFileCount,
+          executionTime: result.executionTime || null
+        });
       } else {
-        showOutput(result.error || 'Execution failed', 'error');
+        const message = result.error || 'Execution failed';
+        showOutput(message, 'error');
+        await publishRunResult('error', { language, entryPath, error: message, output: message });
       }
     } catch (error) {
-      showOutput(`Error: ${error.message}`, 'error');
+      const message = `Error: ${error.message}`;
+      showOutput(message, 'error');
+      await publishRunResult('error', { language, entryPath, error: message, output: message });
     } finally {
       runBtn.disabled = false;
       runBtn.textContent = '▶ Run';
@@ -766,7 +1054,7 @@
     // Show input section for languages that might need it
     const language = document.getElementById('language-selector').value;
     const inputSection = document.getElementById('input-section');
-    if (['python', 'java', 'c_cpp', 'javascript'].includes(language)) {
+    if (['python', 'java', 'c_cpp', 'javascript', 'typescript'].includes(language)) {
       inputSection.style.display = 'block';
     }
   }

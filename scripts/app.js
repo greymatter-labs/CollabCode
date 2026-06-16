@@ -18,6 +18,15 @@
     return SESSION_CODE_PATTERN.test(normalizeSessionCode(value));
   }
 
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   async function createSessionViaApi() {
     const response = await fetch('/api/sessions/create', {
       method: 'POST',
@@ -1623,20 +1632,31 @@
         });
       
       // Load code content
-      window.firebase.database()
-        .ref(`sessions/${sessionCode}/firepad`)
-        .once('value')
-        .then(snapshot => {
-          const firepadData = snapshot.val();
-          // Note: Firepad data is complex, we'd need to parse it properly
-          // For now, just indicate if code exists
-          const codeTab = document.getElementById('code-tab');
-          if (firepadData && firepadData.history) {
-            codeTab.innerHTML = '<p style="padding: 20px;">Code content available. Click "Join" to view in editor.</p>';
-          } else {
-            codeTab.innerHTML = '<p style="padding: 20px;">No code written in this session.</p>';
-          }
-        });
+      const codeTab = document.getElementById('code-tab');
+      if (codeTab) {
+        if (sessionData.finalFiles && Array.isArray(sessionData.finalFiles.files)) {
+          const files = sessionData.finalFiles.files;
+          codeTab.innerHTML = `
+            <div style="padding: 20px;">
+              <p>${files.length} file${files.length === 1 ? '' : 's'} saved. Entry: <strong>${sessionData.finalFiles.entryPath || files[0]?.path || 'Unknown'}</strong></p>
+              <pre style="margin-top: 12px; max-height: 320px; overflow: auto; background: #111; color: #ddd; padding: 12px; border-radius: 6px;">${escapeHtml(files.map(file => `// ${file.path}\n${file.content}`).join('\n\n'))}</pre>
+            </div>
+          `;
+        } else {
+          window.firebase.database()
+            .ref(`sessions/${sessionCode}/firepad`)
+            .once('value')
+            .then(snapshot => {
+              const firepadData = snapshot.val();
+              // Note: Firepad data is complex, we'd need to parse it properly.
+              if (firepadData && firepadData.history) {
+                codeTab.innerHTML = '<p style="padding: 20px;">Code content available. Click "Join" to view in editor.</p>';
+              } else {
+                codeTab.innerHTML = '<p style="padding: 20px;">No code written in this session.</p>';
+              }
+            });
+        }
+      }
     }
     
     // Load session info

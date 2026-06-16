@@ -27,6 +27,48 @@ function normalizeSessionId(sessionId) {
   return String(sessionId || '').trim().toUpperCase();
 }
 
+function normalizePath(value) {
+  return String(value || '')
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '')
+    .replace(/\/+/g, '/')
+    .split('/')
+    .filter(part => part && part !== '.' && part !== '..')
+    .join('/');
+}
+
+function normalizeFinalFiles(input) {
+  if (!Array.isArray(input)) return [];
+
+  const files = [];
+  let totalCharacters = 0;
+  const seenPaths = new Set();
+
+  for (const rawFile of input.slice(0, 100)) {
+    const path = normalizePath(rawFile?.path || rawFile?.name);
+    if (!path || seenPaths.has(path)) continue;
+
+    const content = String(rawFile?.content || '');
+    totalCharacters += content.length;
+    if (totalCharacters > 300000) break;
+
+    seenPaths.add(path);
+    files.push({
+      id: String(rawFile?.id || path.replace(/[^A-Za-z0-9_-]/g, '_')).slice(0, 120),
+      path,
+      language: String(rawFile?.language || 'text').slice(0, 40),
+      role: String(rawFile?.role || 'solution').slice(0, 40),
+      readonly: rawFile?.readonly === true,
+      content,
+      lineCount: content ? content.split('\n').length : 0,
+      characterCount: content.length
+    });
+  }
+
+  return files;
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -75,10 +117,18 @@ module.exports = async (req, res) => {
       };
     });
 
-    const finalCode = String(req.body?.finalCode || '');
+    const finalFiles = normalizeFinalFiles(req.body?.finalFiles);
+    const requestedEntryFileId = String(req.body?.entryFileId || '');
+    const requestedEntryPath = normalizePath(req.body?.entryPath);
+    const entryFile = finalFiles.find(file => file.id === requestedEntryFileId)
+      || finalFiles.find(file => file.path === requestedEntryPath)
+      || finalFiles[0]
+      || null;
+    const finalCode = String(req.body?.finalCode || entryFile?.content || '');
     const language = String(req.body?.language || sessionData.settings?.language || 'javascript');
+    const totalCharacterCount = finalFiles.reduce((sum, file) => sum + file.characterCount, 0);
 
-    await sessionRef.update({
+    const updates = {
       finalCode: {
         content: finalCode,
         language,
@@ -94,7 +144,22 @@ module.exports = async (req, res) => {
         terminatedBy: decoded.email,
         terminatedAt: admin.database.ServerValue.TIMESTAMP
       }
-    });
+    };
+
+    if (finalFiles.length) {
+      updates.finalFiles = {
+        files: finalFiles,
+        entryFileId: entryFile?.id || null,
+        entryPath: entryFile?.path || null,
+        workspaceSource: req.body?.workspaceSource || sessionData.workspace?.source || null,
+        savedAt: admin.database.ServerValue.TIMESTAMP,
+        savedBy: decoded.email,
+        fileCount: finalFiles.length,
+        characterCount: totalCharacterCount
+      };
+    }
+
+    await sessionRef.update(updates);
 
     return res.status(200).json({
       success: true,

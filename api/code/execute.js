@@ -9,16 +9,21 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { language, code, stdin } = req.body;
+    const { language, code, stdin, files, entryPath } = req.body;
 
     // Validate input
-    if (!language || !code) {
-      return res.status(400).json({ error: 'Language and code are required' });
+    if (!language) {
+      return res.status(400).json({ error: 'Language is required' });
     }
 
-    // Security: Limit code size (100KB)
-    if (code.length > 100000) {
-      return res.status(400).json({ error: 'Code too large (max 100KB)' });
+    const executionFiles = normalizeExecutionFiles(files, code, entryPath);
+    if (!executionFiles.length) {
+      return res.status(400).json({ error: 'Code or files are required' });
+    }
+
+    const totalSize = executionFiles.reduce((sum, file) => sum + file.content.length, 0);
+    if (totalSize > 100000) {
+      return res.status(400).json({ error: 'Code too large (max 100KB total)' });
     }
 
     // Language mappings for Piston
@@ -64,9 +69,7 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({
         language: pistonLanguage,
         version: '*', // Use latest version
-        files: [{
-          content: code
-        }],
+        files: executionFiles,
         stdin: stdin || '',
         args: [],
         compile_timeout: 10000,
@@ -109,3 +112,37 @@ module.exports = async function handler(req, res) {
     });
   }
 };
+
+function normalizePath(value) {
+  return String(value || '')
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '')
+    .replace(/\/+/g, '/')
+    .split('/')
+    .filter(part => part && part !== '.' && part !== '..')
+    .join('/');
+}
+
+function normalizeExecutionFiles(files, code, entryPath) {
+  const rawFiles = Array.isArray(files) && files.length
+    ? files
+    : [{ path: normalizePath(entryPath) || 'main', content: code }];
+
+  const normalized = rawFiles
+    .map((file, index) => ({
+      name: normalizePath(file.path || file.name || `file-${index}`),
+      content: String(file.content || '')
+    }))
+    .filter(file => file.name && file.content.length <= 100000);
+
+  const normalizedEntryPath = normalizePath(entryPath);
+  if (!normalizedEntryPath) return normalized;
+
+  const entryIndex = normalized.findIndex(file => file.name === normalizedEntryPath);
+  if (entryIndex <= 0) return normalized;
+
+  const [entryFile] = normalized.splice(entryIndex, 1);
+  normalized.unshift(entryFile);
+  return normalized;
+}

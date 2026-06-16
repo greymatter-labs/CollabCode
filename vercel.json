@@ -1,7 +1,8 @@
 {
   "version": 2,
   "name": "opencollab",
-  "buildCommand": "npm install",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
   "outputDirectory": ".",
   "functions": {
     "api/auth/login.js": {

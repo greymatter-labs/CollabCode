@@ -42,7 +42,8 @@
     <!-- Firepad -->
     <script src="https://cdn.firebase.com/libs/firepad/1.4.0/firepad.min.js"></script>
     <!-- Code Executor -->
-    <script src="scripts/code-executor.js?v=3"></script>
+    <script src="scripts/typescript-transform.bundle.js?v=1"></script>
+    <script src="scripts/code-executor.js?v=4"></script>
     <!-- Authentication -->
     <script src="scripts/auth-api.js"></script>
     
@@ -596,7 +597,30 @@
       <!-- Editor Container with Split View -->
       <div id="editor-wrapper">
         <div id="split-container">
-          <div id="firepad-container"></div>
+          <aside id="workspace-panel" aria-label="Session files">
+            <div id="workspace-header">
+              <span>Files</span>
+              <div id="workspace-actions">
+                <button id="workspace-new-file" type="button" title="New file" aria-label="New file">+</button>
+                <button id="workspace-new-folder" type="button" title="New folder" aria-label="New folder">+/</button>
+                <button id="workspace-rename-file" type="button" title="Rename file" aria-label="Rename file">Aa</button>
+                <button id="workspace-delete-file" type="button" title="Delete file" aria-label="Delete file">×</button>
+                <button id="workspace-set-entry" type="button" title="Set as entry file" aria-label="Set as entry file">▶</button>
+              </div>
+            </div>
+            <div id="workspace-tree"></div>
+            <div id="workspace-footer">
+              <span id="entry-file-path"></span>
+            </div>
+          </aside>
+
+          <div id="editor-shell">
+            <div id="active-file-bar">
+              <span id="active-file-path">src/main.js</span>
+              <span id="entry-file-badge">Entry</span>
+            </div>
+            <div id="firepad-container"></div>
+          </div>
           
           <!-- Interviewer Notes Panel -->
           <div id="notes-panel" style="display: none;">
@@ -662,6 +686,7 @@
               <button id="clear-output">Clear</button>
               <button id="close-output">×</button>
             </div>
+            <div id="last-run-summary"></div>
             <div id="output-content">
               <pre id="output-text"></pre>
             </div>
@@ -708,7 +733,8 @@
     <!-- Simple Templates (must load before firepad.js) -->
     <script src="scripts/simple-templates.js?v=2"></script>
     <script src="scripts/custom-dialogs.js?v=3"></script>
-    <script src="scripts/firepad.js?v=7"></script>
+    <script src="scripts/workspace.bundle.js?v=2"></script>
+    <script src="scripts/firepad.js?v=9"></script>
     <script src="scripts/interview-notes.js?v=3"></script>
     <script src="scripts/slack-integration.js?v=4"></script>
     <script src="scripts/posthog-tracking.js?v=2"></script>

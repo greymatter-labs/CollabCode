@@ -979,12 +979,135 @@ html, body {
 #split-container {
   display: flex;
   height: 100%;
+  min-width: 0;
+}
+
+#workspace-panel {
+  width: 260px;
+  min-width: 220px;
+  max-width: 340px;
+  background: #181818;
+  border-right: 1px solid #303030;
+  color: #d4d4d4;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#workspace-header {
+  min-height: 38px;
+  padding: 0 10px 0 12px;
+  background: #202020;
+  border-bottom: 1px solid #303030;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+#workspace-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#workspace-actions button {
+  width: 26px;
+  height: 26px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: #cfcfcf;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#workspace-actions button:hover {
+  background: #2d2d2d;
+  border-color: #3a3a3a;
+  color: #ffffff;
+}
+
+#workspace-tree {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#workspace-tree file-tree-container {
+  display: block;
+  height: 100%;
+}
+
+#workspace-footer {
+  min-height: 30px;
+  padding: 7px 10px;
+  border-top: 1px solid #303030;
+  background: #202020;
+  color: #9e9e9e;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#editor-shell {
+  flex: 1;
+  min-width: 300px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+#active-file-bar {
+  min-height: 34px;
+  padding: 0 12px;
+  background: #252526;
+  border-bottom: 1px solid #303030;
+  color: #cccccc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+#active-file-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#entry-file-badge {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(76, 175, 80, 0.18);
+  color: #81c784;
+  border: 1px solid rgba(129, 199, 132, 0.28);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 #firepad-container {
   flex: 1;
   height: 100%;
   min-width: 300px;
+  min-height: 0;
 }
 
 /* Output Panel */
@@ -1026,6 +1149,30 @@ html, body {
 #close-output {
   font-size: 20px;
   line-height: 1;
+}
+
+#last-run-summary {
+  min-height: 28px;
+  padding: 7px 12px;
+  border-bottom: 1px solid #3a3a3a;
+  background: #252526;
+  color: #a7a7a7;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#last-run-summary.success {
+  color: #81c784;
+}
+
+#last-run-summary.error {
+  color: #f48771;
+}
+
+#last-run-summary.info {
+  color: #8bb8ff;
 }
 
 #output-content {
@@ -1639,6 +1786,15 @@ a.powered-by-firepad {
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
+  #workspace-panel {
+    width: 210px;
+    min-width: 180px;
+  }
+
+  #active-file-bar {
+    font-size: 12px;
+  }
+
   .atom-roles {
     flex-direction: column;
   }
@@ -1975,6 +2131,10 @@ a.powered-by-firepad {
 
 /* Adjust firepad container when notes panel is visible */
 #firepad-container.with-notes {
+  margin-right: 0;
+}
+
+#editor-shell.with-notes {
   margin-right: 350px;
 }
 

@@ -26,18 +26,18 @@
     const notesToggleBtn = document.getElementById('notes-toggle-btn');
     const notesPanel = document.getElementById('notes-panel');
     const closeNotesBtn = document.getElementById('close-notes');
-    const firepadContainer = document.getElementById('firepad-container');
+    const editorResizeTarget = document.getElementById('editor-shell') || document.getElementById('firepad-container');
     
     if (notesToggleBtn) {
       notesToggleBtn.addEventListener('click', function() {
         const isVisible = notesPanel.style.display !== 'none';
         if (isVisible) {
           notesPanel.style.display = 'none';
-          firepadContainer.classList.remove('with-notes');
+          editorResizeTarget.classList.remove('with-notes');
           notesToggleBtn.classList.remove('active');
         } else {
           notesPanel.style.display = 'flex';
-          firepadContainer.classList.add('with-notes');
+          editorResizeTarget.classList.add('with-notes');
           notesToggleBtn.classList.add('active');
         }
       });
@@ -46,7 +46,7 @@
     if (closeNotesBtn) {
       closeNotesBtn.addEventListener('click', function() {
         notesPanel.style.display = 'none';
-        firepadContainer.classList.remove('with-notes');
+        editorResizeTarget.classList.remove('with-notes');
         notesToggleBtn.classList.remove('active');
       });
     }
