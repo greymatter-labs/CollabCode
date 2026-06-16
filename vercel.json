@@ -17,10 +17,31 @@
     "api/sessions/create.js": {
       "maxDuration": 10
     },
+    "api/sessions/reset.js": {
+      "maxDuration": 30
+    },
     "api/sessions/end.js": {
       "maxDuration": 30
     },
     "api/code/execute.js": {
+      "maxDuration": 120
+    },
+    "api/problems/list.js": {
+      "maxDuration": 10
+    },
+    "api/problems/get.js": {
+      "maxDuration": 10
+    },
+    "api/problems/save.js": {
+      "maxDuration": 10
+    },
+    "api/problems/publish.js": {
+      "maxDuration": 10
+    },
+    "api/problems/validate.js": {
+      "maxDuration": 120
+    },
+    "api/problems/runtime.js": {
       "maxDuration": 120
     }
   },

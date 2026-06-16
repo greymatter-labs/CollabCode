@@ -1,23 +1,19 @@
 (function() {
   // Variables
-  let firepad = null;
   let editor = null;
   let session = null;
   let currentUser = null;
   let usersRef = null;
   let sessionRef = null;
   let lastRunRef = null;
-  let firepadRef = null;
   let languageModes = {};
   let currentSessionCode = null;
   let previousUsers = {};
   let isInitialized = false;
-  let firepadReady = false;
   let isEndingSession = false;
   let isNewSession = false;
   let activeFileId = null;
   let activeFileMeta = null;
-  let firepadGeneration = 0;
   let snapshotSaveTimer = null;
   let suppressSnapshotSave = false;
   let joinedNotificationShown = false;
@@ -84,7 +80,7 @@
     }
     isInitialized = true;
     
-    const { userName, sessionCode, isNew, isAdmin } = options;
+    const { userName, userEmail, sessionCode, isNew, isAdmin } = options;
     
     console.log('=== INITIALIZING SESSION (ONCE) ===');
     console.log('User:', userName, 'Code:', sessionCode, 'New:', isNew, 'Admin:', isAdmin);
@@ -93,9 +89,11 @@
     isNewSession = !!isNew;
     currentUser = {
       name: userName,
+      displayName: formatPresenceDisplayName(userName, userEmail, isAdmin),
       id: 'user_' + Math.random().toString(36).substr(2, 9),
       color: generateUserColor(),
-      isAdmin: isAdmin
+      isAdmin: isAdmin,
+      role: isAdmin ? 'interviewer' : 'candidate'
     };
     
     // Initialize components
@@ -105,6 +103,7 @@
     
     // Update UI based on role
     const endSessionBtn = document.getElementById('end-session-btn');
+    const resetSessionBtn = document.getElementById('reset-session-btn');
     
     if (isAdmin) {
       console.log('Admin user detected - showing End Interview button');
@@ -117,11 +116,17 @@
       if (endSessionBtn) {
         console.log('End Interview button is visible for admin');
       }
+      if (resetSessionBtn) {
+        resetSessionBtn.style.display = 'inline-block';
+      }
     } else {
       console.log('Non-admin user - hiding End Interview button');
       // Hide button for non-admin users
       if (endSessionBtn) {
         endSessionBtn.style.display = 'none';
+      }
+      if (resetSessionBtn) {
+        resetSessionBtn.style.display = 'none';
       }
     }
   }
@@ -178,20 +183,8 @@
     console.log('Editor initialized - ReadOnly:', editor.getReadOnly());
   }
 
-  // Initialize Firebase and Firepad
+  // Initialize Firebase-backed workspace
   function initializeFirebase(isNew) {
-    // Clean up any existing Firepad
-    if (firepad) {
-      console.log('Cleaning up existing Firepad...');
-      try {
-        firepad.dispose();
-      } catch(e) {
-        console.error('Error disposing Firepad:', e);
-      }
-      firepad = null;
-      firepadReady = false;
-    }
-
     if (window.CollabWorkspace && window.CollabWorkspace.destroy) {
       window.CollabWorkspace.destroy();
     }
@@ -249,7 +242,7 @@
       });
     }
 
-    console.log('Creating workspace-backed Firepad instance...');
+    console.log('Creating workspace-backed editor instance...');
     console.log('User info:', { 
       id: currentUser.id, 
       name: currentUser.name, 
@@ -260,33 +253,34 @@
       // Ensure editor is editable for all users
       editor.setReadOnly(false);
 
-      if (window.CollabWorkspace && window.CollabWorkspace.init) {
-        window.CollabWorkspace.init({
-          sessionRef,
-          currentUser,
-          isNew,
-          editor,
-          getDefaultCode,
-          getCurrentLanguage: () => document.getElementById('language-selector')?.value || 'javascript',
-          focusEditor: () => {
-            if (activeFileMeta) {
-              applyEditorAccessForFile(activeFileMeta, true);
-            } else {
-              editor.focus();
-            }
-          },
-          beforeActiveFileChange: saveActiveSnapshotNow,
-          onActiveFileChange: openWorkspaceFile,
-          onWorkspaceChange: () => {}
-        }).catch(function(error) {
-          console.error('Workspace initialization failed, falling back to legacy Firepad:', error);
-          createLegacyFirepad(isNew);
-        });
-      } else {
-        createLegacyFirepad(isNew);
+      if (!window.CollabWorkspace || !window.CollabWorkspace.init) {
+        throw new Error('Workspace editor module did not load');
       }
+
+      window.CollabWorkspace.init({
+        sessionRef,
+        currentUser,
+        isNew,
+        editor,
+        getDefaultCode,
+        getCurrentLanguage: () => document.getElementById('language-selector')?.value || 'javascript',
+        focusEditor: () => {
+          if (activeFileMeta) {
+            applyEditorAccessForFile(activeFileMeta, true);
+          } else {
+            editor.focus();
+          }
+        },
+        beforeActiveFileChange: saveActiveSnapshotNow,
+        onActiveFileChange: openWorkspaceFile,
+        onWorkspaceChange: () => {},
+        loadHiddenFiles: loadHiddenProblemFiles
+      }).catch(function(error) {
+        console.error('Workspace initialization failed:', error);
+        showOutput('Workspace failed to initialize. Refresh the page and try again.', 'error');
+      });
       
-      // Setup presence AFTER Firepad is ready
+      // Setup presence after the workspace is initialized.
       setTimeout(() => setupPresenceOnce(), 100);
       
       // Setup session info
@@ -299,37 +293,31 @@
       setupLastRunSync();
       
     } catch (error) {
-      console.error('❌ Failed to create Firepad:', error);
+      console.error('❌ Failed to create workspace editor:', error);
     }
   }
 
-  function createLegacyFirepad(isNew) {
-    firepadRef = sessionRef.child('firepad');
-    const currentLanguage = document.getElementById('language-selector')?.value || 'javascript';
-    firepad = Firepad.fromACE(firepadRef, editor, {
-      defaultText: isNew ? getDefaultCode(currentLanguage) : '',
-      userId: currentUser.id
-    });
+  async function loadHiddenProblemFiles(source) {
+    if (!currentUser?.isAdmin) return [];
 
-    console.log('✅ Legacy Firepad instance created');
+    const problemId = source?.problemId;
+    const versionId = source?.problemVersionId || source?.versionId;
+    if (!problemId || !versionId) return [];
 
-    firepad.on('ready', function() {
-      if (firepadReady) {
-        console.warn('Firepad ready already triggered, ignoring duplicate');
-        return;
-      }
-      firepadReady = true;
-
-      console.log('🟢 Firepad READY! Session', currentSessionCode, 'is active');
-      if (editor.getReadOnly()) {
-        editor.setReadOnly(false);
-      }
-
-      if (!isNew && !joinedNotificationShown) {
-        joinedNotificationShown = true;
-        showUserNotification(`You joined session ${currentSessionCode}`, 'join');
+    const response = await fetch(`/api/problems/get?problemId=${encodeURIComponent(problemId)}`, {
+      headers: {
+        ...Auth.getAuthHeaders()
       }
     });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success || !data.problem) {
+      throw new Error(data.error || 'Could not load hidden problem files');
+    }
+
+    const version = data.problem.versions?.[versionId];
+    if (!version) return [];
+
+    return (version.files || []).filter(file => file.visibility === 'hidden');
   }
 
   function isWritableWorkspaceFile(file) {
@@ -360,19 +348,8 @@
 
   async function openWorkspaceFile(file, snapshot) {
     if (!file || !editor) return;
-    if (activeFileId === file.id && (firepad || file.readonly || file.role === 'runtime')) return;
+    if (activeFileId === file.id && (file.readonly || file.role === 'runtime')) return;
 
-    if (firepad) {
-      try {
-        firepad.dispose();
-      } catch (error) {
-        console.error('Error disposing Firepad while switching files:', error);
-      }
-      firepad = null;
-    }
-
-    const generation = ++firepadGeneration;
-    firepadReady = false;
     activeFileId = file.id;
     activeFileMeta = file;
 
@@ -385,55 +362,19 @@
     const defaultText = typeof snapshot?.content === 'string'
       ? snapshot.content
       : getDefaultCode(file.language);
-    const padRef = window.CollabWorkspace?.getPadRef?.(file);
-
     suppressSnapshotSave = true;
     editor.setValue(defaultText, -1);
     applyEditorAccessForFile(file);
     suppressSnapshotSave = false;
 
-    if (!padRef) {
-      console.log('Opened read-only workspace file:', file.path);
-      firepadReady = true;
-      applyEditorAccessForFile(file);
-      updateCursorPosition();
-      return;
+    applyEditorAccessForFile(file, true);
+    updateCursorPosition();
+    console.log('Opened workspace file:', file.path);
+
+    if (!isNewSession && !joinedNotificationShown) {
+      joinedNotificationShown = true;
+      showUserNotification(`You joined session ${currentSessionCode}`, 'join');
     }
-
-    firepadRef = padRef;
-    firepad = Firepad.fromACE(firepadRef, editor, {
-      defaultText,
-      userId: currentUser.id
-    });
-
-    firepad.on('ready', function() {
-      if (generation !== firepadGeneration) {
-        console.warn('Ignoring stale Firepad ready event for file:', file.path);
-        return;
-      }
-
-      firepadReady = true;
-      applyEditorAccessForFile(file, true);
-      setTimeout(() => {
-        if (generation === firepadGeneration && activeFileId === file.id) {
-          applyEditorAccessForFile(file, true);
-        }
-      }, 50);
-      updateCursorPosition();
-      scheduleActiveSnapshotSave();
-
-      console.log('🟢 Firepad READY for file:', file.path);
-
-      if (!isNewSession && !joinedNotificationShown) {
-        joinedNotificationShown = true;
-        showUserNotification(`You joined session ${currentSessionCode}`, 'join');
-      }
-    });
-
-    setTimeout(function() {
-      if (generation !== firepadGeneration || activeFileId !== file.id) return;
-      applyEditorAccessForFile(file, true);
-    }, 1200);
   }
 
   function scheduleActiveSnapshotSave() {
@@ -472,6 +413,9 @@
     // Set user data
     userRef.set({
       name: currentUser.name,
+      displayName: currentUser.displayName,
+      role: currentUser.role,
+      isAdmin: currentUser.isAdmin === true,
       color: currentUser.color,
       timestamp: firebase.database.ServerValue.TIMESTAMP
     });
@@ -592,6 +536,27 @@
   }
 
   // Update users list display
+  function formatPresenceDisplayName(name, email, isAdminUser) {
+    const rawName = String(name || '').trim();
+    const emailLocal = String(email || '').split('@')[0].trim();
+    const withoutEmailSuffix = rawName.replace(/\s*\([^)]*@[^)]*\)\s*$/, '').trim();
+
+    if (isAdminUser) {
+      if (!withoutEmailSuffix || /^admin$/i.test(withoutEmailSuffix) || withoutEmailSuffix.includes('@')) {
+        return emailLocal || 'Interviewer';
+      }
+      return withoutEmailSuffix;
+    }
+
+    return withoutEmailSuffix || 'Candidate';
+  }
+
+  function getUserListLabel(user) {
+    const label = formatPresenceDisplayName(user.displayName || user.name, null, user.isAdmin === true || user.role === 'interviewer');
+    if (!currentUser?.isAdmin && /^admin$/i.test(label)) return 'Interviewer';
+    return label;
+  }
+
   function updateUsersList(users) {
     const usersList = document.getElementById('users-list');
     if (!usersList) return;
@@ -604,7 +569,18 @@
       if (userId === currentUser.id) {
         badge.className += ' current-user';
       }
-      badge.textContent = user.name;
+      const name = document.createElement('span');
+      name.className = 'user-badge-name';
+      name.textContent = getUserListLabel(user);
+      badge.appendChild(name);
+
+      if (currentUser?.isAdmin && (user.isAdmin === true || user.role === 'interviewer')) {
+        const role = document.createElement('span');
+        role.className = 'user-badge-role';
+        role.textContent = 'Interviewer';
+        badge.appendChild(role);
+      }
+
       badge.style.borderLeft = `3px solid ${user.color}`;
       usersList.appendChild(badge);
     });
@@ -834,6 +810,14 @@
       console.error('End Interview button not found in DOM');
     }
 
+    const resetSessionBtn = document.getElementById('reset-session-btn');
+    if (resetSessionBtn) {
+      resetSessionBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        resetSessionWorkspace();
+      });
+    }
+
     // Cursor position
     if (editor) {
       editor.on('changeSelection', updateCursorPosition);
@@ -924,6 +908,51 @@
       alert('Failed to end the interview: ' + error.message);
     }
   }
+
+  async function resetSessionWorkspace() {
+    if (!currentUser || !currentUser.isAdmin) {
+      console.error('Only admins can reset sessions');
+      return;
+    }
+
+    if (!confirm('Reset this session back to the frozen problem workspace? Candidate edits and generated runtime files will be cleared.')) return;
+
+    const resetBtn = document.getElementById('reset-session-btn');
+    const originalText = resetBtn ? resetBtn.textContent : '';
+    if (resetBtn) {
+      resetBtn.disabled = true;
+      resetBtn.textContent = 'Resetting...';
+    }
+
+    try {
+      await saveActiveSnapshotNow();
+      const response = await fetch('/api/sessions/reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...Auth.getAuthHeaders()
+        },
+        body: JSON.stringify({
+          sessionId: currentSessionCode
+        })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to reset session');
+      }
+
+      alert('Workspace reset to the frozen problem version. The page will reload.');
+      window.location.reload();
+    } catch (error) {
+      console.error('Error resetting session:', error);
+      alert('Failed to reset the session: ' + error.message);
+    } finally {
+      if (resetBtn) {
+        resetBtn.disabled = false;
+        resetBtn.textContent = originalText || 'Reset Workspace';
+      }
+    }
+  }
   
   // Monitor for session termination
   function monitorSessionTermination() {
@@ -964,14 +993,6 @@
         editor.setReadOnly(true);
       }
       
-      // Disconnect from Firebase
-      if (firepad) {
-        try {
-          firepad.dispose();
-        } catch(e) {
-          console.error('Error disposing Firepad:', e);
-        }
-      }
     }
   }
 

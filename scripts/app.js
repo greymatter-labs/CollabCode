@@ -27,13 +27,14 @@
       .replace(/'/g, '&#39;');
   }
 
-  async function createSessionViaApi() {
+  async function createSessionViaApi(payload = {}) {
     const response = await fetch('/api/sessions/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...Auth.getAuthHeaders()
-      }
+      },
+      body: JSON.stringify(payload)
     });
     const data = await response.json().catch(() => ({}));
 
@@ -340,6 +341,10 @@
     const viewAllSessionsBtn = document.getElementById('viewAllSessionsBtn');
     const closeSessionsModalBtn = document.getElementById('closeSessionsModalBtn');
     const interviewerNameInput = document.getElementById('interviewerName');
+
+    if (window.ProblemLibrary?.init) {
+      window.ProblemLibrary.init();
+    }
     
     // Load saved interviewer name from localStorage
     if (interviewerNameInput) {
@@ -428,7 +433,10 @@
         }
 
         try {
-          const session = await createSessionViaApi();
+          const sessionPayload = window.ProblemLibrary?.getSessionPayload
+            ? window.ProblemLibrary.getSessionPayload()
+            : {};
+          const session = await createSessionViaApi(sessionPayload);
           const sessionCode = normalizeSessionCode(session.sessionId);
           console.log('CREATE SESSION: Created code:', sessionCode);
           
@@ -1643,18 +1651,25 @@
             </div>
           `;
         } else {
-          window.firebase.database()
-            .ref(`sessions/${sessionCode}/firepad`)
-            .once('value')
-            .then(snapshot => {
-              const firepadData = snapshot.val();
-              // Note: Firepad data is complex, we'd need to parse it properly.
-              if (firepadData && firepadData.history) {
-                codeTab.innerHTML = '<p style="padding: 20px;">Code content available. Click "Join" to view in editor.</p>';
-              } else {
-                codeTab.innerHTML = '<p style="padding: 20px;">No code written in this session.</p>';
-              }
-            });
+          const workspaceFiles = Object.values(sessionData.workspace?.files || {});
+          const snapshots = sessionData.fileSnapshots || {};
+          if (workspaceFiles.length) {
+            const files = workspaceFiles
+              .sort((left, right) => String(left.path || '').localeCompare(String(right.path || '')))
+              .map(file => ({
+                path: file.path || file.id || 'Untitled',
+                content: typeof snapshots[file.id]?.content === 'string' ? snapshots[file.id].content : ''
+              }));
+
+            codeTab.innerHTML = `
+              <div style="padding: 20px;">
+                <p>${files.length} file${files.length === 1 ? '' : 's'} saved. Entry: <strong>${sessionData.workspace?.entryFileId || files[0]?.path || 'Unknown'}</strong></p>
+                <pre style="margin-top: 12px; max-height: 320px; overflow: auto; background: #111; color: #ddd; padding: 12px; border-radius: 6px;">${escapeHtml(files.map(file => `// ${file.path}\n${file.content}`).join('\n\n'))}</pre>
+              </div>
+            `;
+          } else {
+            codeTab.innerHTML = '<p style="padding: 20px;">No code written in this session.</p>';
+          }
         }
       }
     }
@@ -1842,8 +1857,10 @@
 
     // Initialize the editor session
     if (typeof initializeSession === 'function') {
+      const authUser = Auth.getCurrentUser();
       initializeSession({
         userName: userName,
+        userEmail: authUser.email || null,
         sessionCode: sessionCode,
         isNew: isNew,
         isAdmin: Auth.isAdmin()

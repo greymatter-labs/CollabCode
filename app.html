@@ -22,10 +22,7 @@
 
     <!-- styling -->
     <!-- Custom style -->
-    <link rel="stylesheet" href="styles/main.css?v=5">
-    <!-- Firepad -->
-    <link rel="stylesheet" href="https://cdn.firebase.com/libs/firepad/1.4.0/firepad.css" />
-
+    <link rel="stylesheet" href="styles/main.css?v=7">
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
@@ -39,8 +36,6 @@
     <!-- ACE and its JavaScript mode and theme files - Updated to latest -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.33.2/ace.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.33.2/ext-language_tools.js"></script>
-    <!-- Firepad -->
-    <script src="https://cdn.firebase.com/libs/firepad/1.4.0/firepad.min.js"></script>
     <!-- Code Executor -->
     <script src="scripts/code-executor.js?v=5"></script>
     <!-- Authentication -->
@@ -276,6 +271,17 @@
               <div class="action-content">
                 <h4>Start New Interview</h4>
                 <p>Create a fresh session for your candidate</p>
+                <div id="selectedProblemCard" class="selected-problem-card">
+                  <div>
+                    <span class="selected-problem-label">Problem</span>
+                    <strong id="selectedProblemTitle">Blank workspace</strong>
+                    <small id="selectedProblemVersion">No frozen problem selected</small>
+                  </div>
+                  <div class="selected-problem-actions">
+                    <button id="chooseProblemBtn" type="button">Choose</button>
+                    <button id="clearProblemSelectionBtn" type="button">Clear</button>
+                  </div>
+                </div>
                 <button id="createSessionBtn" class="action-btn-primary">
                   <span>Create Session</span>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -324,6 +330,14 @@
           
           <!-- Management Tools -->
           <div class="management-tools">
+            <button id="problemLibraryBtn" class="tool-btn" type="button">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              </svg>
+              <span>Problem Library</span>
+              <span class="tool-badge">Build</span>
+            </button>
             <button id="viewAllSessionsBtn" class="tool-btn">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="3" width="7" height="7"></rect>
@@ -335,6 +349,137 @@
               <span class="tool-badge">View All</span>
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Problem Library Modal -->
+    <div id="problemLibraryModal" class="modal" style="display: none;">
+      <div class="modal-content problem-library-modal">
+        <div class="modal-header">
+          <h2>Problem Library</h2>
+          <div class="problem-modal-actions">
+            <button id="newProblemBtn" class="problem-primary-btn" type="button">New Problem</button>
+            <button id="refreshProblemsBtn" class="problem-secondary-btn" type="button">Refresh</button>
+            <button id="closeProblemLibraryBtn" class="close-modal-btn" type="button">×</button>
+          </div>
+        </div>
+        <div class="problem-library-toolbar">
+          <input id="problemSearchInput" type="text" placeholder="Search problems">
+          <select id="problemStatusFilter">
+            <option value="all">All statuses</option>
+            <option value="published">Published</option>
+            <option value="draft">Draft</option>
+          </select>
+        </div>
+        <div id="problemList" class="problem-list"></div>
+        <div id="problemListEmpty" class="problem-empty" style="display: none;">No problems yet.</div>
+      </div>
+    </div>
+
+    <!-- Problem Builder Modal -->
+    <div id="problemBuilderModal" class="modal" style="display: none;">
+      <div class="modal-content problem-builder-modal problem-ide-modal">
+        <div class="problem-ide-header">
+          <div class="problem-title-stack">
+            <input id="problemTitleInput" class="problem-title-input" type="text" placeholder="Problem title">
+            <div class="problem-title-meta">
+              <span id="problemBuilderStatus" class="problem-builder-status">Draft</span>
+              <span id="problemBuilderTitle" class="problem-builder-screen-reader">Problem Builder</span>
+            </div>
+          </div>
+          <div class="problem-modal-actions">
+            <button id="saveProblemDraftBtn" class="problem-secondary-btn" type="button">Save</button>
+            <button id="publishProblemBtn" class="problem-primary-btn" type="button">Publish frozen version</button>
+            <button id="createFromProblemBtn" class="problem-secondary-btn" type="button">Create session</button>
+            <button id="closeProblemBuilderBtn" class="close-modal-btn" type="button">×</button>
+          </div>
+        </div>
+
+        <div class="problem-setup-bar">
+          <textarea id="problemPromptInput" placeholder="Prompt shown to the candidate"></textarea>
+          <div class="problem-setup-fields">
+            <label>
+              <span>Language</span>
+              <select id="problemLanguageInput">
+                <option value="javascript">JavaScript</option>
+                <option value="typescript">TypeScript</option>
+                <option value="python">Python</option>
+              </select>
+            </label>
+            <label>
+              <span>Difficulty</span>
+              <select id="problemDifficultyInput">
+                <option value="">Unset</option>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </label>
+            <label>
+              <span>Entry</span>
+              <input id="problemEntryPathInput" type="text" placeholder="main.js">
+            </label>
+            <label>
+              <span>Run</span>
+              <input id="problemStarterCommandInput" type="text" placeholder="node main.js">
+            </label>
+            <label>
+              <span>Tests</span>
+              <input id="problemTestCommandInput" type="text" placeholder="npm test">
+            </label>
+            <label class="problem-tags-field">
+              <span>Tags</span>
+              <input id="problemTagsInput" type="text" placeholder="arrays, backend">
+            </label>
+          </div>
+        </div>
+
+        <div class="problem-ide-body">
+          <aside class="problem-ide-files" aria-label="Problem files">
+            <div class="problem-ide-panel-header">
+              <span>Files</span>
+              <div class="problem-file-toolbar">
+                <button id="addProblemFileBtn" type="button" title="New file" aria-label="New file">+</button>
+                <button id="addProblemFolderBtn" type="button" title="New folder" aria-label="New folder">+/</button>
+                <button id="uploadProblemFilesBtn" type="button">Upload</button>
+                <button id="uploadProblemFolderBtn" type="button">Folder</button>
+                <button id="uploadHiddenTestsBtn" type="button">Tests</button>
+                <button id="deleteProblemFileBtn" class="danger" type="button" title="Delete selected" aria-label="Delete selected">×</button>
+              </div>
+            </div>
+            <input id="problemFilesUploadInput" type="file" multiple style="display: none;">
+            <input id="problemFolderUploadInput" type="file" multiple webkitdirectory directory style="display: none;">
+            <input id="problemHiddenTestsUploadInput" type="file" multiple style="display: none;">
+            <div id="problemFileList" class="problem-file-list"></div>
+          </aside>
+
+          <main class="problem-ide-editor">
+            <div class="problem-active-file-bar">
+              <input id="problemFilePathInput" type="text" placeholder="path/to/file.js">
+              <select id="problemFileVisibilityInput">
+                <option value="editable">Candidate edits</option>
+                <option value="readonly">Candidate sees</option>
+                <option value="hidden">Hidden</option>
+              </select>
+              <span id="problemActiveFileTitle">No file selected</span>
+            </div>
+            <div id="problemFileEditor"></div>
+          </main>
+
+          <aside class="problem-ide-run" aria-label="Problem runtime">
+            <div class="problem-ide-panel-header">
+              <span>Run</span>
+              <span id="problemRuntimeStatus">Not prepared</span>
+            </div>
+            <div class="runtime-actions">
+              <button id="runStarterBtn" class="problem-secondary-btn" type="button">Run</button>
+              <button id="runTestsBtn" class="problem-secondary-btn" type="button">Test</button>
+              <button id="prepareRuntimeBtn" class="problem-primary-btn" type="button">Prepare</button>
+              <button id="resetRuntimeBtn" class="problem-danger-btn" type="button">Reset</button>
+            </div>
+            <pre id="problemRuntimeOutput"></pre>
+          </aside>
         </div>
       </div>
     </div>
@@ -582,6 +727,7 @@
           <img src="/images/favicon/apple-touch-icon-57x57.png" alt="Atom Tickets" width="24" height="24" style="margin-right: 8px; vertical-align: middle;">
           <span id="session-info"></span>
           <button id="end-session-btn" class="end-session-button" style="margin-left: 15px;">End Interview</button>
+          <button id="reset-session-btn" class="reset-session-button" style="margin-left: 4px;">Reset Workspace</button>
           <span id="user-count" class="user-count"></span>
         </div>
 
@@ -729,16 +875,17 @@
       </div>
     </div>
 
-    <!-- Simple Templates (must load before firepad.js) -->
+    <!-- Core app scripts -->
     <script src="scripts/simple-templates.js?v=2"></script>
     <script src="scripts/custom-dialogs.js?v=3"></script>
-    <script src="scripts/workspace.bundle.js?v=2"></script>
-    <script src="scripts/firepad.js?v=10"></script>
+    <script src="scripts/workspace.bundle.js?v=4"></script>
+    <script src="scripts/firepad.js?v=14"></script>
     <script src="scripts/interview-notes.js?v=3"></script>
     <script src="scripts/slack-integration.js?v=4"></script>
     <script src="scripts/posthog-tracking.js?v=2"></script>
     <script src="scripts/session-tracking.js?v=1"></script>
     <script src="scripts/activity-monitor.js?v=2"></script>
-    <script src="scripts/app.js?v=13"></script>
+    <script src="scripts/problem-library.js?v=2"></script>
+    <script src="scripts/app.js?v=15"></script>
   </body>
 </html>

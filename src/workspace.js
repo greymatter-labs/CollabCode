@@ -82,6 +82,9 @@ import { FileTree } from '@pierre/trees';
     options: {},
     workspace: null,
     snapshots: {},
+    hiddenFiles: [],
+    hiddenFilesKey: '',
+    activeHiddenFileId: null,
     selectedPath: null,
     tree: null,
     treePathSignature: '',
@@ -198,10 +201,32 @@ import { FileTree } from '@pierre/trees';
       readonly: raw?.readonly === true,
       mutable: raw?.mutable !== false,
       origin: String(raw?.origin || 'session'),
-      padPath: raw?.padPath === null ? null : String(raw?.padPath || `filePads/${id}/firepad`),
+      padPath: null,
       createdAt: raw?.createdAt || null,
       updatedAt: raw?.updatedAt || null,
       updatedBy: raw?.updatedBy || null
+    };
+  }
+
+  function normalizeHiddenFileMetadata(raw, index) {
+    const normalizedPath = normalizePath(raw?.path || raw?.name);
+    if (!normalizedPath) return null;
+
+    const fallbackLanguage = getLanguageForPath(normalizedPath, getInitialLanguage());
+    return {
+      id: `hidden_${sanitizeFileId(raw?.id || normalizedPath || `file_${index}`)}`,
+      path: normalizedPath,
+      language: String(raw?.language || fallbackLanguage),
+      role: 'hidden-test',
+      readonly: true,
+      mutable: false,
+      origin: 'problem-hidden',
+      visibility: 'hidden',
+      hidden: true,
+      candidateVisible: false,
+      padPath: null,
+      content: String(raw?.content || ''),
+      updatedAt: raw?.updatedAt || null
     };
   }
 
@@ -251,6 +276,45 @@ import { FileTree } from '@pierre/trees';
   function getFileList() {
     const files = state.workspace?.files || {};
     return Object.values(files).sort((left, right) => left.path.localeCompare(right.path));
+  }
+
+  function getHiddenFileList() {
+    return state.options.currentUser?.isAdmin === true
+      ? state.hiddenFiles.slice().sort((left, right) => left.path.localeCompare(right.path))
+      : [];
+  }
+
+  function getHiddenFileByPath(path) {
+    const normalized = normalizePath(path);
+    return getHiddenFileList().find(file => file.path === normalized) || null;
+  }
+
+  function getHiddenFolderPaths() {
+    const paths = new Set();
+    getHiddenFileList().forEach(file => {
+      const segments = file.path.split('/');
+      segments.pop();
+      let cursor = '';
+      segments.forEach(segment => {
+        cursor = cursor ? `${cursor}/${segment}` : segment;
+        if (cursor) paths.add(cursor);
+      });
+    });
+    return paths;
+  }
+
+  function hiddenFolderExists(path) {
+    const normalized = normalizeFolderPath(path);
+    return !!normalized && getHiddenFolderPaths().has(normalized);
+  }
+
+  function getActiveHiddenFile() {
+    if (!state.activeHiddenFileId) return null;
+    return getHiddenFileList().find(file => file.id === state.activeHiddenFileId) || null;
+  }
+
+  function getDisplayedFile() {
+    return getActiveHiddenFile() || getActiveFile();
   }
 
   function getActiveFile() {
@@ -326,9 +390,10 @@ import { FileTree } from '@pierre/trees';
   function buildProjectSnapshot(activeContent) {
     const activeFile = getActiveFile();
     const entryFile = getEntryFile();
+    const viewingHiddenFile = !!getActiveHiddenFile();
 
     const files = getFileList().map(file => {
-      const content = activeFile && activeFile.id === file.id && typeof activeContent === 'string'
+      const content = !viewingHiddenFile && activeFile && activeFile.id === file.id && typeof activeContent === 'string'
         ? activeContent
         : getFileContent(file);
       return {
@@ -363,8 +428,6 @@ import { FileTree } from '@pierre/trees';
 
     const language = getInitialLanguage();
     const path = getDefaultPath(language);
-    const legacyPadExists = !!sessionData.firepad;
-    const padPath = legacyPadExists && !isNew ? 'firepad' : `filePads/${DEFAULT_FILE_ID}/firepad`;
     const createdAt = serverTimestamp();
 
     await state.sessionRef.update({
@@ -383,7 +446,7 @@ import { FileTree } from '@pierre/trees';
         readonly: false,
         mutable: true,
         origin: 'session',
-        padPath,
+        padPath: null,
         createdAt,
         updatedAt: createdAt
       },
@@ -391,7 +454,7 @@ import { FileTree } from '@pierre/trees';
         path,
         language,
         role: 'solution',
-        content: legacyPadExists && !isNew ? '' : getDefaultMainContent(language),
+        content: getDefaultMainContent(language),
         updatedAt: createdAt
       }
     });
@@ -411,6 +474,11 @@ import { FileTree } from '@pierre/trees';
     newFolderButton?.addEventListener('click', createFolderFromPrompt);
     renameButton?.addEventListener('click', () => {
       const selection = getSelectedTreeTarget();
+      if (getHiddenFileByPath(selection.path) || (selection.isFolder && hiddenFolderExists(selection.path) && !folderExists(selection.path))) {
+        alert('Hidden problem files are read-only in sessions. Edit them in the Problem Library.');
+        renderTree(true);
+        return;
+      }
       if (selection.isFolder) {
         const treePath = toFolderTreePath(selection.path);
         if (treePath && state.tree?.startRenaming?.(treePath)) return;
@@ -456,7 +524,9 @@ import { FileTree } from '@pierre/trees';
   function isKnownTreePath(path) {
     const { isFolder, path: normalized } = fromTreePath(path);
     if (!normalized) return false;
-    return isFolder ? folderExists(normalized) : !!getFileByPath(normalized);
+    return isFolder
+      ? folderExists(normalized) || hiddenFolderExists(normalized)
+      : !!getFileByPath(normalized) || !!getHiddenFileByPath(normalized);
   }
 
   function getSelectedTreeTarget() {
@@ -510,7 +580,7 @@ import { FileTree } from '@pierre/trees';
         readonly: false,
         mutable: true,
         origin: 'session',
-        padPath: `filePads/${id}/firepad`,
+        padPath: null,
         createdAt,
         updatedAt: createdAt
       },
@@ -687,6 +757,10 @@ import { FileTree } from '@pierre/trees';
 
   async function deleteSelectedPath() {
     const selection = getSelectedTreeTarget();
+    if (getHiddenFileByPath(selection.path) || (selection.isFolder && hiddenFolderExists(selection.path) && !folderExists(selection.path))) {
+      alert('Hidden problem files are read-only in sessions. Edit them in the Problem Library.');
+      return;
+    }
     if (selection.isFolder) {
       await deleteFolder(selection.path);
       return;
@@ -712,9 +786,6 @@ import { FileTree } from '@pierre/trees';
       [`workspace/activeFileId`]: nextActive.id
     };
 
-    if (file.padPath && file.padPath !== 'firepad') {
-      updates[`filePads/${file.id}`] = null;
-    }
     if (state.workspace.entryFileId === file.id) {
       updates[`workspace/entryFileId`] = nextActive.id;
     }
@@ -742,6 +813,10 @@ import { FileTree } from '@pierre/trees';
   }
 
   async function setActiveAsEntry() {
+    if (getActiveHiddenFile()) {
+      alert('Hidden problem files are not candidate entry files.');
+      return;
+    }
     const active = getActiveFile();
     if (!active || active.role === 'runtime') return;
     await state.sessionRef.child('workspace/entryFileId').set(active.id);
@@ -749,19 +824,42 @@ import { FileTree } from '@pierre/trees';
 
   async function setActiveFile(fileId) {
     const file = state.workspace?.files?.[fileId];
-    if (!file || fileId === state.workspace.activeFileId || state.pendingActiveFileId === fileId) return;
+    if (!file || state.pendingActiveFileId === fileId) return;
+    if (fileId === state.workspace.activeFileId && !state.activeHiddenFileId) return;
 
     state.pendingActiveFileId = fileId;
     try {
       await state.options.beforeActiveFileChange?.();
-      await state.sessionRef.child('workspace/activeFileId').set(fileId);
+      state.activeHiddenFileId = null;
+      if (fileId === state.workspace.activeFileId) {
+        state.options.onActiveFileChange?.(file, getSnapshot(file.id));
+        renderTree();
+      } else {
+        await state.sessionRef.child('workspace/activeFileId').set(fileId);
+      }
       focusEditorSoon();
     } finally {
       state.pendingActiveFileId = null;
     }
   }
 
+  async function setActiveHiddenFile(file) {
+    if (!file || state.activeHiddenFileId === file.id) return;
+
+    await state.options.beforeActiveFileChange?.();
+    state.activeHiddenFileId = file.id;
+    state.selectedPath = file.path;
+    state.options.onActiveFileChange?.(file, {
+      path: file.path,
+      language: file.language,
+      role: file.role,
+      content: file.content || ''
+    });
+    renderTree();
+  }
+
   async function updateActiveFileLanguage(language) {
+    if (getActiveHiddenFile()) return;
     const active = getActiveFile();
     if (!active) return;
 
@@ -775,6 +873,7 @@ import { FileTree } from '@pierre/trees';
   }
 
   async function saveActiveSnapshot(content) {
+    if (getActiveHiddenFile()) return;
     const active = getActiveFile();
     if (!active || active.readonly || active.role === 'runtime') return;
 
@@ -837,16 +936,17 @@ import { FileTree } from '@pierre/trees';
   }
 
   function updateWorkspaceChrome() {
-    const active = getActiveFile();
+    const active = getDisplayedFile();
     const entry = getEntryFile();
     const activePath = document.getElementById('active-file-path');
     const entryBadge = document.getElementById('entry-file-badge');
     const entryPath = document.getElementById('entry-file-path');
     const languageSelector = document.getElementById('language-selector');
+    const hiddenActive = active?.hidden === true;
 
     if (activePath) activePath.textContent = active?.path || 'No file';
-    if (entryBadge) entryBadge.style.display = active && entry && active.id === entry.id ? 'inline-flex' : 'none';
-    if (entryPath) entryPath.textContent = entry ? `Entry: ${entry.path}` : '';
+    if (entryBadge) entryBadge.style.display = !hiddenActive && active && entry && active.id === entry.id ? 'inline-flex' : 'none';
+    if (entryPath) entryPath.textContent = hiddenActive ? 'Hidden from candidate' : entry ? `Entry: ${entry.path}` : '';
     if (languageSelector && active?.language && languageSelector.value !== active.language) {
       languageSelector.value = active.language;
     }
@@ -861,6 +961,13 @@ import { FileTree } from '@pierre/trees';
       if (treePath) paths.add(treePath);
     });
     getFileList().forEach(file => paths.add(file.path));
+    getHiddenFolderPaths().forEach(path => {
+      const treePath = toFolderTreePath(path);
+      if (treePath) paths.add(treePath);
+    });
+    getHiddenFileList().forEach(file => {
+      if (!getFileByPath(file.path)) paths.add(file.path);
+    });
     return Array.from(paths).sort((left, right) => left.localeCompare(right));
   }
 
@@ -887,6 +994,52 @@ import { FileTree } from '@pierre/trees';
     return Array.from(expanded);
   }
 
+  function clearHiddenFiles() {
+    state.hiddenFiles = [];
+    state.hiddenFilesKey = '';
+    state.activeHiddenFileId = null;
+  }
+
+  async function refreshHiddenFilesForWorkspace() {
+    const source = state.workspace?.source || {};
+    const problemId = source.problemId;
+    const versionId = source.problemVersionId || source.versionId;
+    const key = problemId && versionId ? `${problemId}:${versionId}` : '';
+
+    if (state.options.currentUser?.isAdmin !== true || typeof state.options.loadHiddenFiles !== 'function' || !key) {
+      if (state.hiddenFiles.length || state.hiddenFilesKey || state.activeHiddenFileId) {
+        clearHiddenFiles();
+        renderTree(true);
+      }
+      return;
+    }
+
+    if (key === state.hiddenFilesKey) return;
+    state.hiddenFilesKey = key;
+
+    try {
+      const hiddenFiles = await state.options.loadHiddenFiles(source);
+      if (state.hiddenFilesKey !== key) return;
+
+      state.hiddenFiles = (Array.isArray(hiddenFiles) ? hiddenFiles : [])
+        .map((file, index) => normalizeHiddenFileMetadata(file, index))
+        .filter(Boolean)
+        .filter(file => !getFileByPath(file.path));
+
+      if (state.activeHiddenFileId && !getActiveHiddenFile()) {
+        state.activeHiddenFileId = null;
+      }
+      renderTree(true);
+    } catch (error) {
+      console.warn('Could not load admin hidden problem files:', error);
+      if (state.hiddenFilesKey === key) {
+        state.hiddenFiles = [];
+        state.activeHiddenFileId = null;
+        renderTree(true);
+      }
+    }
+  }
+
   function handleTreeSelection(selectedPaths) {
     const selectedPath = selectedPaths.find(isKnownTreePath) || null;
     if (!selectedPath) return;
@@ -901,6 +1054,12 @@ import { FileTree } from '@pierre/trees';
     const selectedFile = getFileByPath(path);
     if (selectedFile) {
       setActiveFile(selectedFile.id).catch(error => console.error('Failed to switch file:', error));
+      return;
+    }
+
+    const hiddenFile = getHiddenFileByPath(path);
+    if (hiddenFile) {
+      setActiveHiddenFile(hiddenFile).catch(error => console.error('Failed to open hidden file:', error));
     }
   }
 
@@ -925,6 +1084,12 @@ import { FileTree } from '@pierre/trees';
       const file = getFileByPath(path);
       if (file) {
         setActiveFile(file.id).catch(error => console.error('Failed to switch file:', error));
+        return;
+      }
+
+      const hiddenFile = getHiddenFileByPath(path);
+      if (hiddenFile) {
+        setActiveHiddenFile(hiddenFile).catch(error => console.error('Failed to open hidden file:', error));
       }
     }, true);
 
@@ -941,6 +1106,12 @@ import { FileTree } from '@pierre/trees';
       const file = getFileByPath(path);
       if (file) {
         setActiveFile(file.id).catch(error => console.error('Failed to switch file:', error));
+        return;
+      }
+
+      const hiddenFile = getHiddenFileByPath(path);
+      if (hiddenFile) {
+        setActiveHiddenFile(hiddenFile).catch(error => console.error('Failed to open hidden file:', error));
       }
     }, true);
   }
@@ -994,6 +1165,8 @@ import { FileTree } from '@pierre/trees';
         onSelectionChange: handleTreeSelection,
         renderRowDecoration({ item }) {
           const file = getFileByPath(item.path);
+          const hiddenFile = getHiddenFileByPath(item.path);
+          if (hiddenFile) return { text: 'hidden', title: 'Hidden from candidate' };
           if (!file) return null;
           if (file.id === state.workspace?.entryFileId) return { text: 'entry', title: 'Entry file' };
           if (file.role === 'runtime') return { text: 'run', title: 'Generated during this session' };
@@ -1001,6 +1174,8 @@ import { FileTree } from '@pierre/trees';
         },
         renaming: {
           canRename(item) {
+            if (getHiddenFileByPath(item.path)) return false;
+            if (item.isFolder && hiddenFolderExists(item.path) && !folderExists(item.path)) return false;
             return item.isFolder ? folderExists(item.path) : !!getFileByPath(item.path);
           },
           onRename(event) {
@@ -1016,7 +1191,7 @@ import { FileTree } from '@pierre/trees';
         },
         dragAndDrop: {
           canDrag(pathsToDrag) {
-            return pathsToDrag.every(path => !!getFileByPath(path));
+            return pathsToDrag.every(path => !!getFileByPath(path) && !getHiddenFileByPath(path));
           },
           canDrop() {
             return true;
@@ -1054,9 +1229,10 @@ import { FileTree } from '@pierre/trees';
       state.selectedPath = getActiveFile()?.path || getTreePaths()[0] || null;
     }
     renderTree();
+    refreshHiddenFilesForWorkspace();
 
     const active = getActiveFile();
-    if (active && (active.id !== previousActiveFileId || !state.initialized)) {
+    if (!getActiveHiddenFile() && active && (active.id !== previousActiveFileId || !state.initialized)) {
       state.options.onActiveFileChange?.(active, getSnapshot(active.id));
     }
     state.initialized = true;
@@ -1064,6 +1240,13 @@ import { FileTree } from '@pierre/trees';
 
   function handleSnapshotsSnapshot(snapshot) {
     state.snapshots = snapshot.val() || {};
+    const active = getActiveFile();
+    const activeSnapshot = active ? getSnapshot(active.id) : null;
+    const updatedByCurrentUser = activeSnapshot?.updatedBy
+      && activeSnapshot.updatedBy === state.options.currentUser?.name;
+    if (!getActiveHiddenFile() && active && activeSnapshot && !updatedByCurrentUser) {
+      state.options.onActiveFileChange?.(active, activeSnapshot);
+    }
     updateWorkspaceChrome();
   }
 
@@ -1096,6 +1279,9 @@ import { FileTree } from '@pierre/trees';
     state.options = {};
     state.workspace = null;
     state.snapshots = {};
+    state.hiddenFiles = [];
+    state.hiddenFilesKey = '';
+    state.activeHiddenFileId = null;
     state.selectedPath = null;
     state.tree = null;
     state.treePathSignature = '';
@@ -1103,10 +1289,7 @@ import { FileTree } from '@pierre/trees';
   }
 
   function getPadRef(file) {
-    if (!state.sessionRef || !file) return null;
-    if (file.padPath === null || file.role === 'runtime' || file.readonly) return null;
-    if (file.padPath === 'firepad') return state.sessionRef.child('firepad');
-    return state.sessionRef.child('filePads').child(file.id).child('firepad');
+    return null;
   }
 
   window.CollabWorkspace = {

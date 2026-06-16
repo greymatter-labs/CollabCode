@@ -1,5 +1,6 @@
 const getFirebaseAdmin = require('../../lib/firebase-admin');
 const { runProject } = require('../../lib/blaxel-runner');
+const { getProblemVersion, inferLanguage, normalizePath } = require('../../lib/problems');
 
 const SESSION_ID_PATTERN = /^[A-Z0-9]{8}$/;
 const RUN_LOCK_MS = 2 * 60 * 1000;
@@ -24,9 +25,74 @@ function buildRunRecord(status, body, details = {}) {
     executionTime: details.executionTime || null,
     command: details.command || null,
     sandboxName: details.sandboxName || null,
+    hiddenTests: details.hiddenTests === true,
     runById: body?.runById || null,
     runByName: getRunnerName(body),
     updatedAt: Date.now()
+  };
+}
+
+function getDisplayOutput(result) {
+  const output = String(result?.output || '').trim();
+  if (output) return output;
+
+  const stdout = String(result?.stdout || '').trim();
+  const stderr = String(result?.stderr || '').trim();
+  return [stdout, stderr].filter(Boolean).join('\n');
+}
+
+function buildProblemRunProject(body, sessionData, problemVersion) {
+  const requestFiles = Array.isArray(body?.files) ? body.files : [];
+  const filesByPath = new Map();
+
+  requestFiles.forEach((file, index) => {
+    const path = normalizePath(file?.path || file?.name || `file-${index}.txt`);
+    if (!path) return;
+    filesByPath.set(path, {
+      id: String(file?.id || path.replace(/[^A-Za-z0-9_-]/g, '_')).slice(0, 100),
+      path,
+      content: String(file?.content || ''),
+      language: String(file?.language || inferLanguage(path, problemVersion.defaultLanguage)),
+      role: String(file?.role || 'candidate'),
+      readonly: file?.readonly === true
+    });
+  });
+
+  (problemVersion?.files || [])
+    .filter(file => file.visibility === 'hidden')
+    .forEach((file) => {
+      const path = normalizePath(file.path);
+      if (!path || filesByPath.has(path)) return;
+      filesByPath.set(path, {
+        id: String(file.id || path.replace(/[^A-Za-z0-9_-]/g, '_')).slice(0, 100),
+        path,
+        content: String(file.content || ''),
+        language: String(file.language || inferLanguage(path, problemVersion.defaultLanguage)),
+        role: String(file.role || 'hidden-test'),
+        readonly: true
+      });
+    });
+
+  const command = problemVersion?.testCommand || problemVersion?.starterCommand || '';
+  if (command) {
+    filesByPath.set('.collabcode/run.json', {
+      id: 'collabcode_run_config',
+      path: '.collabcode/run.json',
+      content: JSON.stringify({ command }, null, 2),
+      language: 'json',
+      role: 'config',
+      readonly: true
+    });
+  }
+
+  const files = Array.from(filesByPath.values());
+  const entryPath = normalizePath(body?.entryPath || problemVersion?.entryPath) || files[0]?.path || 'main.js';
+  return {
+    files,
+    entryPath,
+    language: inferLanguage(entryPath, body?.language || problemVersion?.defaultLanguage),
+    command,
+    hiddenTests: !!problemVersion?.testCommand
   };
 }
 
@@ -96,7 +162,7 @@ module.exports = async function handler(req, res) {
       output: 'Running in Blaxel...'
     }));
 
-    const result = await runProject({
+    let runInput = {
       sessionId,
       language: req.body?.language,
       code: req.body?.code,
@@ -104,11 +170,33 @@ module.exports = async function handler(req, res) {
       entryPath: req.body?.entryPath,
       stdin: req.body?.stdin,
       timeoutSec: req.body?.timeoutSec
-    });
+    };
 
+    let hiddenTests = false;
+    const problemId = sessionData?.problem?.problemId;
+    const versionId = sessionData?.problem?.versionId;
+    if (problemId && versionId) {
+      const problemSnapshot = await admin.database().ref(`problems/${problemId}`).once('value');
+      const problem = problemSnapshot.val();
+      if (problem) {
+        const version = getProblemVersion(problem, versionId);
+        const project = buildProblemRunProject(req.body, sessionData, version);
+        hiddenTests = project.hiddenTests;
+        runInput = {
+          ...runInput,
+          language: project.language,
+          files: project.files,
+          entryPath: project.entryPath
+        };
+      }
+    }
+
+    const result = await runProject(runInput);
+
+    const rawOutput = getDisplayOutput(result);
     const output = result.success
-      ? result.output || '(No output)'
-      : result.error || result.output || 'Execution failed';
+      ? rawOutput
+      : rawOutput || result.error || 'Execution failed';
     const record = buildRunRecord(result.success ? 'success' : 'error', req.body, {
       language: req.body?.language,
       entryPath: req.body?.entryPath,
@@ -117,7 +205,8 @@ module.exports = async function handler(req, res) {
       runtimeFileCount: Array.isArray(result.runtimeFiles) ? result.runtimeFiles.length : 0,
       executionTime: result.executionTime,
       command: result.command,
-      sandboxName: result.sandboxName
+      sandboxName: result.sandboxName,
+      hiddenTests
     });
     await sessionRef.child('lastRun').set(record);
 
@@ -133,7 +222,8 @@ module.exports = async function handler(req, res) {
       executionTime: result.executionTime,
       runtimeFiles: result.runtimeFiles,
       command: result.command,
-      sandboxName: result.sandboxName
+      sandboxName: result.sandboxName,
+      hiddenTests
     });
   } catch (error) {
     const statusCode = error.statusCode || 500;
