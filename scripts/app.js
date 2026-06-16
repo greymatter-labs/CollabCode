@@ -115,6 +115,36 @@
     setupLandingPage();
     setupCandidateFlow();
     setupAdminFlow();
+    setupSessionDetailsModalHandlers();
+  }
+
+  function closeSessionDetailsModal() {
+    const modal = document.getElementById('sessionDetailsModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+
+  function setupSessionDetailsModalHandlers() {
+    document.addEventListener('click', function(event) {
+      const closeButton = event.target.closest('#closeSessionDetailsBtn');
+      if (closeButton) {
+        closeSessionDetailsModal();
+        return;
+      }
+
+      const modal = document.getElementById('sessionDetailsModal');
+      if (modal && event.target === modal) {
+        closeSessionDetailsModal();
+      }
+    });
+
+    document.addEventListener('keydown', function(event) {
+      const modal = document.getElementById('sessionDetailsModal');
+      if (event.key === 'Escape' && modal && modal.style.display === 'flex') {
+        closeSessionDetailsModal();
+      }
+    });
   }
 
   // Setup landing page
