@@ -1,6 +1,7 @@
 // Main Application Controller
 (function() {
   let appInitialized = false;
+  let adminDashboardInitialized = false;
 
   const SESSION_CODE_LENGTH = 8;
   const SESSION_CODE_PATTERN = /^[A-Z0-9]{8}$/;
@@ -246,6 +247,12 @@
 
   // Setup admin dashboard
   function setupAdminDashboard() {
+    if (adminDashboardInitialized) {
+      console.log('Admin dashboard already initialized, skipping duplicate setup');
+      return;
+    }
+    adminDashboardInitialized = true;
+
     const createSessionBtn = document.getElementById('createSessionBtn');
     const adminSessionCode = document.getElementById('adminSessionCode');
     const adminJoinBtn = document.getElementById('adminJoinBtn');
@@ -324,62 +331,61 @@
     }
 
     // Create new session
-    if (createSessionBtn && !createSessionBtn.dataset.createHandlerBound) {
-      createSessionBtn.dataset.createHandlerBound = 'true';
+    if (createSessionBtn) {
       createSessionBtn.addEventListener('click', async function() {
-      // Check if already starting
-      if (sessionStarting) {
-        console.warn('CREATE SESSION: Already starting a session, ignoring click');
-        return;
-      }
-      
-      const createSessionLabel = createSessionBtn.querySelector('span');
-      const originalText = createSessionLabel ? createSessionLabel.textContent : createSessionBtn.textContent;
-      createSessionBtn.disabled = true;
-      if (createSessionLabel) {
-        createSessionLabel.textContent = 'Creating...';
-      } else {
-        createSessionBtn.textContent = 'Creating...';
-      }
-
-      try {
-        const session = await createSessionViaApi();
-        const sessionCode = normalizeSessionCode(session.sessionId);
-        console.log('CREATE SESSION: Created code:', sessionCode);
-        
-        // Show active session
-        document.getElementById('activeSessionCode').textContent = sessionCode;
-        document.getElementById('activeSession').style.display = 'block';
-        
-        // Hide the dashboard modal immediately
-        document.getElementById('adminDashboardModal').style.display = 'none';
-        
-        // Now set the hash (this might trigger hashchange/load events)
-        window.location.hash = sessionCode;
-        console.log('CREATE SESSION: Current URL hash:', window.location.hash);
-        
-        // Track interviewer creating and joining session
-        const adminName = getAdminDisplayName();
-        
-        // Initialize activity monitor in observer mode for interviewer
-        if (window.initActivityMonitor) {
-          console.log('Starting activity monitor in observer mode for interviewer');
-          window.initActivityMonitor(sessionCode, adminName, 'interviewer');
+        // Check if already starting
+        if (sessionStarting) {
+          console.warn('CREATE SESSION: Already starting a session, ignoring click');
+          return;
         }
         
-        // Start session - DON'T set sessionStarting here, let startSession handle it
-        startSession(adminName, sessionCode, true);
-      } catch (error) {
-        console.error('CREATE SESSION: Failed:', error);
-        alert(error.message || 'Failed to create session. Please try again.');
-      } finally {
-        createSessionBtn.disabled = false;
+        const createSessionLabel = createSessionBtn.querySelector('span');
+        const originalText = createSessionLabel ? createSessionLabel.textContent : createSessionBtn.textContent;
+        createSessionBtn.disabled = true;
         if (createSessionLabel) {
-          createSessionLabel.textContent = originalText;
+          createSessionLabel.textContent = 'Creating...';
         } else {
-          createSessionBtn.textContent = originalText;
+          createSessionBtn.textContent = 'Creating...';
         }
-      }
+
+        try {
+          const session = await createSessionViaApi();
+          const sessionCode = normalizeSessionCode(session.sessionId);
+          console.log('CREATE SESSION: Created code:', sessionCode);
+          
+          // Show active session
+          document.getElementById('activeSessionCode').textContent = sessionCode;
+          document.getElementById('activeSession').style.display = 'block';
+          
+          // Hide the dashboard modal immediately
+          document.getElementById('adminDashboardModal').style.display = 'none';
+          
+          // Now set the hash (this might trigger hashchange/load events)
+          window.location.hash = sessionCode;
+          console.log('CREATE SESSION: Current URL hash:', window.location.hash);
+          
+          // Track interviewer creating and joining session
+          const adminName = getAdminDisplayName();
+          
+          // Initialize activity monitor in observer mode for interviewer
+          if (window.initActivityMonitor) {
+            console.log('Starting activity monitor in observer mode for interviewer');
+            window.initActivityMonitor(sessionCode, adminName, 'interviewer');
+          }
+          
+          // Start session - DON'T set sessionStarting here, let startSession handle it
+          startSession(adminName, sessionCode, true);
+        } catch (error) {
+          console.error('CREATE SESSION: Failed:', error);
+          alert(error.message || 'Failed to create session. Please try again.');
+        } finally {
+          createSessionBtn.disabled = false;
+          if (createSessionLabel) {
+            createSessionLabel.textContent = originalText;
+          } else {
+            createSessionBtn.textContent = originalText;
+          }
+        }
       });
     }
 
