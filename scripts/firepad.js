@@ -996,17 +996,22 @@
     }
 
     // Show output panel
-    showOutput('Running...', 'info');
-    await publishRunResult('running', { language, entryPath, output: 'Running...' });
+    showOutput('Running in Blaxel...', 'info');
+    await publishRunResult('running', { language, entryPath, output: 'Running in Blaxel...' });
     runBtn.disabled = true;
     runBtn.textContent = 'Running...';
 
     try {
       await saveActiveSnapshotNow();
 
+      const executionContext = {
+        sessionId: currentSessionCode,
+        runById: currentUser?.id || null,
+        runByName: currentUser?.name || null
+      };
       const result = projectSnapshot && CodeExecutor.executeProject
-        ? await CodeExecutor.executeProject(language, projectSnapshot.files, projectSnapshot.entryPath, input)
-        : await CodeExecutor.execute(language, code, input);
+        ? await CodeExecutor.executeProject(language, projectSnapshot.files, projectSnapshot.entryPath, input, executionContext)
+        : await CodeExecutor.execute(language, code, input, { ...executionContext, entryPath });
       
       if (result.success) {
         let output = result.output || '(No output)';

@@ -18,10 +18,10 @@
       "maxDuration": 10
     },
     "api/sessions/end.js": {
-      "maxDuration": 10
+      "maxDuration": 30
     },
     "api/code/execute.js": {
-      "maxDuration": 10
+      "maxDuration": 120
     }
   },
   "headers": [

@@ -265,7 +265,7 @@ npm run dev
 - **Editor:** ACE Editor with Firepad
 - **Authentication:** JWT + bcrypt
 - **Deployment:** Vercel (serverless functions)
-- **Code Execution:** Piston API
+- **Code Execution:** Blaxel server-side sandboxes
 
 ## 📦 Project Structure
 
@@ -306,7 +306,9 @@ FIREBASE_DATABASE_URL=https://your-project-default-rtdb.firebaseio.com
 # Optional
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK
 APP_DOMAIN=https://your-domain.com
-PISTON_API_URL=https://your-private-piston.example.com/api/v2/piston
+BL_WORKSPACE=your-blaxel-workspace
+BL_API_KEY=your-blaxel-api-key
+BL_REGION=us-pdx-1
 ```
 
 ### Firebase Setup
@@ -383,7 +385,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [ACE Editor](https://ace.c9.io/) - The high performance code editor
 - [Firebase](https://firebase.google.com/) - Real-time database and hosting
-- [Piston](https://github.com/engineer-man/piston) - Code execution engine
+- [Blaxel](https://blaxel.ai/) - Server-side sandbox execution
 - [Vercel](https://vercel.com/) - Deployment and serverless functions
 
 ## 💬 Support & Community

@@ -1,148 +1,156 @@
-// Secure API endpoint for code execution.
-// Non-JavaScript languages require a private Piston-compatible API configured
-// with PISTON_API_URL. JavaScript is executed client-side in a Web Worker.
+const getFirebaseAdmin = require('../../lib/firebase-admin');
+const { runProject } = require('../../lib/blaxel-runner');
+
+const SESSION_ID_PATTERN = /^[A-Z0-9]{8}$/;
+const RUN_LOCK_MS = 2 * 60 * 1000;
+
+function normalizeSessionId(sessionId) {
+  return String(sessionId || '').trim().toUpperCase();
+}
+
+function getRunnerName(body) {
+  return String(body?.runByName || body?.runnerName || 'Interviewer').slice(0, 120);
+}
+
+function buildRunRecord(status, body, details = {}) {
+  return {
+    status,
+    provider: 'blaxel',
+    language: details.language || body?.language || null,
+    entryPath: details.entryPath || body?.entryPath || null,
+    output: details.output || '',
+    error: details.error || '',
+    runtimeFileCount: details.runtimeFileCount || 0,
+    executionTime: details.executionTime || null,
+    command: details.command || null,
+    sandboxName: details.sandboxName || null,
+    runById: body?.runById || null,
+    runByName: getRunnerName(body),
+    updatedAt: Date.now()
+  };
+}
+
+async function acquireRunLock(sessionRef, runId, body) {
+  const lockRef = sessionRef.child('runLock');
+  const now = Date.now();
+  const result = await lockRef.transaction((current) => {
+    if (current?.expiresAt && current.expiresAt > now) return;
+    return {
+      runId,
+      runById: body?.runById || null,
+      runByName: getRunnerName(body),
+      startedAt: now,
+      expiresAt: now + RUN_LOCK_MS
+    };
+  });
+
+  if (!result.committed) {
+    const current = result.snapshot.val() || {};
+    const runner = current.runByName ? ` by ${current.runByName}` : '';
+    const error = new Error(`Another run is already in progress${runner}.`);
+    error.statusCode = 409;
+    throw error;
+  }
+
+  return async function releaseRunLock() {
+    await lockRef.transaction((current) => {
+      if (current?.runId === runId) return null;
+      return current;
+    });
+  };
+}
 
 module.exports = async function handler(req, res) {
-  // Only allow POST requests
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const sessionId = normalizeSessionId(req.body?.sessionId);
+  if (!SESSION_ID_PATTERN.test(sessionId)) {
+    return res.status(400).json({ error: 'A valid sessionId is required for shared Blaxel execution' });
+  }
+
+  const admin = getFirebaseAdmin();
+  const sessionRef = admin.database().ref(`sessions/${sessionId}`);
+  const sessionSnapshot = await sessionRef.once('value');
+  const sessionData = sessionSnapshot.val();
+  if (!sessionData || sessionData.status === 'ended') {
+    return res.status(404).json({ error: 'Session not found or already ended' });
+  }
+
+  const runId = `run_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  let releaseLock = null;
+
   try {
-    const { language, code, stdin, files, entryPath } = req.body;
+    releaseLock = await acquireRunLock(sessionRef, runId, req.body);
+    await sessionRef.child('lastRun').set(buildRunRecord('running', req.body, {
+      output: 'Running in Blaxel...'
+    }));
 
-    // Validate input
-    if (!language) {
-      return res.status(400).json({ error: 'Language is required' });
-    }
-
-    const executionFiles = normalizeExecutionFiles(files, code, entryPath);
-    if (!executionFiles.length) {
-      return res.status(400).json({ error: 'Code or files are required' });
-    }
-
-    const totalSize = executionFiles.reduce((sum, file) => sum + file.content.length, 0);
-    if (totalSize > 100000) {
-      return res.status(400).json({ error: 'Code too large (max 100KB total)' });
-    }
-
-    // Language mappings for Piston
-    const languageMap = {
-      'javascript': 'javascript',
-      'python': 'python',
-      'java': 'java',
-      'c_cpp': 'cpp',
-      'go': 'go',
-      'rust': 'rust',
-      'ruby': 'ruby',
-      'php': 'php',
-      'csharp': 'csharp',
-      'swift': 'swift',
-      'kotlin': 'kotlin',
-      'typescript': 'typescript',
-      'r': 'r',
-      'perl': 'perl',
-      'scala': 'scala',
-      'haskell': 'haskell',
-      'lua': 'lua',
-      'elixir': 'elixir',
-      'dart': 'dart',
-      'sql': 'sql'
-    };
-
-    const pistonLanguage = languageMap[language] || language;
-    const PISTON_API = process.env.PISTON_API_URL;
-
-    if (!PISTON_API) {
-      return res.status(503).json({
-        error: 'Execution provider not configured',
-        details: `Execution for ${language} requires a private Piston-compatible API in PISTON_API_URL. JavaScript runs in the browser.`
-      });
-    }
-
-    // Execute code via Piston API
-    const response = await fetch(`${PISTON_API}/execute`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        language: pistonLanguage,
-        version: '*', // Use latest version
-        files: executionFiles,
-        stdin: stdin || '',
-        args: [],
-        compile_timeout: 10000,
-        run_timeout: 3000,
-        compile_memory_limit: -1,
-        run_memory_limit: -1
-      })
+    const result = await runProject({
+      sessionId,
+      language: req.body?.language,
+      code: req.body?.code,
+      files: req.body?.files,
+      entryPath: req.body?.entryPath,
+      stdin: req.body?.stdin,
+      timeoutSec: req.body?.timeoutSec
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('Piston API error:', error);
-      return res.status(response.status).json({ 
-        error: 'Code execution failed',
-        details: error 
-      });
-    }
+    const output = result.success
+      ? result.output || '(No output)'
+      : result.error || result.output || 'Execution failed';
+    const record = buildRunRecord(result.success ? 'success' : 'error', req.body, {
+      language: req.body?.language,
+      entryPath: req.body?.entryPath,
+      output,
+      error: result.success ? '' : output,
+      runtimeFileCount: Array.isArray(result.runtimeFiles) ? result.runtimeFiles.length : 0,
+      executionTime: result.executionTime,
+      command: result.command,
+      sandboxName: result.sandboxName
+    });
+    await sessionRef.child('lastRun').set(record);
 
-    const result = await response.json();
-
-    const runCode = result.run?.code ?? 0;
-    const compileCode = result.compile?.code ?? 0;
-
-    // Return execution result
     return res.status(200).json({
-      success: runCode === 0 && compileCode === 0 && !result.run?.signal,
-      output: result.run?.output || '',
-      stdout: result.run?.stdout || '',
-      stderr: result.run?.stderr || '',
-      code: result.run?.code,
-      signal: result.run?.signal,
-      compile_output: result.compile?.output || ''
+      success: result.success,
+      provider: 'blaxel',
+      output,
+      stdout: result.stdout,
+      stderr: result.stderr,
+      error: result.success ? '' : output,
+      code: result.exitCode,
+      status: result.status,
+      executionTime: result.executionTime,
+      runtimeFiles: result.runtimeFiles,
+      command: result.command,
+      sandboxName: result.sandboxName
     });
-
   } catch (error) {
-    console.error('Error executing code:', error);
-    return res.status(500).json({ 
-      error: 'Internal server error',
-      details: error.message 
+    const statusCode = error.statusCode || 500;
+    const message = error.message || 'Execution failed';
+    await sessionRef.child('lastRun').set(buildRunRecord('error', req.body, {
+      output: message,
+      error: message
+    }));
+    return res.status(statusCode).json({
+      success: false,
+      provider: 'blaxel',
+      error: message,
+      details: message
     });
+  } finally {
+    if (releaseLock) {
+      await releaseLock().catch((error) => console.warn('Could not release run lock:', error));
+    }
   }
 };
-
-function normalizePath(value) {
-  return String(value || '')
-    .trim()
-    .replace(/\\/g, '/')
-    .replace(/^\/+/, '')
-    .replace(/\/+/g, '/')
-    .split('/')
-    .filter(part => part && part !== '.' && part !== '..')
-    .join('/');
-}
-
-function normalizeExecutionFiles(files, code, entryPath) {
-  const rawFiles = Array.isArray(files) && files.length
-    ? files
-    : [{ path: normalizePath(entryPath) || 'main', content: code }];
-
-  const normalized = rawFiles
-    .map((file, index) => ({
-      name: normalizePath(file.path || file.name || `file-${index}`),
-      content: String(file.content || '')
-    }))
-    .filter(file => file.name && file.content.length <= 100000);
-
-  const normalizedEntryPath = normalizePath(entryPath);
-  if (!normalizedEntryPath) return normalized;
-
-  const entryIndex = normalized.findIndex(file => file.name === normalizedEntryPath);
-  if (entryIndex <= 0) return normalized;
-
-  const [entryFile] = normalized.splice(entryIndex, 1);
-  normalized.unshift(entryFile);
-  return normalized;
-}

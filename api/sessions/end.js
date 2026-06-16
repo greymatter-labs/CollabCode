@@ -5,6 +5,7 @@
 
 const jwt = require('jsonwebtoken');
 const getFirebaseAdmin = require('../../lib/firebase-admin');
+const { deleteSessionSandbox } = require('../../lib/blaxel-runner');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const SESSION_ID_PATTERN = /^[A-Z0-9]{8}$/;
@@ -161,9 +162,18 @@ module.exports = async (req, res) => {
 
     await sessionRef.update(updates);
 
+    let sandboxCleanup = null;
+    try {
+      sandboxCleanup = await deleteSessionSandbox(sessionId);
+    } catch (error) {
+      console.warn('Could not delete Blaxel sandbox for ended session:', error.message);
+      sandboxCleanup = { deleted: false, error: error.message };
+    }
+
     return res.status(200).json({
       success: true,
-      sessionId
+      sessionId,
+      sandboxCleanup
     });
   } catch (error) {
     console.error('End session error:', error);
