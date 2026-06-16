@@ -2459,22 +2459,25 @@ html, body {
   overflow-y: auto;
   background: #f3f5f8;
   backdrop-filter: none;
-  padding: 0 24px 48px;
+  padding: 0 clamp(12px, 2vw, 24px);
 }
 
 .dashboard-modal-content {
   max-width: 1040px;
   width: 100%;
   margin: 0 auto;
+  padding: 0;
   background: #ffffff;
+  border: 0;
   border-radius: 0 0 16px 16px;
   overflow: hidden;
+  text-align: left;
   box-shadow: 0 18px 50px rgba(15, 23, 42, 0.12);
 }
 
 .dashboard-header-modern {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 32px;
+  padding: clamp(22px, 3vh, 32px) 32px;
   color: white;
 }
 
@@ -2520,7 +2523,7 @@ html, body {
 }
 
 .dashboard-body {
-  padding: 32px;
+  padding: clamp(20px, 3vh, 32px) 32px;
   background: #f8f9fa;
 }
 
@@ -2528,11 +2531,11 @@ html, body {
 .interviewer-card {
   display: flex;
   gap: 20px;
-  padding: 24px;
+  padding: clamp(16px, 2vh, 24px);
   background: white;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
-  margin-bottom: 32px;
+  margin-bottom: clamp(18px, 2.8vh, 32px);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
@@ -2588,24 +2591,30 @@ html, body {
 
 /* Quick Actions Section */
 .quick-actions-section {
-  margin-bottom: 32px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(300px, 0.82fr);
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: clamp(18px, 2.8vh, 32px);
 }
 
 .section-title {
+  grid-column: 1 / -1;
   font-size: 18px;
   font-weight: 600;
   color: #111827;
-  margin: 0 0 20px 0;
+  margin: 0;
+  text-align: center;
 }
 
 .action-card {
   display: flex;
-  gap: 24px;
-  padding: 24px;
+  gap: 18px;
+  padding: clamp(18px, 2.5vh, 24px);
   background: white;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
-  margin-bottom: 16px;
+  margin-bottom: 0;
   transition: all 0.3s ease;
 }
 
@@ -2623,8 +2632,8 @@ html, body {
 }
 
 .action-icon {
-  width: 64px;
-  height: 64px;
+  width: clamp(52px, 6vh, 64px);
+  height: clamp(52px, 6vh, 64px);
   background: #f3f4f6;
   border-radius: 12px;
   display: flex;
@@ -2657,7 +2666,7 @@ html, body {
 .action-content p {
   font-size: 14px;
   color: #6b7280;
-  margin: 0 0 16px 0;
+  margin: 0 0 clamp(10px, 1.8vh, 16px) 0;
 }
 
 .action-btn-primary {
@@ -2798,7 +2807,7 @@ html, body {
 /* Management Tools */
 .management-tools {
   text-align: center;
-  padding-top: 24px;
+  padding-top: clamp(16px, 2.4vh, 24px);
   border-top: 1px solid #e5e7eb;
   display: flex;
   gap: 12px;
@@ -2842,8 +2851,8 @@ html, body {
 
 .selected-problem-card {
   width: min(100%, 520px);
-  margin: 14px auto 18px;
-  padding: 12px;
+  margin: clamp(10px, 1.6vh, 14px) auto clamp(12px, 1.8vh, 18px);
+  padding: clamp(10px, 1.5vh, 12px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3458,10 +3467,28 @@ html, body {
   .logout-btn-modern {
     width: 100%;
   }
+
+  .quick-actions-section {
+    display: block;
+  }
+
+  .section-title {
+    margin-bottom: 16px;
+  }
   
   .action-card {
     flex-direction: column;
     text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .selected-problem-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .selected-problem-actions {
+    justify-content: center;
   }
   
   .join-session-group {
