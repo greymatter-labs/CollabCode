@@ -5,13 +5,13 @@
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { getAdminEmails, isAdminEmail } = require('../../lib/admin-auth');
 
 const JWT_SECRET = process.env.JWT_SECRET;
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 
 // Ensure required environment variables are set
-if (!JWT_SECRET || !ADMIN_EMAIL) {
-  console.error('Missing required environment variables: JWT_SECRET or ADMIN_EMAIL');
+if (!JWT_SECRET || !getAdminEmails().length) {
+  console.error('Missing required environment variables: JWT_SECRET and ADMIN_EMAILS or ADMIN_EMAIL');
 }
 
 // In production, this would update a database
@@ -66,7 +66,7 @@ module.exports = async (req, res) => {
       return res.status(401).json({ error: 'Invalid reset token' });
     }
 
-    if (decoded.email !== ADMIN_EMAIL) {
+    if (!isAdminEmail(decoded.email)) {
       return res.status(401).json({ error: 'Invalid reset token' });
     }
 

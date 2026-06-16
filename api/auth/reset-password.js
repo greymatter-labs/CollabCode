@@ -5,13 +5,13 @@
 
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const { getAdminEmails, isAdminEmail, normalizeEmail } = require('../../lib/admin-auth');
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // Ensure required environment variables are set
-if (!ADMIN_EMAIL || !JWT_SECRET) {
-  console.error('Missing required environment variables: ADMIN_EMAIL or JWT_SECRET');
+if (!getAdminEmails().length || !JWT_SECRET) {
+  console.error('Missing required environment variables: ADMIN_EMAILS or ADMIN_EMAIL, or JWT_SECRET');
 }
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 
@@ -31,13 +31,14 @@ module.exports = async (req, res) => {
   }
 
   const { email } = req.body;
+  const normalizedEmail = normalizeEmail(email);
 
   if (!email) {
     return res.status(400).json({ error: 'Email required' });
   }
 
   // Check if email matches admin
-  if (email !== ADMIN_EMAIL) {
+  if (!isAdminEmail(normalizedEmail)) {
     // Don't reveal if email exists or not (security)
     return res.status(200).json({ 
       success: true, 
@@ -49,7 +50,7 @@ module.exports = async (req, res) => {
     // Generate reset token (expires in 1 hour)
     const resetToken = jwt.sign(
       { 
-        email: email,
+        email: normalizedEmail,
         type: 'password-reset',
         nonce: crypto.randomBytes(16).toString('hex')
       },
@@ -67,7 +68,7 @@ module.exports = async (req, res) => {
       sgMail.setApiKey(SENDGRID_API_KEY);
 
       const msg = {
-        to: email,
+        to: normalizedEmail,
         from: 'noreply@yourcompany.com', // Must be verified in SendGrid
         subject: 'Password Reset Request',
         text: `Click this link to reset your password: ${resetUrl}\n\nThis link expires in 1 hour.`,

@@ -128,7 +128,7 @@
 
 Deploy your own instance in seconds:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/greymatter-labs/CollabCode&env=ADMIN_EMAIL,ADMIN_PASSWORD_HASH,JWT_SECRET,FIREBASE_PROJECT_ID,FIREBASE_CLIENT_EMAIL,FIREBASE_PRIVATE_KEY,FIREBASE_DATABASE_URL)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/greymatter-labs/CollabCode&env=ADMIN_EMAILS,ADMIN_PASSWORD_HASH,JWT_SECRET,FIREBASE_PROJECT_ID,FIREBASE_CLIENT_EMAIL,FIREBASE_PRIVATE_KEY,FIREBASE_DATABASE_URL)
 
 ### Local Development
 
@@ -293,6 +293,7 @@ Create a `.env` file with the following variables:
 ```env
 # Admin Credentials
 ADMIN_EMAIL=admin@yourcompany.com
+ADMIN_EMAILS=admin@yourcompany.com,second-admin@yourcompany.com
 ADMIN_PASSWORD_HASH=<generated_hash>
 JWT_SECRET=<random_secret_key>
 

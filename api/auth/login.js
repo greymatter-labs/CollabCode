@@ -5,15 +5,15 @@
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { getAdminEmails, isAdminEmail, normalizeEmail } = require('../../lib/admin-auth');
 
 // Admin credentials (use environment variables in production)
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // Ensure required environment variables are set
-if (!ADMIN_EMAIL || !ADMIN_PASSWORD_HASH || !JWT_SECRET) {
-  console.error('Missing required environment variables: ADMIN_EMAIL, ADMIN_PASSWORD_HASH, or JWT_SECRET');
+if (!getAdminEmails().length || !ADMIN_PASSWORD_HASH || !JWT_SECRET) {
+  console.error('Missing required environment variables: ADMIN_EMAILS or ADMIN_EMAIL, ADMIN_PASSWORD_HASH, or JWT_SECRET');
 }
 
 module.exports = async (req, res) => {
@@ -62,7 +62,8 @@ module.exports = async (req, res) => {
 
   try {
     // Check email
-    if (email !== ADMIN_EMAIL) {
+    const normalizedEmail = normalizeEmail(email);
+    if (!isAdminEmail(normalizedEmail)) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -75,7 +76,7 @@ module.exports = async (req, res) => {
     // Generate token
     const token = jwt.sign(
       {
-        email: email,
+        email: normalizedEmail,
         isAdmin: true,
         userId: 'admin-' + Date.now()
       },
@@ -86,7 +87,7 @@ module.exports = async (req, res) => {
     res.status(200).json({
       success: true,
       token: token,
-      user: { email: email, isAdmin: true }
+      user: { email: normalizedEmail, isAdmin: true }
     });
   } catch (error) {
     console.error('Login error:', error);
