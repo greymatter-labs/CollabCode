@@ -1650,8 +1650,35 @@
       const statusEl = document.getElementById('display-status');
       if (statusEl) {
         let status = 'Active';
-        if (sessionData.terminated) status = 'Terminated';
-        else if (sessionData.archived) status = 'Archived';
+        if (sessionData.terminated && sessionData.terminated.terminated) {
+          status = 'Terminated';
+        } else if (sessionData.archived) {
+          status = 'Archived';
+        } else {
+          const activeUsers = Object.values(sessionData.users || {});
+          const hasCandidate = activeUsers.some(user => {
+            const name = (user.name || '').toLowerCase();
+            return name &&
+              !name.includes('interviewer') &&
+              !name.includes('@') &&
+              !name.includes('admin') &&
+              !name.includes('.com') &&
+              !name.includes('.io') &&
+              !name.includes('.net');
+          });
+          const hasInterviewer = activeUsers.some(user => {
+            const name = (user.name || '').toLowerCase();
+            return name.includes('interviewer') ||
+              name.includes('@') ||
+              name.includes('admin') ||
+              name.includes('.com') ||
+              name.includes('.io') ||
+              name.includes('.net');
+          });
+          if (hasCandidate && hasInterviewer) {
+            status = 'In Progress';
+          }
+        }
         statusEl.textContent = status;
       }
     } else {

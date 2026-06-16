@@ -12,6 +12,7 @@
   let previousUsers = {};
   let isInitialized = false;
   let firepadReady = false;
+  let isEndingSession = false;
   
   // Session termination modal HTML
   const terminationModalHTML = `
@@ -621,6 +622,7 @@
     }
     
     console.log('Admin ending session:', currentSessionCode);
+    isEndingSession = true;
     
     // Save the final code before ending the session
     const finalCode = editor ? editor.getValue() : '';
@@ -628,6 +630,7 @@
     
     if (!sessionRef) {
       console.error('No session reference available');
+      isEndingSession = false;
       alert('Unable to end session - no active session found');
       return;
     }
@@ -657,6 +660,7 @@
         window.location.replace(window.location.pathname + window.location.search);
       }, 800);
     } catch (error) {
+      isEndingSession = false;
       console.error('Error terminating session:', error);
       alert('Failed to end the interview: ' + error.message);
     }
@@ -672,11 +676,11 @@
       if (data && data.terminated) {
         console.log('Session has been terminated');
         
-        if (!currentUser.isAdmin) {
-          // Non-admin: show termination modal
+        if (!currentUser.isAdmin || !isEndingSession) {
+          // Candidates and other interviewers should leave the ended session.
           showSessionTerminatedModal();
         }
-        // Admin will reload via the endSession function
+        // The interviewer who clicked End will navigate via endSession().
       }
     });
   }
