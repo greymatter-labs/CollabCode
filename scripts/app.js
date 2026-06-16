@@ -64,6 +64,46 @@
       : currentUser.email || 'Interviewer';
   }
 
+  function clearSessionHash() {
+    if (!window.location.hash) return;
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
+
+  function hideEditorSession() {
+    const mainContainer = document.getElementById('main-container');
+    if (mainContainer) {
+      mainContainer.style.display = 'none';
+    }
+
+    const activeSession = document.getElementById('activeSession');
+    if (activeSession) {
+      activeSession.style.display = 'none';
+    }
+  }
+
+  function showInitialScreen() {
+    init();
+
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.style.display = 'none';
+    });
+    hideEditorSession();
+
+    if (Auth.isAdmin()) {
+      document.getElementById('adminDashboardModal').style.display = 'flex';
+      setupAdminDashboard();
+    } else {
+      document.getElementById('landingModal').style.display = 'flex';
+    }
+  }
+
+  function handleInvalidSession(message) {
+    clearSessionHash();
+    hideEditorSession();
+    alert(message);
+    showInitialScreen();
+  }
+
   // Initialize the application
   function init() {
     if (appInitialized) {
@@ -1705,8 +1745,7 @@
       const validation = await validateSession(sessionCode);
       if (!validation.valid) {
         sessionStarting = false;
-        alert(validation.error || 'Invalid session');
-        location.reload();
+        handleInvalidSession(validation.error || 'Invalid session');
         return;
       }
     }
@@ -1779,7 +1818,7 @@
     console.log('PAGE LOAD: Session logged in?', session.isLoggedIn, 'URL code:', urlCode);
 
     // Only auto-join if we have a URL code AND we're logged in (for page refresh scenarios)
-    if (session.isLoggedIn && urlCode) {
+    if (session.isLoggedIn && isValidSessionCode(urlCode)) {
       console.log('PAGE LOAD: This should only run on page refresh! Resuming session with code from URL:', urlCode);
       console.trace('PAGE LOAD: Stack trace');
       // Resume existing session - this is ONLY for when someone refreshes the page
@@ -1787,7 +1826,8 @@
     } else {
       console.log('PAGE LOAD: Showing landing page');
       // Show landing page
-      init();
+      if (urlCode) clearSessionHash();
+      showInitialScreen();
     }
   });
 
@@ -1799,9 +1839,10 @@
       const session = Auth.getCurrentSession();
       
       // Only init if we're not going to handle this in the load event
-      if (!session.isLoggedIn || !urlCode) {
+      if (!session.isLoggedIn || !isValidSessionCode(urlCode)) {
         console.log('DOM READY: Calling init()');
-        init();
+        if (urlCode) clearSessionHash();
+        showInitialScreen();
       } else {
         console.log('DOM READY: Skipping init, will handle in load event');
       }
@@ -1810,9 +1851,10 @@
     // Document already loaded, check same conditions
     const urlCode = window.location.hash.replace('#', '');
     const session = Auth.getCurrentSession();
-    if (!session.isLoggedIn || !urlCode) {
+    if (!session.isLoggedIn || !isValidSessionCode(urlCode)) {
       console.log('IMMEDIATE: Calling init()');
-      init();
+      if (urlCode) clearSessionHash();
+      showInitialScreen();
     }
   }
   // Initialize animated code particles background

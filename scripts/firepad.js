@@ -22,7 +22,7 @@
           <p style="color: #333; font-size: 16px; margin-bottom: 10px;">This interview has been terminated by the interviewer.</p>
           <p style="color: #555; font-size: 15px;">Thank you for your participation!</p>
         </div>
-        <button onclick="location.reload()" class="primary-btn" style="background: #fff; color: #667eea; font-weight: bold; font-size: 16px; padding: 12px 30px; border: 2px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">Return to Home</button>
+        <button onclick="window.location.replace(window.location.pathname + window.location.search)" class="primary-btn" style="background: #fff; color: #667eea; font-weight: bold; font-size: 16px; padding: 12px 30px; border: 2px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">Return to Home</button>
       </div>
     </div>
   `;
@@ -187,7 +187,7 @@
         if (!data || !data.created || !data.createdBy) {
           console.error('Invalid session - not created by admin');
           alert('Invalid session code. This session does not exist.');
-          location.reload();
+          window.location.replace(window.location.pathname + window.location.search);
           return;
         }
       });
@@ -653,7 +653,9 @@
 
       console.log('Session terminated successfully with code and participants saved');
       alert('Interview ended. Code has been saved. All participants have been disconnected.');
-      setTimeout(() => location.reload(), 800);
+      setTimeout(() => {
+        window.location.replace(window.location.pathname + window.location.search);
+      }, 800);
     } catch (error) {
       console.error('Error terminating session:', error);
       alert('Failed to end the interview: ' + error.message);
