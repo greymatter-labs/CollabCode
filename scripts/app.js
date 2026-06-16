@@ -1097,17 +1097,6 @@
           });
         }
         
-        // Add end button handler
-        const terminateBtn = row.querySelector('.terminate-btn');
-        if (terminateBtn) {
-          terminateBtn.addEventListener('click', function() {
-            const code = this.getAttribute('data-code');
-            if (confirm(`End session ${code}? This will mark the interview as completed and move it to Ended Sessions.`)) {
-              terminateSessionFromDashboard(code);
-            }
-          });
-        }
-        
         // Add view button handler
         const viewBtn = row.querySelector('.view-btn');
         if (viewBtn) {
