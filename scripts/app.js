@@ -1,5 +1,7 @@
 // Main Application Controller
 (function() {
+  let appInitialized = false;
+
   const SESSION_CODE_LENGTH = 8;
   const SESSION_CODE_PATTERN = /^[A-Z0-9]{8}$/;
 
@@ -63,6 +65,12 @@
 
   // Initialize the application
   function init() {
+    if (appInitialized) {
+      console.log('App already initialized, skipping duplicate setup');
+      return;
+    }
+    appInitialized = true;
+
     setupLandingPage();
     setupCandidateFlow();
     setupAdminFlow();
