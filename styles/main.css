@@ -2453,13 +2453,23 @@ html, body {
 }
 
 /* Modern Dashboard Redesign */
+#adminDashboardModal {
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  background: #f3f5f8;
+  backdrop-filter: none;
+  padding: 0 24px 48px;
+}
+
 .dashboard-modal-content {
-  max-width: 900px;
-  width: 95%;
+  max-width: 1040px;
+  width: 100%;
+  margin: 0 auto;
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: 0 0 16px 16px;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.12);
 }
 
 .dashboard-header-modern {
@@ -3430,6 +3440,10 @@ html, body {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+  #adminDashboardModal {
+    padding: 0;
+  }
+
   .dashboard-modal-content {
     width: 100%;
     border-radius: 0;
