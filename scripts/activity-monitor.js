@@ -6,6 +6,7 @@
   let sessionCode = null;
   let userId = null;
   let userType = null;
+  let metricsIntervalId = null;
   
   // Idle detection state (moved to module scope)
   let isIdle = false;
@@ -88,6 +89,33 @@
           // Could show a toast notification here
         }
       });
+  }
+
+  function stopMonitoring() {
+    monitoring = false;
+    if (metricsIntervalId) {
+      clearInterval(metricsIntervalId);
+      metricsIntervalId = null;
+    }
+  }
+
+  async function canWriteActivityData(options = {}) {
+    if (!monitoring || !window.firebase || !window.firebase.database || !sessionCode) {
+      return false;
+    }
+
+    const snapshot = await firebase.database().ref(`sessions/${sessionCode}`).once('value');
+    const session = snapshot.val();
+    const hasSessionMetadata = !!(session && session.created && session.createdBy);
+    const isTerminated = !!(session && session.terminated && session.terminated.terminated);
+    const canWrite = hasSessionMetadata && (options.allowTerminated || !isTerminated);
+
+    if (!canWrite) {
+      console.log('Stopping activity monitoring for inactive session:', sessionCode);
+      stopMonitoring();
+    }
+
+    return canWrite;
   }
   
   // 1. VISIBILITY API - This actually works!
@@ -290,7 +318,7 @@
   }
   
   // 5. Log events to Firebase
-  function logEvent(eventType, data) {
+  async function logEvent(eventType, data) {
     if (!monitoring) return;
     
     if (!window.firebase || !window.firebase.database) {
@@ -307,6 +335,8 @@
         timestamp: Date.now()
       };
       
+      if (!await canWriteActivityData()) return;
+
       console.log('Logging event to Firebase:', eventType, sessionCode);
       firebase.database()
         .ref(`sessions/${sessionCode}/activity_log`)
@@ -351,7 +381,9 @@
   
   // 7. Report metrics periodically
   function reportMetricsPeriodically() {
-    setInterval(function() {
+    if (metricsIntervalId) return;
+
+    metricsIntervalId = setInterval(async function() {
       if (!monitoring) return;
       
       // Calculate total idle time including current idle period
@@ -376,6 +408,8 @@
       
       // Store summary
       if (window.firebase && window.firebase.database) {
+        if (!await canWriteActivityData()) return;
+
         console.log('📝 Saving activity summary to Firebase for session:', sessionCode);
         firebase.database()
           .ref(`sessions/${sessionCode}/activity_summary`)
@@ -467,12 +501,19 @@
     
     // Save to Firebase
     if (window.firebase && window.firebase.database && sessionCode) {
-      console.log('💾 Saving final activity summary for session:', sessionCode);
-      firebase.database()
-        .ref(`sessions/${sessionCode}/activity_final_summary`)
-        .set(finalSummary)
-        .then(() => {
+      canWriteActivityData({ allowTerminated: true })
+        .then((canWrite) => {
+          if (!canWrite) return false;
+          console.log('💾 Saving final activity summary for session:', sessionCode);
+          return firebase.database()
+            .ref(`sessions/${sessionCode}/activity_final_summary`)
+            .set(finalSummary)
+            .then(() => true);
+        })
+        .then((saved) => {
+          if (!saved) return;
           console.log('✅ Final activity summary saved successfully:', finalSummary);
+          stopMonitoring();
         })
         .catch(err => {
           console.error('❌ Failed to save final activity summary:', err);

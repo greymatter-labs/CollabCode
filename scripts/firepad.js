@@ -678,6 +678,9 @@
         
         if (!currentUser.isAdmin || !isEndingSession) {
           // Candidates and other interviewers should leave the ended session.
+          if (window.saveActivitySummary) {
+            window.saveActivitySummary();
+          }
           showSessionTerminatedModal();
         }
         // The interviewer who clicked End will navigate via endSession().

@@ -825,6 +825,11 @@
       // Filter sessions into active/in-progress and ended
       Object.keys(sessions).forEach(code => {
         const session = sessions[code];
+
+        if (!session || !session.created || !session.createdBy) {
+          console.warn('Ignoring malformed session record:', code);
+          return;
+        }
         
         const sessionAge = now - (session.created || now);
         const userCount = Object.keys(session.users || {}).length;
