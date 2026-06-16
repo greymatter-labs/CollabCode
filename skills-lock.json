@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "blaxel-cli": {
+      "source": "blaxel-ai/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/blaxel-cli/SKILL.md",
+      "computedHash": "aebfd553e3673bb59ddbed7623c16f0828fd64e39c4a7b0278e959b80fc97691"
+    },
+    "blaxel-sdk": {
+      "source": "blaxel-ai/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/blaxel-sdk/SKILL.md",
+      "computedHash": "0765970de06abf704282e2b3333c960dbe49ad489d76eace77a8420be42206b4"
+    }
+  }
+}
