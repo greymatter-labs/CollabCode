@@ -324,13 +324,14 @@
     }
 
     // Create new session
-    createSessionBtn.addEventListener('click', async function() {
+    if (createSessionBtn && !createSessionBtn.dataset.createHandlerBound) {
+      createSessionBtn.dataset.createHandlerBound = 'true';
+      createSessionBtn.addEventListener('click', async function() {
       // Check if already starting
-      if (sessionCreating || sessionStarting) {
+      if (sessionStarting) {
         console.warn('CREATE SESSION: Already starting a session, ignoring click');
         return;
       }
-      sessionCreating = true;
       
       const createSessionLabel = createSessionBtn.querySelector('span');
       const originalText = createSessionLabel ? createSessionLabel.textContent : createSessionBtn.textContent;
@@ -372,7 +373,6 @@
         console.error('CREATE SESSION: Failed:', error);
         alert(error.message || 'Failed to create session. Please try again.');
       } finally {
-        sessionCreating = false;
         createSessionBtn.disabled = false;
         if (createSessionLabel) {
           createSessionLabel.textContent = originalText;
@@ -380,7 +380,8 @@
           createSessionBtn.textContent = originalText;
         }
       }
-    });
+      });
+    }
 
     // Join existing session
     adminJoinBtn.addEventListener('click', async function() {
@@ -1674,7 +1675,6 @@
 
   // Track if session is starting to prevent duplicates
   let sessionStarting = false;
-  let sessionCreating = false;
   
   // Start coding session
   async function startSession(userName, sessionCode, isNew) {
