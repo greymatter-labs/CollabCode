@@ -46,7 +46,7 @@ module.exports = async (req, res) => {
     const command = req.body?.command || req.body?.customCommand || '';
     const project = buildValidationProject(selected.record, selected.source, mode, {
       command,
-      includeHidden: req.body?.includeHidden === true
+      includeHidden: req.body?.includeHidden !== false
     });
     mode = project.mode;
     const result = await runProject({
