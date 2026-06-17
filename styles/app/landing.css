@@ -12,6 +12,8 @@
 .atom-gradient{
   position:absolute; inset:0;
   background:linear-gradient(135deg,#0e2e28 0%,#123b33 34%,#0d1514 68%,#08090a 100%) !important;
+  animation:none !important;
+  transform:none !important;
 }
 
 /* ============================================================
