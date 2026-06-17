@@ -103,31 +103,8 @@
       document.getElementById('adminDashboardModal').style.display = 'flex';
       setupAdminDashboard();
     } else {
-      document.getElementById('adminLoginModal').style.display = 'flex';
+      document.getElementById('landingModal').style.display = 'flex';
     }
-  }
-
-  function showCandidateJoinScreen(sessionCode = '') {
-    init();
-
-    document.querySelectorAll('.modal').forEach(modal => {
-      modal.style.display = 'none';
-    });
-    hideEditorSession();
-
-    const candidateSessionCode = document.getElementById('candidateSessionCode');
-    const normalizedCode = normalizeSessionCode(sessionCode);
-    if (candidateSessionCode && isValidSessionCode(normalizedCode)) {
-      candidateSessionCode.value = normalizedCode;
-      candidateSessionCode.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-
-    const candidateModal = document.getElementById('candidateModal');
-    if (candidateModal) {
-      candidateModal.style.display = 'flex';
-    }
-
-    document.getElementById('candidateName')?.focus();
   }
 
   function handleInvalidSession(message) {
@@ -145,6 +122,7 @@
     }
     appInitialized = true;
 
+    setupLandingPage();
     setupCandidateFlow();
     setupAdminFlow();
     setupSessionDetailsModalHandlers();
@@ -179,6 +157,27 @@
     });
   }
 
+  // Setup landing page
+  function setupLandingPage() {
+    // Candidate button - support both old and new classes
+    const candidateBtn = document.querySelector('#candidateCard .role-btn');
+    if (candidateBtn) {
+      candidateBtn.addEventListener('click', function() {
+        document.getElementById('landingModal').style.display = 'none';
+        document.getElementById('candidateModal').style.display = 'flex';
+      });
+    }
+
+    // Admin button - support both old and new classes  
+    const adminBtn = document.querySelector('#adminCard .role-btn');
+    if (adminBtn) {
+      adminBtn.addEventListener('click', function() {
+        document.getElementById('landingModal').style.display = 'none';
+        document.getElementById('adminLoginModal').style.display = 'flex';
+      });
+    }
+  }
+
   // Setup candidate flow
   function setupCandidateFlow() {
     const candidateName = document.getElementById('candidateName');
@@ -186,13 +185,11 @@
     const candidateJoinBtn = document.getElementById('candidateJoinBtn');
     const candidateBack = document.getElementById('candidateBack');
 
-    if (candidateBack) {
-      candidateBack.addEventListener('click', function() {
-        clearSessionHash();
-        document.getElementById('candidateModal').style.display = 'none';
-        document.getElementById('adminLoginModal').style.display = 'flex';
-      });
-    }
+    // Back button
+    candidateBack.addEventListener('click', function() {
+      document.getElementById('candidateModal').style.display = 'none';
+      document.getElementById('landingModal').style.display = 'flex';
+    });
 
     // Enable/disable join button
     function updateJoinButton() {
@@ -279,7 +276,15 @@
     const adminEmail = document.getElementById('adminEmail');
     const adminPassword = document.getElementById('adminPassword');
     const adminLoginBtn = document.getElementById('adminLoginBtn');
+    const adminLoginBack = document.getElementById('adminLoginBack');
     const loginError = document.getElementById('loginError');
+
+    // Back button
+    adminLoginBack.addEventListener('click', function() {
+      document.getElementById('adminLoginModal').style.display = 'none';
+      document.getElementById('landingModal').style.display = 'flex';
+      loginError.style.display = 'none';
+    });
 
     // Login
     adminLoginBtn.addEventListener('click', async function() {
@@ -520,7 +525,7 @@
     adminLogoutBtn.addEventListener('click', function() {
       Auth.logout();
       document.getElementById('adminDashboardModal').style.display = 'none';
-      document.getElementById('adminLoginModal').style.display = 'flex';
+      document.getElementById('landingModal').style.display = 'flex';
       document.getElementById('activeSession').style.display = 'none';
     });
   }
@@ -1868,39 +1873,146 @@
     }, 2000);
   }
 
-  let initialRouteHandled = false;
-
-  function routeInitialPage() {
-    if (initialRouteHandled) return;
-    initialRouteHandled = true;
-
-    if (sessionStarting) return;
-
+  // Track if this is initial page load
+  let isInitialLoad = true;
+  
+  // Check for existing session on load - ONLY for page refreshes
+  window.addEventListener('load', function() {
+    console.log('PAGE LOAD EVENT FIRED - isInitialLoad:', isInitialLoad);
+    
+    // If this is NOT the initial page load, skip (means we navigated after page was already loaded)
+    if (!isInitialLoad) {
+      console.log('PAGE LOAD: Not initial load, skipping');
+      return;
+    }
+    isInitialLoad = false;
+    
+    // Don't run if we're already starting a session
+    if (sessionStarting) {
+      console.log('PAGE LOAD: Session already starting, skipping load handler');
+      return;
+    }
+    
+    // Check if we're already in a session (main container visible means session is active)
     const mainContainer = document.getElementById('main-container');
-    if (mainContainer && mainContainer.style.display !== 'none') return;
-
+    if (mainContainer && mainContainer.style.display !== 'none') {
+      console.log('PAGE LOAD: Already in a session, skipping');
+      return;
+    }
+    
     const session = Auth.getCurrentSession();
-    const urlCode = normalizeSessionCode(window.location.hash.replace('#', ''));
-    const hasValidUrlCode = isValidSessionCode(urlCode);
+    const urlCode = window.location.hash.replace('#', '');
+    
+    console.log('PAGE LOAD: Session logged in?', session.isLoggedIn, 'URL code:', urlCode);
 
-    if (session.isLoggedIn && hasValidUrlCode) {
-      init();
+    // Only auto-join if we have a URL code AND we're logged in (for page refresh scenarios)
+    if (session.isLoggedIn && isValidSessionCode(urlCode)) {
+      console.log('PAGE LOAD: This should only run on page refresh! Resuming session with code from URL:', urlCode);
+      console.trace('PAGE LOAD: Stack trace');
+      // Resume existing session - this is ONLY for when someone refreshes the page
       startSession(session.userName, urlCode, false);
-      return;
+    } else {
+      console.log('PAGE LOAD: Showing landing page');
+      // Show landing page
+      if (urlCode) clearSessionHash();
+      showInitialScreen();
     }
+  });
 
-    if (!session.isLoggedIn && hasValidUrlCode) {
-      showCandidateJoinScreen(urlCode);
-      return;
-    }
-
-    if (window.location.hash) clearSessionHash();
-    showInitialScreen();
-  }
-
+  // Initialize on DOM ready (but only if not already handling via load event)
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', routeInitialPage);
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOM READY: Checking if should init...');
+      const urlCode = window.location.hash.replace('#', '');
+      const session = Auth.getCurrentSession();
+      
+      // Only init if we're not going to handle this in the load event
+      if (!session.isLoggedIn || !isValidSessionCode(urlCode)) {
+        console.log('DOM READY: Calling init()');
+        if (urlCode) clearSessionHash();
+        showInitialScreen();
+      } else {
+        console.log('DOM READY: Skipping init, will handle in load event');
+      }
+    });
   } else {
-    routeInitialPage();
+    // Document already loaded, check same conditions
+    const urlCode = window.location.hash.replace('#', '');
+    const session = Auth.getCurrentSession();
+    if (!session.isLoggedIn || !isValidSessionCode(urlCode)) {
+      console.log('IMMEDIATE: Calling init()');
+      if (urlCode) clearSessionHash();
+      showInitialScreen();
+    }
+  }
+  // Initialize animated code particles background
+  function initializeBackground() {
+    const particlesContainer = document.getElementById('codeParticles');
+    if (!particlesContainer) return;
+    
+    // Fun code snippets that will float around
+    const codeSnippets = [
+      'function() {}',
+      'const app = {}',
+      '<div>Hello</div>',
+      'print("Hello")',
+      'if (true) {}',
+      'for (;;) {}',
+      '.map(x => x)',
+      'await fetch()',
+      'class App {}',
+      'import React',
+      '{ flex: 1 }',
+      'SELECT * FROM',
+      'git commit',
+      'npm install',
+      '// TODO: fix',
+      'return true;',
+      'catch (e) {}',
+      '&& ||',
+      '=> { }',
+      '[...array]',
+      '`${template}`',
+      '?.optional',
+      'async/await',
+      '#include',
+      'pub fn main()',
+      'def hello():',
+      '@decorator',
+      'interface {}',
+      'enum Status',
+      'match case'
+    ];
+    
+    // Create floating particles
+    const particleCount = 20;
+    for (let i = 0; i < particleCount; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'code-particle';
+      particle.textContent = codeSnippets[Math.floor(Math.random() * codeSnippets.length)];
+      
+      // Random initial position
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.top = Math.random() * 100 + '%';
+      
+      // Random animation duration and delay
+      particle.style.animationDuration = (15 + Math.random() * 20) + 's';
+      particle.style.animationDelay = Math.random() * 10 + 's';
+      
+      // Random font size for depth effect
+      particle.style.fontSize = (10 + Math.random() * 8) + 'px';
+      particle.style.opacity = 0.1 + Math.random() * 0.3;
+      
+      particlesContainer.appendChild(particle);
+    }
+    
+    console.log('Animated code particles initialized');
+  }
+  
+  // Call on page load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeBackground);
+  } else {
+    initializeBackground();
   }
 })();

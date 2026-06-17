@@ -1,0 +1,171 @@
+/* styles/app/landing.css — token-driven surface partial (overrides _legacy.css). */
+
+/* ============================================================
+   APP · LANDING  —  role-select screen (#landingModal / .atom-*)
+   Rebuilt as a compact, centered Linear card with two stacked
+   option rows. No overflow, no fat "OR" bar, monochrome icons.
+   ============================================================ */
+
+/* ---- overlay + ambient background ------------------------- */
+.atom-landing{ background:var(--bg-app) !important; }
+.atom-background{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+.atom-gradient{
+  position:absolute; inset:0;
+  background:
+    radial-gradient(720px 460px at 50% -6%, rgba(94,106,210,.16), transparent 60%),
+    radial-gradient(620px 520px at 88% 112%, rgba(94,106,210,.06), transparent 60%) !important;
+}
+/* the floating code text reads as noise here — hush it almost away */
+.code-particles{ opacity:.5; }
+.code-particle{ color:rgba(138,143,152,.10) !important; text-shadow:none !important; }
+
+/* ============================================================
+   CARD  —  compact, centered (legacy made it 800px / white)
+   ============================================================ */
+.atom-landing .atom-card{
+  position:relative; z-index:1;
+  width:100%; max-width:440px !important;
+  margin:0 auto;
+  padding:34px 32px 30px !important;
+  background:var(--bg-2) !important;
+  backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+  border:1px solid var(--border-2) !important;
+  border-radius:var(--r-xl) !important;
+  box-shadow:var(--shadow-lg) !important;
+  text-align:left;
+}
+
+/* ============================================================
+   HEAD  —  logo mark + wordmark
+   ============================================================ */
+.atom-logo-section{ margin-bottom:26px; text-align:center; }
+.atom-logo{
+  display:inline-grid; place-items:center;
+  width:54px; height:54px; margin:0 auto 16px;
+  border-radius:16px;
+  background:transparent;
+  box-shadow:0 10px 28px rgba(0,0,0,.28);
+  animation:none;
+}
+.atom-logo svg{ width:54px; height:54px; display:block; }
+.atom-title{
+  color:var(--text-1);
+  font-size:25px; font-weight:600; letter-spacing:-.025em;
+  margin-bottom:7px;
+}
+.atom-subtitle{
+  color:var(--text-3);
+  font-size:13.5px; font-weight:450; line-height:1.5;
+  max-width:30ch; margin:0 auto;
+}
+
+/* ============================================================
+   ROLES  —  two stacked, full-width option rows
+   ============================================================ */
+.atom-roles{
+  display:flex !important; flex-direction:column !important;
+  gap:10px !important; margin-bottom:0 !important;
+  align-items:stretch !important;
+}
+/* the legacy "OR" divider element is gone from the markup; belt-and-suspenders */
+.atom-divider{ display:none !important; }
+
+.atom-role-card{
+  display:block !important;
+  background:transparent !important; border:0 !important;
+  padding:0 !important; margin:0 !important; box-shadow:none !important;
+  transform:none !important;
+}
+
+.atom-roles .role-btn{
+  width:100%;
+  display:flex; align-items:center; gap:14px;
+  padding:13px 14px;
+  background:var(--bg-1);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+  cursor:pointer; text-align:left;
+  transition:background .13s var(--ease), border-color .13s var(--ease),
+             transform .13s var(--ease), box-shadow .13s var(--ease) !important;
+}
+.atom-roles .role-btn:hover{
+  background:var(--bg-3);
+  border-color:var(--border-strong);
+  transform:translateY(-1px);
+  box-shadow:var(--shadow-md);
+}
+.atom-roles .role-btn:focus-visible{ outline:none; box-shadow:var(--ring); }
+
+.role-ic{
+  flex:none; display:grid; place-items:center;
+  width:40px; height:40px; border-radius:10px;
+  background:var(--bg-inset); border:1px solid var(--border);
+  color:var(--text-2);
+}
+.role-ic svg{ width:20px; height:20px; }
+
+.role-text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.role-title{ color:var(--text-1); font-size:14px; font-weight:550; letter-spacing:-.01em; line-height:1.2; }
+.role-sub{ color:var(--text-3); font-size:12.5px; line-height:1.3; }
+
+.role-arrow{ flex:none; display:grid; place-items:center; color:var(--text-4); transition:color .13s var(--ease), transform .13s var(--ease); }
+.role-arrow svg{ width:17px; height:17px; }
+.atom-roles .role-btn:hover .role-arrow{ color:var(--text-2); transform:translateX(2px); }
+
+/* primary path (Interviewer): a restrained indigo accent */
+.atom-role-card.is-primary .role-btn{
+  border:1px solid var(--accent-border);
+}
+.atom-role-card.is-primary .role-ic{
+  background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent-text);
+}
+.atom-role-card.is-primary .role-btn:hover{
+  background:var(--accent-soft);
+  border-color:var(--accent-border);
+}
+.atom-role-card.is-primary .role-arrow{ color:var(--accent-text); }
+
+/* ============================================================
+   FEATURES  —  three quiet, monochrome capabilities
+   ============================================================ */
+.atom-features{
+  display:flex !important; gap:8px;
+  padding-top:20px; margin-top:24px;
+  border-top:1px solid var(--border);
+}
+.feature-item{
+  flex:1; min-width:0;
+  display:flex; flex-direction:column; align-items:center; gap:7px;
+  color:var(--text-3); font-size:11.5px; text-align:center; line-height:1.3;
+  transition:color .12s var(--ease);
+  background:none !important; border:0 !important; padding:0 !important;
+}
+.feature-item svg{ width:17px; height:17px; color:var(--text-4); fill:none; transition:color .12s var(--ease); }
+.feature-item:hover{ color:var(--text-2); }
+.feature-item:hover svg{ color:var(--accent-text); }
+
+/* ============================================================
+   FOOTER  —  pinned credits + links
+   ============================================================ */
+.atom-footer{
+  position:fixed; left:0; right:0; bottom:0; z-index:1;
+  background:transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+  border-top:none !important;
+  padding:18px 20px !important; text-align:center;
+}
+.footer-content{ color:var(--text-4); font-size:12px; }
+.footer-made{ margin:0 0 8px; color:var(--text-4); }
+.atom-link{ color:var(--text-2); font-weight:500; }
+.atom-link::after{ background:var(--accent); }
+.atom-link:hover{ color:var(--text-1); }
+.footer-links{ display:flex; gap:8px; align-items:center; justify-content:center; }
+.footer-links a{ color:var(--text-3); font-weight:450; transition:color .12s var(--ease); }
+.footer-links a:hover{ color:var(--text-1); text-decoration:none; }
+.footer-separator{ color:var(--text-4); }
+
+/* tighten on short viewports so the card + footer never collide */
+@media (max-height:680px){
+  .atom-footer{ position:static; }
+  .atom-landing{ align-items:flex-start !important; padding-top:24px; padding-bottom:24px; overflow-y:auto; }
+}

@@ -160,6 +160,12 @@ html, body {
   border-color: #4caf50;
 }
 
+/* Role-based Landing Styles */
+.landing-content {
+  max-width: 800px;
+  width: 90%;
+}
+
 .subtitle {
   color: #888;
   margin-top: -10px;
@@ -1401,6 +1407,379 @@ html, body {
   animation: pulse 1.5s infinite;
 }
 
+/* ==================== ATOMTICKETS INSPIRED STYLES ==================== */
+
+/* Atom Landing Page Styles */
+.atom-landing {
+  background: linear-gradient(135deg, #018ef5 0%, #0062aa 100%);
+  overflow: hidden;
+}
+
+.atom-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.atom-gradient {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 20% 80%, rgba(1, 142, 245, 0.3) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(0, 98, 170, 0.2) 0%, transparent 50%),
+              radial-gradient(circle at 40% 40%, rgba(79, 195, 247, 0.2) 0%, transparent 50%);
+  animation: gradientShift 20s ease infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  33% { transform: translate(-5%, -5%) rotate(120deg); }
+  66% { transform: translate(5%, -5%) rotate(240deg); }
+}
+
+/* Floating Shapes Animation */
+.floating-shapes {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.shape {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.1;
+  animation: float 20s infinite ease-in-out;
+}
+
+.shape-1 {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(135deg, #FFF 0%, rgba(255, 255, 255, 0.5) 100%);
+  top: 10%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.shape-2 {
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(135deg, #4FC3F7 0%, rgba(79, 195, 247, 0.5) 100%);
+  top: 60%;
+  right: 10%;
+  animation-delay: 5s;
+}
+
+.shape-3 {
+  width: 150px;
+  height: 150px;
+  background: linear-gradient(135deg, #FFF 0%, rgba(255, 255, 255, 0.3) 100%);
+  bottom: 20%;
+  left: 30%;
+  animation-delay: 10s;
+}
+
+.shape-4 {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, #29B6F6 0%, rgba(41, 182, 246, 0.5) 100%);
+  top: 30%;
+  right: 30%;
+  animation-delay: 15s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(30px, -30px) scale(1.1); }
+  50% { transform: translate(-20px, 20px) scale(0.9); }
+  75% { transform: translate(20px, 30px) scale(1.05); }
+}
+
+/* Atom Card Styles */
+.atom-card {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: none;
+  max-width: 900px;
+  animation: slideUp 0.6s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Atom Logo Section */
+.atom-logo-section {
+  margin-bottom: 40px;
+  animation: fadeIn 0.8s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.atom-logo {
+  display: inline-block;
+  margin-bottom: 20px;
+  animation: atomSpin 3s ease-in-out infinite;
+}
+
+@keyframes atomSpin {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.1); }
+}
+
+.atom-title {
+  color: #018ef5;
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: -0.5px;
+}
+
+.atom-subtitle {
+  color: #666;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+/* Atom Role Cards */
+.atom-roles {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.atom-role-card {
+  background: #FAFAFA;
+  border: 2px solid #F5F5F5;
+  padding: 30px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.atom-role-card:hover {
+  background: #FFF;
+  border-color: #018ef5;
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(1, 142, 245, 0.15);
+}
+
+.atom-role-card h3 {
+  color: #333;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.atom-role-card p {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.atom-icon {
+  margin-bottom: 20px;
+  display: inline-block;
+  animation: iconPulse 2s ease infinite;
+}
+
+@keyframes iconPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Atom Buttons */
+.atom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 28px;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: none;
+  letter-spacing: 0.3px;
+}
+
+.atom-btn-primary {
+  background: linear-gradient(135deg, #018ef5 0%, #0062aa 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(1, 142, 245, 0.3);
+}
+
+.atom-btn-primary:hover {
+  background: linear-gradient(135deg, #01538f 0%, #018ef5 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(1, 142, 245, 0.4);
+}
+
+.atom-btn-secondary {
+  background: #FFF;
+  color: #018ef5;
+  border: 2px solid #018ef5;
+}
+
+.atom-btn-secondary:hover {
+  background: #018ef5;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(1, 142, 245, 0.3);
+}
+
+.atom-btn svg {
+  transition: transform 0.3s ease;
+}
+
+.atom-btn:hover svg {
+  transform: translateX(3px);
+}
+
+/* Atom Divider */
+.atom-divider {
+  position: relative;
+  width: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.atom-divider span {
+  background: #FFF;
+  padding: 8px 12px;
+  color: #999;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 20px;
+  border: 2px solid #F5F5F5;
+  z-index: 1;
+}
+
+.atom-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 150px;
+  background: linear-gradient(to bottom, transparent, #E0E0E0, transparent);
+}
+
+/* Atom Features */
+.atom-features {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  padding-top: 30px;
+  border-top: 1px solid #F0F0F0;
+  margin-top: 30px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+
+.feature-item:hover {
+  color: #018ef5;
+}
+
+.feature-item svg {
+  transition: transform 0.3s ease;
+}
+
+.feature-item:hover svg {
+  transform: scale(1.2) rotate(5deg);
+}
+
+/* Atom Footer */
+.atom-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 20px;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.footer-content {
+  color: white;
+  font-size: 14px;
+}
+
+.footer-content p {
+  margin-bottom: 10px;
+}
+
+.atom-link {
+  color: white;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.atom-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: white;
+  transition: width 0.3s ease;
+}
+
+.atom-link:hover::after {
+  width: 100%;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.footer-links a {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  transition: color 0.3s ease;
+  font-weight: 500;
+}
+
+.footer-links a:hover {
+  color: white;
+  text-decoration: underline;
+}
+
+.footer-separator {
+  color: rgba(255, 255, 255, 0.5);
+}
+
 /* Responsive Adjustments */
 @media (max-width: 768px) {
   #workspace-panel {
@@ -1410,6 +1789,29 @@ html, body {
 
   #active-file-bar {
     font-size: 12px;
+  }
+
+  .atom-roles {
+    flex-direction: column;
+  }
+  
+  .atom-divider {
+    width: 100%;
+    height: 40px;
+  }
+  
+  .atom-divider::before {
+    width: 150px;
+    height: 2px;
+  }
+  
+  .atom-features {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .atom-title {
+    font-size: 24px;
   }
 }
 
@@ -3345,6 +3747,77 @@ html, body {
   }
   50% {
     opacity: 0.25;
+  }
+}
+
+/* Ensure the grid is behind the modal content */
+.atom-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.atom-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, 
+    rgba(1, 142, 245, 0.95) 0%, 
+    rgba(102, 126, 234, 0.95) 50%, 
+    rgba(118, 75, 162, 0.95) 100%);
+  z-index: 2;
+}
+
+.modal-content.landing-content {
+  position: relative;
+  z-index: 3;
+}
+
+/* Animated Code Particles */
+.code-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.code-particle {
+  position: absolute;
+  font-family: 'Monaco', 'Courier New', monospace;
+  color: rgba(24, 143, 245, 0.6);
+  white-space: nowrap;
+  animation: float-particle 20s infinite ease-in-out;
+  text-shadow: 0 0 10px rgba(24, 143, 245, 0.3);
+  user-select: none;
+}
+
+@keyframes float-particle {
+  0%, 100% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-30px) translateX(20px) rotate(5deg);
+  }
+  50% {
+    transform: translateY(20px) translateX(-30px) rotate(-5deg);
+  }
+  75% {
+    transform: translateY(-20px) translateX(30px) rotate(3deg);
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .code-particle {
+    font-size: 8px !important;
   }
 }
 
