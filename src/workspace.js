@@ -88,6 +88,7 @@ import { FileTree } from '@pierre/trees';
     selectedPath: null,
     tree: null,
     treePathSignature: '',
+    pendingInlineRenamePath: null,
     pendingActiveFileId: null,
     toolbarBound: false,
     treeActivationBound: false
@@ -357,11 +358,6 @@ import { FileTree } from '@pierre/trees';
     return !!getFolderByPath(normalized) || hasFolderChildren(normalized);
   }
 
-  function pathExists(path) {
-    const normalized = normalizePath(path);
-    return !!normalized && (!!getFileByPath(normalized) || folderExists(normalized));
-  }
-
   function getSnapshot(fileId) {
     return state.snapshots?.[fileId] || null;
   }
@@ -470,27 +466,18 @@ import { FileTree } from '@pierre/trees';
     const deleteButton = document.getElementById('workspace-delete-file');
     const entryButton = document.getElementById('workspace-set-entry');
 
-    newButton?.addEventListener('click', createFileFromPrompt);
-    newFolderButton?.addEventListener('click', createFolderFromPrompt);
+    newButton?.addEventListener('click', () => createFileInline());
+    newFolderButton?.addEventListener('click', () => createFolderInline());
     renameButton?.addEventListener('click', () => {
       const selection = getSelectedTreeTarget();
-      if (getHiddenFileByPath(selection.path) || (selection.isFolder && hiddenFolderExists(selection.path) && !folderExists(selection.path))) {
+      if (isReadOnlyTreeTarget(selection)) {
         alert('Hidden problem files are read-only in sessions. Edit them in the Problem Library.');
         renderTree(true);
         return;
       }
-      if (selection.isFolder) {
-        const treePath = toFolderTreePath(selection.path);
-        if (treePath && state.tree?.startRenaming?.(treePath)) return;
-        renameFolderFromPrompt(selection.path);
-        return;
-      }
 
-      const file = getFileByPath(selection.path) || getActiveFile();
-      if (file && state.tree?.startRenaming?.(file.path)) {
-        return;
-      } else if (file) {
-        renameFileFromPrompt(file);
+      if (!startInlineRenameForTarget(selection)) {
+        alert('Select a file or folder to rename.');
       }
     });
     deleteButton?.addEventListener('click', deleteSelectedPath);
@@ -499,24 +486,24 @@ import { FileTree } from '@pierre/trees';
 
   function getUniquePath(basePath) {
     const normalized = normalizePath(basePath);
-    if (!getFileByPath(normalized)) return normalized;
+    if (!treePathExists(normalized)) return normalized;
 
     const extension = getExtension(normalized);
     const withoutExtension = extension ? normalized.slice(0, -(extension.length + 1)) : normalized;
     for (let index = 2; index < 100; index += 1) {
       const candidate = extension ? `${withoutExtension}-${index}.${extension}` : `${withoutExtension}-${index}`;
-      if (!getFileByPath(candidate)) return candidate;
+      if (!treePathExists(candidate)) return candidate;
     }
     return createFileId('untitled');
   }
 
   function getUniqueFolderPath(basePath) {
     const normalized = normalizeFolderPath(basePath);
-    if (!pathExists(normalized)) return normalized;
+    if (!treePathExists(normalized)) return normalized;
 
     for (let index = 2; index < 100; index += 1) {
       const candidate = `${normalized}-${index}`;
-      if (!pathExists(candidate)) return candidate;
+      if (!treePathExists(candidate)) return candidate;
     }
     return createFileId('folder');
   }
@@ -548,20 +535,100 @@ import { FileTree } from '@pierre/trees';
     return { isFolder: false, path: '' };
   }
 
-  async function createFileFromPrompt() {
+  function treePathExists(path) {
+    const normalized = normalizePath(path);
+    return !!normalized
+      && (
+        !!getFileByPath(normalized)
+        || !!getHiddenFileByPath(normalized)
+        || folderExists(normalized)
+        || hiddenFolderExists(normalized)
+      );
+  }
+
+  function getTargetTreePath(target) {
+    const normalized = normalizePath(target?.path);
+    if (!normalized) return '';
+    return target?.isFolder ? toFolderTreePath(normalized) : normalized;
+  }
+
+  function getContextMenuTarget(item) {
+    const target = fromTreePath(item?.path);
+    return {
+      isFolder: item?.kind === 'directory' || target.isFolder,
+      path: target.path
+    };
+  }
+
+  function isReadOnlyTreeTarget(target) {
+    return !!getHiddenFileByPath(target.path)
+      || (target.isFolder && hiddenFolderExists(target.path) && !folderExists(target.path));
+  }
+
+  function getBaseDirectoryForTarget(target = getSelectedTreeTarget()) {
+    if (target?.isFolder) return target.path;
+    if (target?.path) return dirname(target.path);
+
+    const active = getActiveFile();
+    return active ? dirname(active.path) : 'src';
+  }
+
+  function getDefaultFileNameForTarget(target = getSelectedTreeTarget()) {
+    const referenceFile = !target?.isFolder
+      ? getFileByPath(target.path) || getHiddenFileByPath(target.path)
+      : getActiveFile();
+    const referenceLanguage = referenceFile?.language || getInitialLanguage();
+    const extension = getExtension(referenceFile?.path || getDefaultPath(referenceLanguage)) || 'txt';
+    return `untitled.${extension}`;
+  }
+
+  function startInlineRename(path) {
+    const treePath = String(path || '');
+    if (!treePath || !state.tree || !isKnownTreePath(treePath)) return false;
+
+    state.selectedPath = treePath;
+    state.tree.getItem(treePath)?.select?.();
+    state.tree.scrollToPath?.(treePath, { offset: 'nearest' });
+    return state.tree.startRenaming?.(treePath) === true;
+  }
+
+  function startInlineRenameForTarget(target) {
+    const treePath = getTargetTreePath(target);
+    return startInlineRename(treePath);
+  }
+
+  function queueInlineRename(path) {
+    const treePath = String(path || '');
+    if (!treePath) return;
+    state.pendingInlineRenamePath = treePath;
+    window.setTimeout(flushPendingInlineRename, 0);
+  }
+
+  function flushPendingInlineRename() {
+    const treePath = state.pendingInlineRenamePath;
+    if (!treePath || !state.tree || !isKnownTreePath(treePath)) return;
+
+    window.requestAnimationFrame(() => {
+      if (state.pendingInlineRenamePath !== treePath) return;
+      if (startInlineRename(treePath)) {
+        state.pendingInlineRenamePath = null;
+      }
+    });
+  }
+
+  async function createFileInline(target = getSelectedTreeTarget()) {
     if (!state.sessionRef || getFileList().length >= MAX_FILES) {
       alert(`This session can have up to ${MAX_FILES} files.`);
       return;
     }
 
     const active = getActiveFile();
-    const selection = getSelectedTreeTarget();
-    const baseDirectory = selection.isFolder ? selection.path : active ? dirname(active.path) : 'src';
-    const defaultPath = getUniquePath(`${baseDirectory ? `${baseDirectory}/` : ''}helper.js`);
-    const requestedPath = normalizePath(prompt('New file path:', defaultPath));
+    const baseDirectory = getBaseDirectoryForTarget(target);
+    const defaultFileName = getDefaultFileNameForTarget(target);
+    const requestedPath = getUniquePath(`${baseDirectory ? `${baseDirectory}/` : ''}${defaultFileName}`);
     if (!requestedPath) return;
 
-    if (pathExists(requestedPath)) {
+    if (treePathExists(requestedPath)) {
       alert('A file or folder already exists at that path.');
       return;
     }
@@ -593,20 +660,20 @@ import { FileTree } from '@pierre/trees';
       },
       [`workspace/activeFileId`]: id
     });
-    focusEditorSoon();
+
+    state.selectedPath = requestedPath;
+    queueInlineRename(requestedPath);
   }
 
-  async function createFolderFromPrompt() {
+  async function createFolderInline(target = getSelectedTreeTarget()) {
     if (!state.sessionRef) return;
 
-    const selection = getSelectedTreeTarget();
-    const active = getActiveFile();
-    const baseDirectory = selection.isFolder ? selection.path : active ? dirname(active.path) : 'src';
+    const baseDirectory = getBaseDirectoryForTarget(target);
     const defaultPath = getUniqueFolderPath(`${baseDirectory ? `${baseDirectory}/` : ''}new-folder`);
-    const requestedPath = normalizeFolderPath(prompt('New folder path:', defaultPath));
+    const requestedPath = normalizeFolderPath(defaultPath);
     if (!requestedPath) return;
 
-    if (pathExists(requestedPath)) {
+    if (treePathExists(requestedPath)) {
       alert('A file or folder already exists at that path.');
       return;
     }
@@ -623,19 +690,8 @@ import { FileTree } from '@pierre/trees';
         updatedAt: createdAt
       }
     });
-  }
 
-  async function renameFileFromPrompt(file) {
-    const nextPath = normalizePath(prompt('Rename file:', file.path));
-    if (!nextPath || nextPath === file.path) return;
-    await renamePath(file.path, nextPath);
-  }
-
-  async function renameFolderFromPrompt(path) {
-    const currentPath = normalizeFolderPath(path);
-    const nextPath = normalizeFolderPath(prompt('Rename folder:', currentPath));
-    if (!nextPath || nextPath === currentPath) return;
-    await renameFolderPath(currentPath, nextPath);
+    queueInlineRename(toFolderTreePath(requestedPath));
   }
 
   async function renamePath(sourcePath, destinationPath) {
@@ -649,7 +705,12 @@ import { FileTree } from '@pierre/trees';
       renderTree(true);
       return;
     }
-    if (folderExists(nextPath)) {
+    if (getHiddenFileByPath(nextPath)) {
+      alert('A hidden problem file already exists at that path.');
+      renderTree(true);
+      return;
+    }
+    if (folderExists(nextPath) || hiddenFolderExists(nextPath)) {
       alert('A folder already exists at that path.');
       renderTree(true);
       return;
@@ -686,14 +747,14 @@ import { FileTree } from '@pierre/trees';
       return;
     }
 
-    if (getFileByPath(destination)) {
+    if (getFileByPath(destination) || getHiddenFileByPath(destination)) {
       alert('A file already exists at that path.');
       renderTree(true);
       return;
     }
 
     const existingFolder = getFolderByPath(destination);
-    if (existingFolder && existingFolder.id !== sourceFolder?.id) {
+    if ((existingFolder && existingFolder.id !== sourceFolder?.id) || hiddenFolderExists(destination)) {
       alert('A folder already exists at that path.');
       renderTree(true);
       return;
@@ -756,8 +817,12 @@ import { FileTree } from '@pierre/trees';
   }
 
   async function deleteSelectedPath() {
-    const selection = getSelectedTreeTarget();
-    if (getHiddenFileByPath(selection.path) || (selection.isFolder && hiddenFolderExists(selection.path) && !folderExists(selection.path))) {
+    await deleteTreeTarget(getSelectedTreeTarget());
+  }
+
+  async function deleteTreeTarget(target) {
+    const selection = target || getSelectedTreeTarget();
+    if (isReadOnlyTreeTarget(selection)) {
       alert('Hidden problem files are read-only in sessions. Edit them in the Problem Library.');
       return;
     }
@@ -818,8 +883,12 @@ import { FileTree } from '@pierre/trees';
       return;
     }
     const active = getActiveFile();
-    if (!active || active.role === 'runtime') return;
-    await state.sessionRef.child('workspace/entryFileId').set(active.id);
+    await setFileAsEntry(active);
+  }
+
+  async function setFileAsEntry(file) {
+    if (!file || file.role === 'runtime') return;
+    await state.sessionRef.child('workspace/entryFileId').set(file.id);
   }
 
   async function setActiveFile(fileId) {
@@ -1123,12 +1192,39 @@ import { FileTree } from '@pierre/trees';
         height: 100%;
         color: #d4d4d4;
         background: #181818;
+        color-scheme: dark;
+        --trees-bg-override: #181818;
+        --trees-bg-muted-override: #24262a;
+        --trees-input-bg-override: #0f1011;
+        --trees-search-bg-override: #0f1011;
+        --trees-search-fg-override: #e6e8eb;
+        --trees-fg-override: #d4d4d4;
+        --trees-fg-muted-override: #8a8f98;
+        --trees-border-color-override: rgba(255, 255, 255, 0.08);
+        --trees-selected-fg-override: #ffffff;
+        --trees-selected-bg-override: rgba(94, 106, 210, 0.24);
+        --trees-selected-focused-border-color-override: rgba(94, 106, 210, 0.68);
         --trees-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
       .file-tree-root,
-      [data-file-tree-virtualized-wrapper] {
+      [data-file-tree-virtualized-wrapper],
+      [data-file-tree-virtualized-root],
+      [data-file-tree-virtualized-scroll] {
         height: 100%;
-        background: #181818;
+        background: #181818 !important;
+      }
+      [data-file-tree-search-container] {
+        background: #181818 !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+      }
+      [data-file-tree-search-input] {
+        background: #0f1011 !important;
+        color: #e6e8eb !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+        caret-color: #e6e8eb;
+      }
+      [data-file-tree-search-input]::placeholder {
+        color: #7b818a;
       }
       [role="treeitem"] {
         color: #d4d4d4;
@@ -1138,6 +1234,98 @@ import { FileTree } from '@pierre/trees';
         color: #ffffff;
       }
     `;
+  }
+
+  function createContextMenuButton(label, { danger = false, disabled = false, title = '', onSelect } = {}) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = danger ? 'workspace-context-menu__item danger' : 'workspace-context-menu__item';
+    button.textContent = label;
+    button.setAttribute('role', 'menuitem');
+    if (title) button.title = title;
+
+    if (disabled) {
+      button.disabled = true;
+      button.setAttribute('aria-disabled', 'true');
+      return button;
+    }
+
+    button.addEventListener('mousedown', event => {
+      event.preventDefault();
+    });
+    button.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      Promise.resolve(onSelect?.()).catch(error => {
+        console.error(`File tree action failed: ${label}`, error);
+        alert('Could not complete that file action.');
+        renderTree(true);
+      });
+    });
+
+    return button;
+  }
+
+  function renderWorkspaceContextMenu(item, context) {
+    const target = getContextMenuTarget(item);
+    const treePath = getTargetTreePath(target);
+    const file = target.isFolder ? null : getFileByPath(target.path);
+    const hiddenFile = target.isFolder ? null : getHiddenFileByPath(target.path);
+    const readOnlyTarget = isReadOnlyTreeTarget(target);
+    const canRenameTarget = !!treePath && !readOnlyTarget && (target.isFolder ? folderExists(target.path) : !!file);
+    const canDeleteTarget = !readOnlyTarget && (target.isFolder ? !!getFolderByPath(target.path) : !!file);
+    const canSetEntry = !!file && file.role !== 'runtime' && !hiddenFile;
+
+    const menu = document.createElement('div');
+    menu.className = 'workspace-context-menu';
+    menu.dataset.fileTreeContextMenuRoot = 'true';
+    menu.setAttribute('role', 'menu');
+    menu.setAttribute('aria-label', `Actions for ${item?.name || target.path || 'file'}`);
+    const menuWidth = 188;
+    const left = Math.max(8, Math.min(window.innerWidth - menuWidth - 8, context.anchorRect.right - menuWidth));
+    const top = Math.max(8, Math.min(window.innerHeight - 228, context.anchorRect.bottom + 4));
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+
+    const runAction = action => () => {
+      if (treePath) {
+        state.selectedPath = treePath;
+        state.tree?.getItem?.(treePath)?.select?.();
+      }
+      context.close({ restoreFocus: false });
+      return action();
+    };
+
+    menu.append(
+      createContextMenuButton('New File', {
+        onSelect: runAction(() => createFileInline(target))
+      }),
+      createContextMenuButton('New Folder', {
+        onSelect: runAction(() => createFolderInline(target))
+      }),
+      document.createElement('hr'),
+      createContextMenuButton('Rename', {
+        disabled: !canRenameTarget,
+        title: readOnlyTarget ? 'Hidden problem files are read-only in sessions.' : '',
+        onSelect: runAction(() => {
+          if (!startInlineRename(treePath)) renderTree(true);
+        })
+      }),
+      createContextMenuButton('Set as Entry', {
+        disabled: !canSetEntry,
+        title: target.isFolder ? 'Folders cannot be entry files.' : '',
+        onSelect: runAction(() => setFileAsEntry(file))
+      }),
+      document.createElement('hr'),
+      createContextMenuButton('Delete', {
+        danger: true,
+        disabled: !canDeleteTarget,
+        title: readOnlyTarget ? 'Hidden problem files are read-only in sessions.' : '',
+        onSelect: runAction(() => deleteTreeTarget(target))
+      })
+    );
+
+    return menu;
   }
 
   function renderTree(force = false) {
@@ -1162,6 +1350,13 @@ import { FileTree } from '@pierre/trees';
         search: true,
         density: 'compact',
         unsafeCSS: getTreeCss(),
+        composition: {
+          contextMenu: {
+            enabled: true,
+            triggerMode: 'right-click',
+            render: renderWorkspaceContextMenu
+          }
+        },
         onSelectionChange: handleTreeSelection,
         renderRowDecoration({ item }) {
           const file = getFileByPath(item.path);
@@ -1220,6 +1415,7 @@ import { FileTree } from '@pierre/trees';
     }
 
     updateWorkspaceChrome();
+    flushPendingInlineRename();
   }
 
   function handleWorkspaceSnapshot(snapshot) {
@@ -1285,6 +1481,7 @@ import { FileTree } from '@pierre/trees';
     state.selectedPath = null;
     state.tree = null;
     state.treePathSignature = '';
+    state.pendingInlineRenamePath = null;
     state.pendingActiveFileId = null;
   }
 

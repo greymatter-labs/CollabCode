@@ -14,7 +14,7 @@
     
     // Only show notes for interviewers/admins
     if (user && user.isAdmin) {
-      document.getElementById('notes-toggle-btn').style.display = 'block';
+      document.getElementById('notes-toggle-btn').style.display = 'inline-flex';
       setupNotesPanel();
       loadExistingNotes();
     }

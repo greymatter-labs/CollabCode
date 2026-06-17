@@ -309,14 +309,22 @@
 
 /* legacy secondary note button, kept consistent with .btn--secondary */
 .notes-button{
-  padding:7px 13px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  height:32px;
+  padding:0 12px;
   background:var(--bg-3);
   color:var(--text-1);
   border:1px solid var(--border-2);
   border-radius:var(--r-sm);
   font-size:13px;
+  font-weight:500;
+  line-height:1;
   transition:background .12s var(--ease),border-color .12s,color .12s;
 }
+.notes-button .ic{width:14px;height:14px;flex:none;display:block;}
 .notes-button:hover{background:var(--bg-4);border-color:var(--border-strong);}
 .notes-button.active{
   background:var(--accent-soft);
