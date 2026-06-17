@@ -24,14 +24,14 @@
   
   // Session termination modal HTML
   const terminationModalHTML = `
-    <div id="session-terminated-modal" class="modal" style="display: none; z-index: 10000;">
-      <div class="modal-content" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: 2px solid #fff; box-shadow: 0 20px 60px rgba(102, 126, 234, 0.5);">
-        <h2 style="color: #ffffff; font-size: 28px; margin-bottom: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">Interview Ended</h2>
-        <div style="background: rgba(255,255,255,0.95); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-          <p style="color: #333; font-size: 16px; margin-bottom: 10px;">This interview has been terminated by the interviewer.</p>
-          <p style="color: #555; font-size: 15px;">Thank you for your participation!</p>
+    <div id="session-terminated-modal" class="modal session-ended-modal" style="display: none;">
+      <div class="modal-content session-ended-card">
+        <div class="session-ended-icon" aria-hidden="true">
+          <svg class="ic ic-18"><use href="#i-x"/></svg>
         </div>
-        <button onclick="window.location.replace(window.location.pathname + window.location.search)" class="primary-btn" style="background: #fff; color: #667eea; font-weight: bold; font-size: 16px; padding: 12px 30px; border: 2px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">Return to Home</button>
+        <h2>Interview Ended</h2>
+        <p>This interview has been ended by the interviewer.</p>
+        <button id="return-home-after-ended" class="session-ended-action" type="button">Return to Home</button>
       </div>
     </div>
   `;
@@ -1123,6 +1123,12 @@
     // Add modal to page if not already present
     if (!document.getElementById('session-terminated-modal')) {
       document.body.insertAdjacentHTML('beforeend', terminationModalHTML);
+      const returnHomeButton = document.getElementById('return-home-after-ended');
+      if (returnHomeButton) {
+        returnHomeButton.addEventListener('click', function() {
+          window.location.replace(window.location.pathname + window.location.search);
+        });
+      }
     }
     
     // Show the modal
