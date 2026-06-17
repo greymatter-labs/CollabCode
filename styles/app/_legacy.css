@@ -645,17 +645,6 @@ html, body {
   vertical-align: middle;
 }
 
-.session-code-cell {
-  font-weight: 600;
-  color: #059669;
-  font-family: 'Courier New', monospace;
-  font-size: 15px;
-  background: #f0fdf4;
-  padding: 4px 8px;
-  border-radius: 4px;
-  display: inline-block;
-}
-
 .participants-list {
   display: flex;
   flex-direction: column;
@@ -3587,31 +3576,6 @@ html, body {
 .action-btn.delete-forever-btn:hover {
   background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
   box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
-}
-
-/* Coming Soon buttons */
-.action-btn.coming-soon {
-  background: #e0e0e0;
-  color: #999;
-  cursor: not-allowed;
-  opacity: 0.7;
-  position: relative;
-  padding-right: 48px;
-}
-
-.coming-soon-badge {
-  position: absolute;
-  right: 4px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: #ff9800;
-  color: white;
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .action-btn:disabled {

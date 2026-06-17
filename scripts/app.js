@@ -27,6 +27,10 @@
       .replace(/'/g, '&#39;');
   }
 
+  function iconMarkup(id, size = 14) {
+    return `<svg class="ic ic-${size}" aria-hidden="true"><use href="#${id}"></use></svg>`;
+  }
+
   async function createSessionViaApi(payload = {}) {
     const response = await fetch('/api/sessions/create', {
       method: 'POST',
@@ -168,7 +172,7 @@
       });
     }
 
-    // Admin button - support both old and new classes  
+    // Admin button - support both old and new classes
     const adminBtn = document.querySelector('#adminCard .role-btn');
     if (adminBtn) {
       adminBtn.addEventListener('click', function() {
@@ -194,8 +198,8 @@
     // Enable/disable join button
     function updateJoinButton() {
       const privacyConsent = document.getElementById('candidatePrivacyConsent');
-      candidateJoinBtn.disabled = 
-        !candidateName.value.trim() || 
+      candidateJoinBtn.disabled =
+        !candidateName.value.trim() ||
         !isValidSessionCode(candidateSessionCode.value) ||
         !privacyConsent.checked;
     }
@@ -205,7 +209,7 @@
       this.value = normalizeSessionCode(this.value);
       updateJoinButton();
     });
-    
+
     // Privacy consent checkbox
     const privacyConsent = document.getElementById('candidatePrivacyConsent');
     if (privacyConsent) {
@@ -221,29 +225,29 @@
         // Show loading state
         candidateJoinBtn.disabled = true;
         candidateJoinBtn.textContent = 'Validating...';
-        
+
         // Validate session exists before joining (pass true for isCandidate)
         const validation = await validateSession(sessionCode, true);
-        
+
         if (!validation.valid) {
           candidateJoinBtn.disabled = false;
           candidateJoinBtn.textContent = 'Join Session';
           alert(validation.error || 'Invalid session code. Please check with your interviewer.');
           return;
         }
-        
+
         // Initialize session tracking for candidates (make it async/non-blocking)
         if (window.SessionTracking) {
           // Don't await - let tracking happen in background
           window.SessionTracking.initialize(sessionCode, 'candidate', name);
           // Remove the security check message - just proceed
         }
-        
+
         // Initialize activity monitoring for candidates (with consent)
         if (window.initActivityMonitor) {
           console.log('Starting activity monitoring for candidate:', name);
           window.initActivityMonitor(sessionCode, name, 'candidate');
-          
+
           // Log consent status
           if (window.firebase) {
             firebase.database()
@@ -255,10 +259,10 @@
               });
           }
         }
-        
+
         Auth.joinAsCandidate(name);
         window.location.hash = sessionCode;
-        
+
         startSession(name, sessionCode, false);
       }
     });
@@ -298,7 +302,7 @@
 
       try {
         const result = await Auth.loginAdmin(email, password);
-        
+
         if (result.success) {
           document.getElementById('adminLoginModal').style.display = 'none';
           document.getElementById('adminDashboardModal').style.display = 'flex';
@@ -345,35 +349,35 @@
     if (window.ProblemLibrary?.init) {
       window.ProblemLibrary.init();
     }
-    
+
     // Load saved interviewer name from localStorage
     if (interviewerNameInput) {
       const savedName = localStorage.getItem('interviewerName');
       if (savedName) {
         interviewerNameInput.value = savedName;
       }
-      
+
       // Save name when it changes
       interviewerNameInput.addEventListener('input', function() {
         localStorage.setItem('interviewerName', this.value.trim());
       });
     }
-    
+
     // View all sessions button
     if (viewAllSessionsBtn) {
       viewAllSessionsBtn.addEventListener('click', function() {
         const modal = document.getElementById('sessionsModal');
         modal.style.display = 'flex';
-        
+
         // Reset selections
         const selectAllCheckbox = document.getElementById('selectAllCheckbox');
         const selectAllBtn = document.getElementById('selectAllBtn');
         if (selectAllCheckbox) selectAllCheckbox.checked = false;
         if (selectAllBtn) selectAllBtn.textContent = 'Select All';
         updateBulkActionButtons();
-        
+
         loadActiveSessions();
-        
+
         // Close on escape key
         const escHandler = function(e) {
           if (e.key === 'Escape') {
@@ -387,7 +391,7 @@
           }
         };
         document.addEventListener('keydown', escHandler);
-        
+
         // Close on click outside
         modal.addEventListener('click', function(e) {
           if (e.target === modal) {
@@ -401,7 +405,7 @@
         });
       });
     }
-    
+
     // Close sessions modal
     if (closeSessionsModalBtn) {
       closeSessionsModalBtn.addEventListener('click', function() {
@@ -422,7 +426,7 @@
           console.warn('CREATE SESSION: Already starting a session, ignoring click');
           return;
         }
-        
+
         const createSessionLabel = createSessionBtn.querySelector('span');
         const originalText = createSessionLabel ? createSessionLabel.textContent : createSessionBtn.textContent;
         createSessionBtn.disabled = true;
@@ -439,27 +443,27 @@
           const session = await createSessionViaApi(sessionPayload);
           const sessionCode = normalizeSessionCode(session.sessionId);
           console.log('CREATE SESSION: Created code:', sessionCode);
-          
+
           // Show active session
           document.getElementById('activeSessionCode').textContent = sessionCode;
           document.getElementById('activeSession').style.display = 'block';
-          
+
           // Hide the dashboard modal immediately
           document.getElementById('adminDashboardModal').style.display = 'none';
-          
+
           // Now set the hash (this might trigger hashchange/load events)
           window.location.hash = sessionCode;
           console.log('CREATE SESSION: Current URL hash:', window.location.hash);
-          
+
           // Track interviewer creating and joining session
           const adminName = getAdminDisplayName();
-          
+
           // Initialize activity monitor in observer mode for interviewer
           if (window.initActivityMonitor) {
             console.log('Starting activity monitor in observer mode for interviewer');
             window.initActivityMonitor(sessionCode, adminName, 'interviewer');
           }
-          
+
           // Start session - DON'T set sessionStarting here, let startSession handle it
           startSession(adminName, sessionCode, true);
         } catch (error) {
@@ -479,7 +483,7 @@
     // Join existing session
     adminJoinBtn.addEventListener('click', async function() {
       const sessionCode = normalizeSessionCode(adminSessionCode.value);
-      
+
       if (isValidSessionCode(sessionCode)) {
         const validation = await validateSession(sessionCode);
         if (!validation.valid) {
@@ -489,13 +493,13 @@
 
         // Track interviewer joining session
         const adminName = getAdminDisplayName();
-        
+
         // Initialize activity monitor in observer mode for interviewer
         if (window.initActivityMonitor) {
           console.log('Starting activity monitor in observer mode for interviewer');
           window.initActivityMonitor(sessionCode, adminName, 'interviewer');
         }
-        
+
         window.location.hash = sessionCode;
         startSession(adminName, sessionCode, false);
       } else {
@@ -542,17 +546,17 @@
       console.log('Waiting for Firebase to validate session...');
       // Wait a bit for Firebase to load
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Try again
       if (!window.firebase || !window.firebase.database) {
         return { valid: false, error: 'Database connection failed. Please refresh and try again.' };
       }
     }
-    
+
     try {
       const snapshot = await window.firebase.database().ref('sessions/' + sessionCode).once('value');
       const sessionData = snapshot.val();
-      
+
       console.log('Validating session:', sessionCode, 'Data:', sessionData);
 
       if (!sessionData) {
@@ -562,7 +566,7 @@
       if (!sessionData.created || !sessionData.createdBy) {
         return { valid: false, error: 'Invalid session. This session was not created by an interviewer.' };
       }
-      
+
       // For candidates, session MUST exist with proper structure
       if (isCandidate) {
         // Check if session has been archived (older than 2 hours)
@@ -572,26 +576,26 @@
           return { valid: false, error: 'This session has expired. Please request a new session code from your interviewer.' };
         }
       }
-      
+
       // Check if session is terminated
       if (sessionData && sessionData.terminated && sessionData.terminated.terminated) {
         return { valid: false, error: 'This interview session has already ended.' };
       }
-      
+
       return { valid: true };
     } catch (error) {
       console.error('Session validation error:', error);
       return { valid: false, error: 'Failed to validate session. Please check your internet connection.' };
     }
   }
-  
+
   // Setup bulk action handlers
   function setupBulkActions() {
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
     const selectAllBtn = document.getElementById('selectAllBtn');
     const endSelectedBtn = document.getElementById('endSelectedBtn');
     const endAllSessionsBtn = document.getElementById('endAllSessionsBtn');
-    
+
     // Select All checkbox in header
     if (selectAllCheckbox) {
       selectAllCheckbox.addEventListener('change', function() {
@@ -600,50 +604,50 @@
         updateBulkActionButtons();
       });
     }
-    
+
     // Select All button
     if (selectAllBtn) {
       selectAllBtn.addEventListener('click', function() {
         const isSelectAll = this.textContent === 'Select All';
         const checkboxes = document.querySelectorAll('.session-checkbox');
         const headerCheckbox = document.getElementById('selectAllCheckbox');
-        
+
         checkboxes.forEach(cb => cb.checked = isSelectAll);
         if (headerCheckbox) headerCheckbox.checked = isSelectAll;
-        
+
         this.textContent = isSelectAll ? 'Select None' : 'Select All';
         updateBulkActionButtons();
       });
     }
-    
+
     // End/Delete Selected button (behavior depends on active tab)
     if (endSelectedBtn) {
       endSelectedBtn.addEventListener('click', function() {
         const selected = document.querySelectorAll('.session-checkbox:checked');
         const archivedTabBtn = document.getElementById('archivedTabBtn');
         const isArchivedTab = archivedTabBtn && archivedTabBtn.classList.contains('active');
-        
+
         console.log('End/Delete Selected clicked, found checkboxes:', selected.length);
         console.log('Is archived tab:', isArchivedTab);
-        
+
         const sessionCodes = Array.from(selected).map(cb => cb.getAttribute('data-code'));
         console.log('Session codes to process:', sessionCodes);
-        
+
         if (sessionCodes.length === 0) {
           console.log('No sessions selected');
           return;
         }
-        
+
         if (isArchivedTab) {
           // In Ended Sessions tab - DELETE permanently
-          const message = sessionCodes.length === 1 
+          const message = sessionCodes.length === 1
             ? `⚠️ PERMANENTLY DELETE session ${sessionCodes[0]}?`
             : `⚠️ PERMANENTLY DELETE ${sessionCodes.length} selected sessions?`;
-            
+
           if (confirm(message + '\n\nThis will remove all data forever and CANNOT be undone!')) {
             if (confirm('FINAL CONFIRMATION: Delete these sessions forever?')) {
               console.log('User confirmed, DELETING sessions...', sessionCodes);
-              
+
               // Delete sessions with staggered timing to ensure Firebase handles them properly
               sessionCodes.forEach((code, index) => {
                 setTimeout(() => {
@@ -651,16 +655,16 @@
                   deleteSession(code);
                 }, index * 200); // Stagger by 200ms
               });
-              
+
               showNotification(`Deleting ${sessionCodes.length} session(s)...`);
             }
           }
         } else {
           // In Active tab - just end/terminate sessions
-          const message = sessionCodes.length === 1 
+          const message = sessionCodes.length === 1
             ? `End session ${sessionCodes[0]}?`
             : `End ${sessionCodes.length} selected sessions?`;
-            
+
           if (confirm(message + ' All participants will be disconnected.')) {
             console.log('User confirmed, ending sessions...');
             sessionCodes.forEach(code => {
@@ -671,26 +675,26 @@
         }
       });
     }
-    
+
     // End All / Delete All button (behavior depends on active tab)
     if (endAllSessionsBtn) {
       endAllSessionsBtn.addEventListener('click', function() {
         const checkboxes = document.querySelectorAll('.session-checkbox');
         const archivedTabBtn = document.getElementById('archivedTabBtn');
         const isArchivedTab = archivedTabBtn && archivedTabBtn.classList.contains('active');
-        
+
         if (checkboxes.length === 0) {
           alert(isArchivedTab ? 'No ended sessions to delete' : 'No active sessions to end');
           return;
         }
-        
+
         if (isArchivedTab) {
           // In Ended Sessions tab - DELETE ALL permanently
           if (confirm(`⚠️ PERMANENTLY DELETE ALL ${checkboxes.length} ended sessions?\n\nThis will remove all data forever!`)) {
             if (confirm('FINAL CONFIRMATION: Delete ALL ended sessions forever? This CANNOT be undone!')) {
               const sessionCodes = Array.from(checkboxes).map(cb => cb.getAttribute('data-code'));
               console.log('Mass deleting sessions:', sessionCodes);
-              
+
               // Delete all sessions sequentially to ensure they complete
               sessionCodes.forEach((code, index) => {
                 setTimeout(() => {
@@ -698,7 +702,7 @@
                   deleteSession(code);
                 }, index * 200); // Stagger deletions by 200ms to avoid overwhelming Firebase
               });
-              
+
               showNotification(`Deleting ${sessionCodes.length} sessions...`);
             }
           }
@@ -712,12 +716,12 @@
       });
     }
   }
-  
+
   // Update bulk action buttons state
   function updateBulkActionButtons() {
     const selected = document.querySelectorAll('.session-checkbox:checked');
     const endSelectedBtn = document.getElementById('endSelectedBtn');
-    
+
     if (endSelectedBtn) {
       endSelectedBtn.disabled = selected.length === 0;
       if (selected.length > 0) {
@@ -727,29 +731,29 @@
       }
     }
   }
-  
+
   // Store the sessions listener reference globally to prevent duplicates
   let sessionsListener = null;
-  
+
   // Load all active sessions for admin
   function loadActiveSessions(isArchived = false) {
     const sessionsTableBody = document.getElementById('sessionsTableBody');
     const noSessionsMessage = document.getElementById('noSessionsMessage');
     const sessionsTable = document.getElementById('sessionsTable');
-    
+
     if (!sessionsTableBody) return;
-    
+
     // Setup bulk actions once
     if (!sessionsTableBody.hasAttribute('data-bulk-setup')) {
       setupBulkActions();
       sessionsTableBody.setAttribute('data-bulk-setup', 'true');
     }
-    
+
     // Setup tab handlers
     const activeTabBtn = document.getElementById('activeTabBtn');
     const archivedTabBtn = document.getElementById('archivedTabBtn');
     const bulkActionsBar = document.getElementById('bulkActionsBar');
-    
+
     // Update time column header based on tab
     function updateTimeColumnHeader(isArchived) {
       const timeHeader = document.querySelector('#sessionsTable th:nth-child(6)');
@@ -757,88 +761,104 @@
         timeHeader.textContent = isArchived ? 'Ended' : 'Created';
       }
     }
-    
+
+    function setBulkActionsMode(isArchived) {
+      if (!bulkActionsBar) return;
+      bulkActionsBar.classList.toggle('bulk-actions--archive', Boolean(isArchived));
+      bulkActionsBar.classList.toggle('bulk-actions--active', !isArchived);
+    }
+
+    function renderSessionsMessage(message, tone = '') {
+      sessionsTableBody.replaceChildren();
+      const row = document.createElement('tr');
+      row.className = ['sessions-message-row', tone].filter(Boolean).join(' ');
+      const cell = document.createElement('td');
+      cell.colSpan = 7;
+      cell.textContent = message;
+      row.appendChild(cell);
+      sessionsTableBody.appendChild(row);
+    }
+
     if (activeTabBtn && !activeTabBtn.hasAttribute('data-handler')) {
       activeTabBtn.setAttribute('data-handler', 'true');
       activeTabBtn.addEventListener('click', function() {
-        this.classList.add('active');
-        archivedTabBtn.classList.remove('active');
-        bulkActionsBar.style.display = 'flex';
-        updateTimeColumnHeader(false); // Update header to "Created"
-        // Update bulk action buttons for active/in-progress sessions
-        const endSelectedBtn = document.getElementById('endSelectedBtn');
-        const deleteAllBtn = document.getElementById('endAllSessionsBtn');
-        if (endSelectedBtn) {
-          endSelectedBtn.textContent = 'End Selected';
-          endSelectedBtn.style.background = '#ff9800';
-        }
-        if (deleteAllBtn) {
-          deleteAllBtn.textContent = 'End All';
-          deleteAllBtn.style.background = '#ff9800';
-        }
-        loadActiveSessions();
-      });
+          this.classList.add('active');
+          archivedTabBtn.classList.remove('active');
+          bulkActionsBar.style.display = 'flex';
+          setBulkActionsMode(false);
+          updateTimeColumnHeader(false); // Update header to "Created"
+          // Update bulk action buttons for active/in-progress sessions
+          const endSelectedBtn = document.getElementById('endSelectedBtn');
+          const deleteAllBtn = document.getElementById('endAllSessionsBtn');
+          if (endSelectedBtn) {
+            endSelectedBtn.textContent = 'End Selected';
+          }
+          if (deleteAllBtn) {
+            deleteAllBtn.textContent = 'End All';
+          }
+          loadActiveSessions();
+        });
     }
-    
+
     if (archivedTabBtn && !archivedTabBtn.hasAttribute('data-handler')) {
       archivedTabBtn.setAttribute('data-handler', 'true');
       archivedTabBtn.addEventListener('click', function() {
-        this.classList.add('active');
-        activeTabBtn.classList.remove('active');
-        bulkActionsBar.style.display = 'flex'; // Show bulk actions for ended sessions too
-        updateTimeColumnHeader(true); // Update header to "Ended"
-        // Update bulk action buttons for ended sessions (delete only)
-        const endSelectedBtn = document.getElementById('endSelectedBtn');
-        const deleteAllBtn = document.getElementById('endAllSessionsBtn');
-        if (endSelectedBtn) {
-          endSelectedBtn.textContent = 'Delete Selected';
-          endSelectedBtn.style.background = '#f44336';
-        }
-        if (deleteAllBtn) {
-          deleteAllBtn.textContent = 'Delete All Ended';
-          deleteAllBtn.style.background = '#f44336';
-        }
-        loadActiveSessions(true); // Load ended sessions
-      });
+          this.classList.add('active');
+          activeTabBtn.classList.remove('active');
+          bulkActionsBar.style.display = 'flex'; // Show bulk actions for ended sessions too
+          setBulkActionsMode(true);
+          updateTimeColumnHeader(true); // Update header to "Ended"
+          // Update bulk action buttons for ended sessions (delete only)
+          const endSelectedBtn = document.getElementById('endSelectedBtn');
+          const deleteAllBtn = document.getElementById('endAllSessionsBtn');
+          if (endSelectedBtn) {
+            endSelectedBtn.textContent = 'Delete Selected';
+          }
+          if (deleteAllBtn) {
+            deleteAllBtn.textContent = 'Delete All Ended';
+          }
+          loadActiveSessions(true); // Load ended sessions
+        });
     }
-    
-    // Check current tab
-    const isShowingArchived = archivedTabBtn && archivedTabBtn.classList.contains('active');
-    
-    // Check if Firebase is loaded
-    if (!window.firebase || !window.firebase.database) {
-      console.log('Waiting for Firebase to load...');
-      sessionsTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Connecting to database...</td></tr>';
-      setTimeout(() => loadActiveSessions(isArchived), 1500);
-      return;
-    }
-    
+
+      // Check current tab
+      const isShowingArchived = archivedTabBtn && archivedTabBtn.classList.contains('active');
+      setBulkActionsMode(isShowingArchived);
+
+      // Check if Firebase is loaded
+      if (!window.firebase || !window.firebase.database) {
+        console.log('Waiting for Firebase to load...');
+        renderSessionsMessage('Connecting to database...');
+        setTimeout(() => loadActiveSessions(isArchived), 1500);
+        return;
+      }
+
     // Double check Firebase database ref is accessible
-    try {
-      const testRef = window.firebase.database().ref();
-    } catch (error) {
-      console.error('Firebase database error:', error);
-      sessionsTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: red;">Database connection error. Please refresh the page.</td></tr>';
-      return;
-    }
-    
+      try {
+        const testRef = window.firebase.database().ref();
+      } catch (error) {
+        console.error('Firebase database error:', error);
+        renderSessionsMessage('Database connection error. Please refresh the page.', 'is-error');
+        return;
+      }
+
     // Remove existing listener if it exists to prevent duplicates
     if (sessionsListener) {
       window.firebase.database().ref('sessions').off('value', sessionsListener);
       sessionsListener = null;
     }
-    
-    // Create the listener function
-    sessionsListener = function(snapshot) {
-      const sessions = snapshot.val() || {};
-      sessionsTableBody.innerHTML = '';
-      
+
+      // Create the listener function
+      sessionsListener = function(snapshot) {
+        const sessions = snapshot.val() || {};
+        sessionsTableBody.replaceChildren();
+
       const activeSessions = [];
       const archivedSessions = [];
       let totalUsers = 0;
       const twoHours = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
       const now = Date.now();
-      
+
       // Filter sessions into active/in-progress and ended
       Object.keys(sessions).forEach(code => {
         const session = sessions[code];
@@ -847,15 +867,15 @@
           console.warn('Ignoring malformed session record:', code);
           return;
         }
-        
+
         const sessionAge = now - (session.created || now);
         const userCount = Object.keys(session.users || {}).length;
-        
+
         // For ended sessions, use preserved participants if available
-        const participants = (session.terminated && session.terminated.terminated && session.preservedParticipants) 
-          ? session.preservedParticipants 
+        const participants = (session.terminated && session.terminated.terminated && session.preservedParticipants)
+          ? session.preservedParticipants
           : session.users || {};
-          
+
         const sessionInfo = {
           code: code,
           users: participants,
@@ -865,7 +885,7 @@
           isExpired: sessionAge > twoHours,
           isTerminated: session.terminated && session.terminated.terminated
         };
-        
+
         // Ended sessions go to the ended list
         if (session.terminated && session.terminated.terminated) {
           sessionInfo.terminatedAt = session.terminated.terminatedAt || session.created; // Add terminated timestamp
@@ -876,7 +896,7 @@
           totalUsers += userCount;
         }
       });
-      
+
       // Sort ended sessions by terminated time (most recent first)
       console.log('Sorting ended sessions. Count:', archivedSessions.length);
       archivedSessions.sort((a, b) => {
@@ -888,52 +908,54 @@
         }
         return timeB - timeA; // Descending order (newest first)
       });
-      
+
       // Sort active sessions by created time (most recent first)
       activeSessions.sort((a, b) => {
         return (b.created || 0) - (a.created || 0); // Descending order
       });
-      
+
       // Update stats
       const activeSessionsCount = document.getElementById('activeSessionsCount');
       const totalUsersCount = document.getElementById('totalUsersCount');
       if (activeSessionsCount) activeSessionsCount.textContent = activeSessions.length;
       if (totalUsersCount) totalUsersCount.textContent = totalUsers;
-      
+
       // Choose which sessions to display based on active tab
       const isShowingArchived = archivedTabBtn && archivedTabBtn.classList.contains('active');
       const sessionsToDisplay = isShowingArchived ? archivedSessions : activeSessions;
-      
-      if (sessionsToDisplay.length === 0) {
-        sessionsTable.style.display = 'none';
-        noSessionsMessage.style.display = 'block';
-        noSessionsMessage.innerHTML = isShowingArchived
-          ? '<p>No ended sessions</p>' 
-          : '<p>No active or in-progress sessions</p>';
-        return;
-      }
-      
+
+        if (sessionsToDisplay.length === 0) {
+          sessionsTable.style.display = 'none';
+          noSessionsMessage.style.display = 'block';
+          const message = document.createElement('p');
+          message.textContent = isShowingArchived
+            ? 'No ended sessions'
+            : 'No active or in-progress sessions';
+          noSessionsMessage.replaceChildren(message);
+          return;
+        }
+
       sessionsTable.style.display = 'table';
       noSessionsMessage.style.display = 'none';
-      
+
       // Display each session
       sessionsToDisplay.forEach(session => {
         const row = document.createElement('tr');
-        
+
         // Get the full session data to access notes
         const fullSession = sessions[session.code];
-        
+
         // Make isShowingArchived available in this scope
         const isArchivedView = isShowingArchived;
-        
+
         // Separate candidates and interviewers
         const users = Object.values(session.users);
         const candidates = users.filter(user => {
           if (!user.name) return false;
           const nameLower = user.name.toLowerCase();
           // Exclude if it contains interviewer patterns, email domains, or admin keywords
-          return !nameLower.includes('interviewer') && 
-                 !nameLower.includes('@') && 
+          return !nameLower.includes('interviewer') &&
+                 !nameLower.includes('@') &&
                  !nameLower.includes('admin') &&
                  !nameLower.includes('.com') &&
                  !nameLower.includes('.io') &&
@@ -943,196 +965,152 @@
           if (!user.name) return false;
           const nameLower = user.name.toLowerCase();
           // Include if it contains interviewer patterns or email domains
-          return nameLower.includes('interviewer') || 
-                 nameLower.includes('@') || 
+          return nameLower.includes('interviewer') ||
+                 nameLower.includes('@') ||
                  nameLower.includes('admin') ||
                  nameLower.includes('.com') ||
                  nameLower.includes('.io') ||
                  nameLower.includes('.net');
         });
-        
+
         // Get hire signal from notes if available
-        let hireSignal = '';
-        if (fullSession && fullSession.interviewerNotes && fullSession.interviewerNotes.recommendation) {
-          const rec = fullSession.interviewerNotes.recommendation;
-          const recColors = {
-            'STRONG_HIRE': '#4caf50',
-            'HIRE': '#8bc34a',
-            'PROCEED_TO_NEXT_ROUND': '#2196f3',
-            'MAYBE': '#ff9800',
-            'NO_HIRE': '#f44336'
-          };
-          const recLabels = {
-            'STRONG_HIRE': 'Strong Hire',
-            'HIRE': 'Hire',
-            'PROCEED_TO_NEXT_ROUND': 'Next Round',
-            'MAYBE': 'Maybe',
-            'NO_HIRE': 'No Hire'
-          };
-          hireSignal = `<span style="background: ${recColors[rec] || '#666'}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-left: 8px;">${recLabels[rec] || rec}</span>`;
-        }
-        
-        // Format candidate names with hire signal (only show candidates)
-        const candidateNames = candidates.map(user => 
-          `<div class="participant-name" style="font-weight: bold; color: #4caf50;">${user.name}${hireSignal}</div>`
-        ).join('') || `<div style="color: #666;">No candidate yet${hireSignal}</div>`;
-        
-        // Format interviewer names
-        const interviewerNames = interviewers.length > 0 ? 
-          `<div style="font-size: 11px; color: #888; margin-top: 4px;">Interviewed by: ${interviewers.map(i => i.name).join(', ')}</div>` : '';
-        
-        // Format all participants with clear separation
-        const allParticipants = `
-          ${candidates.length > 0 ? `<div style="margin-bottom: 8px;"><strong>Candidates:</strong><br>${candidates.map(c => `<span style="color: #4caf50;">${c.name}</span>`).join(', ')}</div>` : ''}
-          ${interviewers.length > 0 ? `<div><strong>Interviewers:</strong><br>${interviewers.map(i => `<span style="color: #667eea;">${i.name}</span>`).join(', ')}</div>` : ''}
-          ${users.length === 0 ? '<div style="color: #666;">No participants</div>' : ''}
-        `;
-        
+          let hireSignal = '';
+          if (fullSession && fullSession.interviewerNotes && fullSession.interviewerNotes.recommendation) {
+            const rec = fullSession.interviewerNotes.recommendation;
+            const recLabels = {
+              'STRONG_HIRE': 'Strong Hire',
+              'HIRE': 'Hire',
+              'PROCEED_TO_NEXT_ROUND': 'Next Round',
+              'MAYBE': 'Maybe',
+              'NO_HIRE': 'No Hire'
+            };
+            const recClass = rec.toLowerCase().replace(/_/g, '-');
+            hireSignal = `<span class="hire-signal hire-signal--${recClass}">${escapeHtml(recLabels[rec] || rec)}</span>`;
+          }
+
+          // Format candidate names with hire signal (only show candidates)
+          const candidateNames = candidates.map(user =>
+            `<div class="participant-name participant-name--candidate"><span>${escapeHtml(user.name)}</span>${hireSignal}</div>`
+          ).join('') || `<div class="participant-empty">No candidate yet${hireSignal}</div>`;
+
+          // Format interviewer names
+          const interviewerNames = interviewers.length > 0 ?
+            `<div class="participant-meta">Interviewed by: ${escapeHtml(interviewers.map(i => i.name).join(', '))}</div>` : '';
+
+          // Format all participants with clear separation
+          const allParticipants = `
+            ${candidates.length > 0 ? `<div class="participant-group"><span class="participant-group-label">Candidates</span><span class="participant-values">${escapeHtml(candidates.map(c => c.name).join(', '))}</span></div>` : ''}
+            ${interviewers.length > 0 ? `<div class="participant-group"><span class="participant-group-label">Interviewers</span><span class="participant-values participant-values--admin">${escapeHtml(interviewers.map(i => i.name).join(', '))}</span></div>` : ''}
+            ${users.length === 0 ? '<div class="participant-empty">No participants</div>' : ''}
+          `;
+
         // Check for fraud indicators from security warnings
         let fraudBadge = '';
         if (fullSession && fullSession.security_warnings) {
           const warnings = Object.values(fullSession.security_warnings || {});
           const candidateWarnings = warnings.filter(w => w.userType === 'candidate');
-          
+
           if (candidateWarnings.length > 0) {
             const hasVPN = candidateWarnings.some(w => w.type === 'vpn_detected');
             const hasMultipleLogin = candidateWarnings.some(w => w.type === 'multiple_login');
-            
-            if (hasMultipleLogin) {
-              fraudBadge = '<span class="fraud-badge" style="background: #ff0000; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 4px;">🚨 FRAUD</span>';
-            } else if (hasVPN) {
-              fraudBadge = '<span class="fraud-badge" style="background: #ff9800; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 4px;">⚠️ VPN</span>';
+
+              if (hasMultipleLogin) {
+                fraudBadge = '<span class="fraud-badge fraud-badge--danger">Fraud</span>';
+              } else if (hasVPN) {
+                fraudBadge = '<span class="fraud-badge fraud-badge--warning">VPN</span>';
+              }
             }
           }
-        }
-        
+
         // Determine session status - Simple progression: Active -> In Progress -> Ended
         let status = 'active';
         let statusBadge = '';
-        
-        if (session.isTerminated) {
-          // Session has ended
-          status = 'ended';
-          statusBadge = '<span class="status-badge status-ended" style="background-color: #666;">Ended</span>' + fraudBadge;
-        } else if (candidates.length > 0 && interviewers.length > 0) {
-          // Both candidate and interviewer present - interview in progress
-          status = 'in-progress';
-          statusBadge = '<span class="status-badge status-in-progress" style="background-color: #2196f3;">In Progress</span>' + fraudBadge;
-        } else {
-          // Session created but interview not started yet
-          status = 'active';
-          statusBadge = '<span class="status-badge status-active" style="background-color: #4caf50;">Active</span>' + fraudBadge;
-        }
-        
+
+          if (session.isTerminated) {
+            // Session has ended
+            status = 'ended';
+            statusBadge = '<span class="status-badge status-ended">Ended</span>' + fraudBadge;
+          } else if (candidates.length > 0 && interviewers.length > 0) {
+            // Both candidate and interviewer present - interview in progress
+            status = 'in-progress';
+            statusBadge = '<span class="status-badge status-in-progress">In Progress</span>' + fraudBadge;
+          } else {
+            // Session created but interview not started yet
+            status = 'active';
+            statusBadge = '<span class="status-badge status-active">Active</span>' + fraudBadge;
+          }
+          statusBadge = `<div class="session-status-stack">${statusBadge}</div>`;
+
         // Format time - show terminated time for ended sessions, created time for active
         let displayTime;
         if (isArchivedView && session.terminatedAt) {
           const terminatedDate = new Date(session.terminatedAt);
-          displayTime = terminatedDate.toLocaleString('en-US', { 
-            month: 'short', 
-            day: 'numeric', 
-            hour: '2-digit', 
-            minute: '2-digit' 
+          displayTime = terminatedDate.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
           });
         } else {
           displayTime = new Date(session.created).toLocaleTimeString();
         }
-        
-        row.innerHTML = `
-          <td>
-            <input type="checkbox" class="session-checkbox" data-code="${session.code}">
-          </td>
-          <td class="session-code-cell">${session.code}</td>
-          <td>${statusBadge}</td>
-          <td>
-            <div class="participants-list">
+
+          row.innerHTML = `
+            <td>
+              <input type="checkbox" class="session-checkbox" data-code="${escapeHtml(session.code)}">
+            </td>
+            <td><span class="session-code-chip">${escapeHtml(session.code)}</span></td>
+            <td>${statusBadge}</td>
+            <td>
+              <div class="participants-list">
               ${candidateNames}
               ${interviewerNames}
             </div>
           </td>
           <td>
             <div class="participants-list">
-              ${allParticipants}
-            </div>
-          </td>
-          <td class="session-time" title="${isArchivedView ? 'Ended' : 'Created'}: ${displayTime}">${displayTime}</td>
-          <td>
-            <div class="action-buttons-modern">
-              <button class="action-btn view-btn" data-code="${session.code}" title="View Details">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-                <span>View</span>
-              </button>
-              
-              
-              ${isArchivedView ? 
-                `<button class="action-btn slack-btn" data-code="${session.code}" title="Export to Slack">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/>
-                  </svg>
-                  <span>Slack</span>
+                ${allParticipants}
+              </div>
+            </td>
+            <td class="session-time" title="${isArchivedView ? 'Ended' : 'Created'}: ${escapeHtml(displayTime)}">${escapeHtml(displayTime)}</td>
+            <td>
+              <div class="action-buttons-modern">
+                <button class="action-btn view-btn" data-code="${escapeHtml(session.code)}" title="View details">
+                  ${iconMarkup('i-info')}
+                  <span>View</span>
                 </button>
-                
-                <button class="action-btn email-btn coming-soon" disabled title="Email Export - Coming Soon">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                    <polyline points="22,6 12,13 2,6"></polyline>
-                  </svg>
-                  <span>Email</span>
-                  <span class="coming-soon-badge">Soon</span>
-                </button>
-                
-                <button class="action-btn csv-btn coming-soon" disabled title="CSV Export - Coming Soon">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                    <polyline points="10 9 9 9 8 9"></polyline>
-                  </svg>
-                  <span>CSV</span>
-                  <span class="coming-soon-badge">Soon</span>
-                </button>
-                
-                <button class="action-btn delete-forever-btn" data-code="${session.code}" title="Permanently Delete">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                    <line x1="14" y1="11" x2="14" y2="17"></line>
-                  </svg>
-                  <span>Delete Forever</span>
-                </button>` : 
-                `<button class="action-btn join-btn" data-code="${session.code}" ${session.isExpired || session.isTerminated ? 'disabled' : ''} title="Join Session">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-                    <polyline points="10 17 15 12 10 7"></polyline>
-                    <line x1="15" y1="12" x2="3" y2="12"></line>
-                  </svg>
-                  <span>Join</span>
-                </button>
-                 <button class="action-btn end-btn" data-code="${session.code}" ${session.isTerminated ? 'disabled' : ''} title="End Session">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <rect x="9" y="9" width="6" height="6"></rect>
-                  </svg>
-                  <span>End</span>
-                </button>`
-              }
+
+
+                ${isArchivedView ?
+                  `<button class="action-btn slack-btn" data-code="${escapeHtml(session.code)}" title="Export to Slack">
+                    ${iconMarkup('i-slack')}
+                    <span>Slack</span>
+                  </button>
+                  <button class="action-btn delete-forever-btn" data-code="${escapeHtml(session.code)}" title="Permanently delete">
+                    ${iconMarkup('i-trash')}
+                    <span>Delete</span>
+                  </button>` :
+                  `<button class="action-btn join-btn" data-code="${escapeHtml(session.code)}" ${session.isExpired || session.isTerminated ? 'disabled' : ''} title="Join session">
+                    ${iconMarkup('i-arrow-right')}
+                    <span>Join</span>
+                  </button>
+                   <button class="action-btn end-btn" data-code="${escapeHtml(session.code)}" ${session.isTerminated ? 'disabled' : ''} title="End session">
+                    ${iconMarkup('i-x')}
+                    <span>End</span>
+                  </button>`
+                }
             </div>
           </td>
         `;
-        
+
         // Add checkbox change handler (only for active sessions)
         const checkbox = row.querySelector('.session-checkbox');
         if (checkbox) {
           checkbox.addEventListener('change', updateBulkActionButtons);
         }
-        
+
         sessionsTableBody.appendChild(row);
-        
+
         // Add join button handler
         const joinBtn = row.querySelector('.join-btn');
         if (joinBtn) {
@@ -1141,14 +1119,14 @@
             document.getElementById('sessionsModal').style.display = 'none';
             const currentUser = Auth.getCurrentUser();
             const interviewerName = document.getElementById('interviewerName')?.value.trim();
-            const adminName = interviewerName ? 
-              `${interviewerName} (${currentUser.email})` : 
+            const adminName = interviewerName ?
+              `${interviewerName} (${currentUser.email})` :
               currentUser.email || 'Interviewer';
             window.location.hash = code;
             startSession(adminName, code, false);
           });
         }
-        
+
         // Add view button handler
         const viewBtn = row.querySelector('.view-btn');
         if (viewBtn) {
@@ -1160,7 +1138,7 @@
             viewSessionDetails(code, fullSessionData);
           });
         }
-        
+
         // Add Slack export button handler
         const slackBtn = row.querySelector('.slack-btn');
         if (slackBtn) {
@@ -1171,7 +1149,7 @@
             exportSessionToSlack(code, fullSessionData);
           });
         }
-        
+
         // Add delete forever button handler
         const deleteForeverBtn = row.querySelector('.delete-forever-btn');
         if (deleteForeverBtn) {
@@ -1186,7 +1164,7 @@
             }
           });
         }
-        
+
         // Add end button handler
         const endBtn = row.querySelector('.end-btn');
         if (endBtn) {
@@ -1199,29 +1177,29 @@
         }
       });
     };
-    
+
     // Attach the listener for real-time updates
-    window.firebase.database().ref('sessions').on('value', sessionsListener, function(error) {
-      console.error('Firebase listener error:', error);
-      sessionsTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: red;">Error loading sessions: ' + error.message + '</td></tr>';
-    });
+      window.firebase.database().ref('sessions').on('value', sessionsListener, function(error) {
+        console.error('Firebase listener error:', error);
+        renderSessionsMessage(`Error loading sessions: ${error.message}`, 'is-error');
+      });
   }
-  
+
   // End session - mark as ended (not deleted)
   async function terminateSessionFromDashboard(sessionCode) {
     sessionCode = normalizeSessionCode(sessionCode);
     console.log('Ending session:', sessionCode);
-    
+
     if (!isValidSessionCode(sessionCode)) {
       alert('Invalid session code');
       return;
     }
-    
+
     // Track session end with PostHog
     if (window.trackSessionEnd) {
       window.trackSessionEnd('admin_ended');
     }
-    
+
     try {
       await endSessionViaApi(sessionCode);
       console.log('Session ' + sessionCode + ' ended successfully');
@@ -1231,7 +1209,7 @@
       alert('Failed to end session: ' + error.message);
     }
   }
-  
+
   // Show notification helper
   function showNotification(message, isError = false) {
     // Simple notification (you can enhance this)
@@ -1241,11 +1219,11 @@
     document.body.appendChild(notification);
     setTimeout(() => notification.remove(), 3000);
   }
-  
+
   // Export session to Slack directly from session row
   function exportSessionToSlack(sessionCode, sessionData) {
     console.log('Exporting session to Slack:', sessionCode);
-    
+
     // Load slack integration script if not already loaded
     if (!window.initializeSlackIntegration) {
       const script = document.createElement('script');
@@ -1258,30 +1236,30 @@
       proceedWithSlackExport(sessionCode, sessionData);
     }
   }
-  
+
   function proceedWithSlackExport(sessionCode, sessionData) {
     // Initialize Slack integration
     window.initializeSlackIntegration(sessionCode, sessionData);
-    
+
     // Open the Slack share modal directly
     window.openSlackShareModal();
   }
-  
+
   // Delete ALL sessions from Firebase - NUCLEAR OPTION
   function deleteAllSessions() {
     console.log('DELETING ALL SESSIONS FROM DATABASE');
-    
+
     if (!window.firebase || !window.firebase.database) {
       alert('Database connection not ready');
       return;
     }
-    
+
     // Delete the entire sessions node
     window.firebase.database().ref('sessions').remove()
       .then(function() {
         console.log('ALL SESSIONS DELETED SUCCESSFULLY');
         showNotification('ALL SESSIONS HAVE BEEN DELETED FROM DATABASE');
-        
+
         // Force refresh the sessions list
         setTimeout(() => {
           if (typeof loadActiveSessions === 'function') {
@@ -1296,19 +1274,19 @@
         alert('Failed to delete all sessions: ' + error.message);
       });
   }
-  
+
   // Make it globally accessible for console use
   window.deleteAllSessions = deleteAllSessions;
-  
+
   // Delete session completely from Firebase - HARD DELETE
   function deleteSession(sessionCode) {
     console.log('HARD DELETING session:', sessionCode);
-    
+
     if (!window.firebase || !window.firebase.database) {
       alert('Database connection not ready');
       return;
     }
-    
+
     // First, try to read the session to confirm it exists
     window.firebase.database().ref('sessions/' + sessionCode).once('value')
       .then(function(snapshot) {
@@ -1317,9 +1295,9 @@
           showNotification('Session ' + sessionCode + ' does not exist', true);
           return;
         }
-        
+
         console.log('Session exists, proceeding with HARD DELETE');
-        
+
         // Now perform the actual deletion
         return window.firebase.database().ref('sessions/' + sessionCode).remove();
       })
@@ -1327,7 +1305,7 @@
         if (result !== undefined) { // Only show success if we actually deleted
           console.log('Session ' + sessionCode + ' HARD DELETED successfully');
           showNotification('Session ' + sessionCode + ' has been PERMANENTLY DELETED from database');
-          
+
           // Force refresh the sessions list after a short delay
           setTimeout(() => {
             if (typeof loadActiveSessions === 'function') {
@@ -1341,7 +1319,7 @@
       .catch(function(error) {
         console.error('Error HARD DELETING session:', error);
         console.error('Error details:', error.code, error.message);
-        
+
         if (error.code === 'PERMISSION_DENIED') {
           showNotification('Permission denied. Update Firebase rules to allow deletion.', true);
           alert('Cannot delete: Permission denied.\n\nPlease update Firebase rules:\nAdd ".write": true at the sessions root level');
@@ -1350,7 +1328,7 @@
         }
       });
   }
-  
+
   // Display activity tab data
   function displayActivityTab(sessionCode) {
     console.log('displayActivityTab called for session:', sessionCode);
@@ -1359,16 +1337,16 @@
       console.error('Activity container not found');
       return;
     }
-    
+
     // Start loading
     container.innerHTML = '<p class="loading-message">Loading activity data...</p>';
-    
+
     // Get activity data from Firebase
     if (window.firebase && window.firebase.database) {
       console.log('Fetching activity data from Firebase...');
       console.log('Firebase available:', !!window.firebase);
       console.log('Firebase database available:', !!window.firebase.database);
-      
+
       // Also check for any activity logs
       firebase.database()
         .ref(`sessions/${sessionCode}/activity_log`)
@@ -1378,7 +1356,7 @@
           const logs = snapshot.val();
           console.log('Activity logs found:', logs);
         });
-      
+
       // Try to get final summary first, then regular summary
       firebase.database()
         .ref(`sessions/${sessionCode}/activity_final_summary`)
@@ -1386,7 +1364,7 @@
         .then(snapshot => {
           let activityData = snapshot.val();
           console.log('Final summary data:', activityData);
-          
+
           // If no final summary, try regular summary
           if (!activityData) {
             console.log('No final summary, checking regular summary...');
@@ -1399,7 +1377,7 @@
         .then(snapshot => {
           const activityData = snapshot.val();
           console.log('Activity data retrieved:', activityData);
-          
+
           if (!activityData) {
             container.innerHTML = `
               <div style="padding: 20px; text-align: center; color: #666;">
@@ -1409,11 +1387,11 @@
             `;
             return;
           }
-          
+
           // Display activity data
-          const scoreColor = activityData.activityScore > 80 ? '#4caf50' : 
+          const scoreColor = activityData.activityScore > 80 ? '#4caf50' :
                            activityData.activityScore > 60 ? '#ff9800' : '#ff4444';
-          
+
           // Calculate engagement level
           let engagementLevel = 'High';
           let engagementColor = '#4caf50';
@@ -1424,7 +1402,7 @@
             engagementLevel = 'Medium';
             engagementColor = '#ff9800';
           }
-          
+
           container.innerHTML = `
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px; color: white; margin-bottom: 20px;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1446,9 +1424,9 @@
                 </div>
               </div>
             </div>
-            
+
             <h4 style="margin-bottom: 15px; color: #666;">📊 Behavior Metrics</h4>
-            
+
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
               <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid ${activityData.tabSwitches > 10 ? '#ff9800' : '#42a5f5'};">
                 <div style="color: #666; font-size: 12px; margin-bottom: 5px;">🔄 TAB SWITCHES</div>
@@ -1456,11 +1434,11 @@
                   ${activityData.tabSwitches || 0}
                 </div>
                 <div style="font-size: 11px; color: #999; margin-top: 5px;">
-                  ${activityData.tabSwitches > 10 ? 'High (may indicate looking up answers)' : 
+                  ${activityData.tabSwitches > 10 ? 'High (may indicate looking up answers)' :
                     activityData.tabSwitches > 5 ? 'Moderate' : 'Normal'}
                 </div>
               </div>
-              
+
               <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid ${activityData.idlePeriods > 5 ? '#ff9800' : '#66bb6a'};">
                 <div style="color: #666; font-size: 12px; margin-bottom: 5px;">⏸️ IDLE PERIODS</div>
                 <div style="font-size: 24px; font-weight: bold; color: #333;">
@@ -1470,7 +1448,7 @@
                   Times inactive for >1 minute
                 </div>
               </div>
-              
+
               <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #ffa726;">
                 <div style="color: #666; font-size: 12px; margin-bottom: 5px;">⏱️ TOTAL IDLE TIME</div>
                 <div style="font-size: 24px; font-weight: bold; color: #333;">
@@ -1481,7 +1459,7 @@
                 </div>
               </div>
             </div>
-            
+
             ${activityData.suspiciousPatterns && activityData.suspiciousPatterns.length > 0 ? `
               <div style="background: rgba(255,152,0,0.1); border: 1px solid rgba(255,152,0,0.3); border-radius: 8px; padding: 15px; margin-top: 20px;">
                 <h4 style="color: #ff9800; margin-top: 0;">⚠️ Notable Behaviors</h4>
@@ -1500,7 +1478,7 @@
                 </ul>
               </div>
             ` : ''}
-            
+
             <div style="background: #e3f2fd; border-radius: 8px; padding: 15px; margin-top: 20px;">
               <h5 style="margin-top: 0; color: #1976d2;">ℹ️ Understanding the Metrics</h5>
               <ul style="font-size: 12px; color: #666; margin: 10px 0; padding-left: 20px;">
@@ -1526,11 +1504,11 @@
       container.innerHTML = '<p>Firebase not initialized</p>';
     }
   }
-  
+
   // View session details with notes
   function viewSessionDetails(sessionCode, sessionData) {
     console.log('viewSessionDetails called with:', sessionCode, sessionData);
-    
+
     const modal = document.getElementById('sessionDetailsModal');
     if (!modal) {
       console.error('Session details modal not found in DOM');
@@ -1545,9 +1523,9 @@
       }, 100);
       return;
     }
-    
+
     console.log('Modal found, showing it now');
-    
+
     // Make sure modal is visible with high z-index
     modal.style.display = 'flex';
     modal.style.zIndex = '10000';
@@ -1556,16 +1534,16 @@
     modal.style.left = '0';
     modal.style.width = '100%';
     modal.style.height = '100%';
-    
+
     // Set session code
     const codeElement = document.getElementById('detail-session-code');
     if (codeElement) codeElement.textContent = sessionCode;
-    
+
     // Initialize Slack integration
     if (window.initializeSlackIntegration) {
       window.initializeSlackIntegration(sessionCode, sessionData);
     }
-    
+
     // Load notes
     if (window.firebase) {
       window.firebase.database()
@@ -1582,7 +1560,7 @@
                 recDiv.className = 'detail-recommendation ' + (window.getRecommendationClass ? window.getRecommendationClass(notes.recommendation) : '');
               }
             }
-            
+
             // Display rating
             const ratingEl = document.getElementById('display-rating');
             if (ratingEl) {
@@ -1593,25 +1571,25 @@
                 ratingEl.textContent = 'Not rated';
               }
             }
-            
+
             // Display tags
             const tagsEl = document.getElementById('display-tags');
             if (tagsEl) {
               if (notes.tags && notes.tags.length > 0) {
-                tagsEl.innerHTML = notes.tags.map(tag => 
+                tagsEl.innerHTML = notes.tags.map(tag =>
                   `<span class="tag">${tag.replace(/-/g, ' ')}</span>`
                 ).join(' ');
               } else {
                 tagsEl.textContent = 'No tags';
               }
             }
-            
+
             // Display notes content
             const notesContentEl = document.getElementById('display-notes-content');
             if (notesContentEl) {
               notesContentEl.textContent = notes.content || 'No notes added';
             }
-            
+
             // Display metadata
             const updatedEl = document.getElementById('display-updated');
             if (updatedEl && notes.updatedAt) {
@@ -1638,7 +1616,7 @@
         }).catch(error => {
           console.error('Error loading notes:', error);
         });
-      
+
       // Load code content
       const codeTab = document.getElementById('code-tab');
       if (codeTab) {
@@ -1673,7 +1651,7 @@
         }
       }
     }
-    
+
     // Load session info
     if (sessionData) {
       const createdEl = document.getElementById('display-created');
@@ -1681,7 +1659,7 @@
         const created = new Date(sessionData.created || Date.now());
         createdEl.textContent = created.toLocaleString();
       }
-      
+
       // Calculate duration
       const durationEl = document.getElementById('display-duration');
       if (durationEl) {
@@ -1690,7 +1668,7 @@
         const duration = Math.floor((now - created.getTime()) / 1000 / 60); // minutes
         durationEl.textContent = `${duration} minutes`;
       }
-      
+
       // Participants - use preserved participants for ended sessions
       const participantsEl = document.getElementById('display-participants');
       if (participantsEl) {
@@ -1704,7 +1682,7 @@
         }
         participantsEl.textContent = users.map(u => u.name).join(', ') || 'None';
       }
-      
+
       // Status
       const statusEl = document.getElementById('display-status');
       if (statusEl) {
@@ -1743,17 +1721,17 @@
     } else {
       console.error('No session data provided to viewSessionDetails');
     }
-    
+
     // Setup tab switching (remove old listeners first)
     const tabs = document.querySelectorAll('.detail-tab');
     const tabContents = document.querySelectorAll('.tab-content');
-    
+
     // Remove any existing listeners by cloning
     tabs.forEach(tab => {
       const newTab = tab.cloneNode(true);
       tab.parentNode.replaceChild(newTab, tab);
     });
-    
+
     // Re-query after cloning
     const newTabs = document.querySelectorAll('.detail-tab');
     newTabs.forEach(tab => {
@@ -1761,20 +1739,20 @@
         // Remove active class from all tabs
         newTabs.forEach(t => t.classList.remove('active'));
         tabContents.forEach(c => c.style.display = 'none');
-        
+
         // Add active to clicked tab
         this.classList.add('active');
         const tabName = this.getAttribute('data-tab');
         const tabContent = document.getElementById(`${tabName}-tab`);
         if (tabContent) {
           tabContent.style.display = 'block';
-          
+
           // If security tab, load tracking data
           if (tabName === 'security' && window.SessionTracking) {
             const sessionCode = document.getElementById('detail-session-code').textContent;
             window.SessionTracking.displaySecurityTab(sessionCode);
           }
-          
+
           // If activity tab, load activity data
           if (tabName === 'activity') {
             const sessionCode = document.getElementById('detail-session-code').textContent;
@@ -1783,7 +1761,7 @@
         }
       });
     });
-    
+
     // Close button - remove old listener first
     const closeBtn = document.getElementById('closeSessionDetailsBtn');
     if (closeBtn) {
@@ -1793,7 +1771,7 @@
         modal.style.display = 'none';
       });
     }
-    
+
     // Close on ESC - use a named function to avoid duplicate listeners
     const escHandler = function(e) {
       if (e.key === 'Escape' && modal.style.display === 'flex') {
@@ -1807,7 +1785,7 @@
 
   // Track if session is starting to prevent duplicates
   let sessionStarting = false;
-  
+
   // Start coding session
   async function startSession(userName, sessionCode, isNew) {
     sessionCode = normalizeSessionCode(sessionCode);
@@ -1818,7 +1796,7 @@
       return;
     }
     sessionStarting = true;
-    
+
     if (!isValidSessionCode(sessionCode)) {
       sessionStarting = false;
       alert('Please enter a valid 8-character session code.');
@@ -1835,7 +1813,7 @@
         return;
       }
     }
-    
+
     // Hide all modals
     document.querySelectorAll('.modal').forEach(modal => {
       modal.style.display = 'none';
@@ -1866,7 +1844,7 @@
         isAdmin: Auth.isAdmin()
       });
     }
-    
+
     // Reset flag after a delay to allow future navigation
     setTimeout(() => {
       sessionStarting = false;
@@ -1875,34 +1853,34 @@
 
   // Track if this is initial page load
   let isInitialLoad = true;
-  
+
   // Check for existing session on load - ONLY for page refreshes
   window.addEventListener('load', function() {
     console.log('PAGE LOAD EVENT FIRED - isInitialLoad:', isInitialLoad);
-    
+
     // If this is NOT the initial page load, skip (means we navigated after page was already loaded)
     if (!isInitialLoad) {
       console.log('PAGE LOAD: Not initial load, skipping');
       return;
     }
     isInitialLoad = false;
-    
+
     // Don't run if we're already starting a session
     if (sessionStarting) {
       console.log('PAGE LOAD: Session already starting, skipping load handler');
       return;
     }
-    
+
     // Check if we're already in a session (main container visible means session is active)
     const mainContainer = document.getElementById('main-container');
     if (mainContainer && mainContainer.style.display !== 'none') {
       console.log('PAGE LOAD: Already in a session, skipping');
       return;
     }
-    
+
     const session = Auth.getCurrentSession();
     const urlCode = window.location.hash.replace('#', '');
-    
+
     console.log('PAGE LOAD: Session logged in?', session.isLoggedIn, 'URL code:', urlCode);
 
     // Only auto-join if we have a URL code AND we're logged in (for page refresh scenarios)
@@ -1925,7 +1903,7 @@
       console.log('DOM READY: Checking if should init...');
       const urlCode = window.location.hash.replace('#', '');
       const session = Auth.getCurrentSession();
-      
+
       // Only init if we're not going to handle this in the load event
       if (!session.isLoggedIn || !isValidSessionCode(urlCode)) {
         console.log('DOM READY: Calling init()');

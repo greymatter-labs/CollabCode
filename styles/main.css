@@ -20,15 +20,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;510;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @import url('tokens.css');
-@import url('components.css');
+@import url('components.css?v=2');
 
-@import url('app/_legacy.css');
+@import url('app/_legacy.css?v=2');
 
 @import url('app/base.css');
 @import url('app/landing.css');
 @import url('app/auth.css');
 @import url('app/dashboard.css');
-@import url('app/sessions.css');
-@import url('app/problem.css');
+@import url('app/sessions.css?v=17');
+@import url('app/problem.css?v=6');
 @import url('app/editor.css?v=18');
 @import url('app/notes.css?v=16');

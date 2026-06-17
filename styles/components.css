@@ -81,7 +81,8 @@
 .input--err:focus{box-shadow:0 0 0 3px var(--red-soft);border-color:rgba(235,87,87,.6);}
 .input-wrap{position:relative;}
 .input-wrap .i-lead{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-3);width:15px;height:15px;pointer-events:none;}
-.input-wrap .input{padding-left:32px;}
+.input-wrap .input,
+.input-wrap .i-lead + input{padding-left:32px;}
 
 .switch{position:relative;display:inline-flex;width:36px;height:20px;flex:none;cursor:pointer;vertical-align:middle;}
 .switch input{position:absolute;opacity:0;width:0;height:0;}

@@ -1884,6 +1884,7 @@
         color: #e6e8eb !important;
         border-color: rgba(255, 255, 255, 0.08) !important;
         caret-color: #e6e8eb;
+        padding-inline: 34px 10px !important;
       }
       [data-file-tree-search-input]::placeholder {
         color: #7b818a;

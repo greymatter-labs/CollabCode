@@ -11,7 +11,7 @@
 
     <!-- styling -->
     <!-- Custom style -->
-    <link rel="stylesheet" href="styles/main.css?v=21">
+    <link rel="stylesheet" href="styles/main.css?v=23">
     <!-- Linear-style design system: tokens.css -> components.css -> app/*.css (see styles/main.css) -->
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -30,9 +30,9 @@
     <script src="scripts/code-executor.js?v=5"></script>
     <!-- Authentication -->
     <script src="scripts/auth-api.js?v=2"></script>
-    
+
     <!-- Analytics (Optional - Replace with your analytics service) -->
-    <!-- 
+    <!--
     <script>
       // Add your analytics code here if needed
       // Example: Google Analytics, PostHog, Plausible, etc.
@@ -147,25 +147,25 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Candidate Join Modal -->
     <div id="candidateModal" class="modal" style="display: none;">
       <div class="modal-content">
         <button class="back-btn" id="candidateBack"><svg class="ic"><use href="#i-arrow-left"/></svg>Back</button>
         <h2>Join Interview Session</h2>
         <p class="modal-subtitle">Enter your details to join the session</p>
-        
+
         <div class="form-group">
           <label>Your Name</label>
           <input type="text" id="candidateName" placeholder="Enter your full name" maxlength="50">
         </div>
-        
+
         <div class="form-group">
           <label>Session Code</label>
           <input type="text" id="candidateSessionCode" placeholder="8-character code (e.g., ABCD2345)" maxlength="8">
           <small>Your interviewer will provide this code</small>
         </div>
-        
+
         <div class="privacy-notice">
           <div class="privacy-notice__head">
             <svg class="ic"><use href="#i-shield-check"/></svg>
@@ -189,33 +189,33 @@
             </span>
           </label>
         </div>
-        
+
         <button id="candidateJoinBtn" class="primary-btn" disabled>Join Session</button>
       </div>
     </div>
-    
+
     <!-- Admin Login Modal -->
     <div id="adminLoginModal" class="modal" style="display: none;">
       <div class="modal-content">
         <button class="back-btn" id="adminLoginBack"><svg class="ic"><use href="#i-arrow-left"/></svg>Back</button>
         <h2>Interviewer Login</h2>
         <p class="modal-subtitle">Login to create and manage sessions</p>
-        
+
         <div class="form-group">
           <label>Email</label>
           <input type="email" id="adminEmail" placeholder="Enter your email">
         </div>
-        
+
         <div class="form-group">
           <label>Password</label>
           <input type="password" id="adminPassword" placeholder="Enter your password">
         </div>
-        
+
         <button id="adminLoginBtn" class="primary-btn">Login</button>
         <div id="loginError" class="error-message" style="display: none;"></div>
       </div>
     </div>
-    
+
     <!-- Admin Dashboard Modal - Professional Redesign -->
     <div id="adminDashboardModal" class="modal" style="display: none;">
       <div class="modal-content dashboard-modal-content">
@@ -235,7 +235,7 @@
             </button>
           </div>
         </div>
-        
+
         <div class="dashboard-body">
           <div class="dashboard-layout">
             <div class="dashboard-main-pane">
@@ -499,7 +499,7 @@
           <h2>Share to Slack</h2>
           <button id="closeSlackConfigBtn" class="close-modal-btn"><svg class="ic ic-18"><use href="#i-x"/></svg></button>
         </div>
-        
+
         <div class="slack-config-content">
           <div class="slack-info-section" style="padding: 12px 14px; background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--r-md); margin-bottom: 20px;">
             <p style="color: var(--text-3); margin: 0;">
@@ -508,7 +508,7 @@
               Contact your administrator if notifications are not working.</span>
             </p>
           </div>
-          
+
           <div class="slack-preview-section" style="margin-top: 20px;">
             <h3>Preview:</h3>
             <div id="slackMessagePreview" style="background: var(--bg-inset); padding: 15px; border-radius: var(--r-md); border: 1px solid var(--border); border-left: 3px solid var(--green);">
@@ -518,7 +518,7 @@
               </div>
             </div>
           </div>
-          
+
           <div class="slack-actions" style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
             <button id="cancelSlackShare" class="btn btn--secondary">Cancel</button>
             <button id="sendToSlack" class="btn btn--primary">Send to Slack</button>
@@ -526,7 +526,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Session Details Modal -->
     <div id="sessionDetailsModal" class="modal" style="display: none;">
       <div class="modal-content" style="max-width: 800px;">
@@ -539,19 +539,19 @@
             <button id="closeSessionDetailsBtn" class="close-modal-btn"><svg class="ic ic-18"><use href="#i-x"/></svg></button>
           </div>
         </div>
-        
+
         <div id="sessionDetailsContent">
           <div class="session-detail-header">
             <h3>Session: <span id="detail-session-code"></span></h3>
             <div class="detail-recommendation" id="detail-recommendation"></div>
           </div>
-          
+
           <div class="session-detail-tabs">
             <button class="detail-tab active" data-tab="notes"><svg class="ic ic-14"><use href="#i-doc"/></svg><span>Notes</span></button>
             <button class="detail-tab" data-tab="info"><svg class="ic ic-14"><use href="#i-info"/></svg><span>Session Info</span></button>
             <button class="detail-tab" data-tab="activity"><svg class="ic ic-14"><use href="#i-activity"/></svg><span>Candidate Behavior</span></button>
           </div>
-          
+
           <div class="tab-content" id="notes-tab" style="display: block;">
             <div class="notes-display">
               <div class="notes-display-rating">
@@ -569,8 +569,8 @@
               </div>
             </div>
           </div>
-          
-          
+
+
           <div class="tab-content" id="info-tab" style="display: none;">
             <div class="session-info-display" style="padding: 20px;">
               <h4><svg class="ic ic-18"><use href="#i-calendar"/></svg>Session Details</h4>
@@ -583,8 +583,8 @@
               </div>
             </div>
           </div>
-          
-          
+
+
           <div class="tab-content" id="activity-tab" style="display: none;">
             <div class="activity-info-display" style="padding: 20px;">
               <h4><svg class="ic ic-18"><use href="#i-activity"/></svg>Candidate Behavior Monitoring</h4>
@@ -600,7 +600,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Sessions Management Modal -->
     <div id="sessionsModal" class="modal" style="display: none;">
       <div class="modal-content sessions-modal-content">
@@ -608,7 +608,7 @@
           <h2>Sessions Management</h2>
           <button id="closeSessionsModalBtn" class="close-modal-btn"><svg class="ic ic-18"><use href="#i-x"/></svg></button>
         </div>
-        
+
         <div class="sessions-stats">
           <div class="stat-item">
             <span class="stat-label">Active Sessions:</span>
@@ -619,23 +619,23 @@
             <span id="totalUsersCount" class="stat-value">0</span>
           </div>
         </div>
-        
+
         <div class="session-tabs">
           <button id="activeTabBtn" class="tab-btn active">Active/In Progress</button>
           <button id="archivedTabBtn" class="tab-btn">Ended Sessions</button>
         </div>
-        
+
         <div class="bulk-actions" id="bulkActionsBar">
           <button id="selectAllBtn" class="select-all-btn">Select All</button>
           <button id="endSelectedBtn" class="end-selected-btn" disabled>End Selected</button>
           <button id="endAllSessionsBtn" class="end-all-btn">End All Sessions</button>
         </div>
-        
+
         <div id="sessionsTableContainer">
           <table id="sessionsTable" class="sessions-table">
             <thead>
               <tr>
-                <th style="width: 40px;">
+                <th>
                   <input type="checkbox" id="selectAllCheckbox" title="Select All">
                 </th>
                 <th>Session Code</th>
@@ -656,7 +656,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Main Editor Interface -->
     <div id="main-container" style="display: none;">
       <!-- Top Bar -->
@@ -710,7 +710,7 @@
               <option value="markdown">📝 Markdown</option>
             </optgroup>
           </select>
-          
+
           <select id="theme-selector">
             <option value="monokai">Monokai</option>
             <option value="github">GitHub</option>
@@ -795,7 +795,7 @@
               <pre id="problem-prompt-text"></pre>
             </div>
           </aside>
-          
+
           <!-- Interviewer Notes Panel -->
           <div id="notes-panel" style="display: none;">
             <div id="notes-header">
@@ -819,7 +819,7 @@
                   <span data-rating="5">☆</span>
                 </div>
               </div>
-              
+
               <div class="notes-tags-section">
                 <label>Quick Tags:</label>
                 <div class="quick-tags">
@@ -830,12 +830,12 @@
                   <button class="tag-btn" data-tag="asks-good-questions">Asks Good Questions</button>
                 </div>
               </div>
-              
+
               <div class="notes-text-section">
                 <label>Notes:</label>
                 <textarea id="interview-notes-text" placeholder="Add your observations about the candidate..."></textarea>
               </div>
-              
+
               <div class="notes-recommendation-section">
                 <label>Recommendation:</label>
                 <select id="notes-recommendation">
@@ -847,13 +847,13 @@
                   <option value="NO_HIRE">No Hire</option>
                 </select>
               </div>
-              
+
               <div class="notes-actions">
                 <button id="save-notes-btn" class="save-notes-btn"><svg class="ic"><use href="#i-check"/></svg>Save Notes</button>
               </div>
             </div>
           </div>
-          
+
           <div id="output-panel" style="display: none;">
             <div id="output-header">
               <span>Output</span>
@@ -890,7 +890,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Custom Confirm Modal -->
     <div id="customConfirmModal" class="custom-modal" style="display: none;">
       <div class="custom-modal-content">
@@ -907,7 +907,7 @@
     <!-- Core app scripts -->
     <script src="scripts/simple-templates.js?v=2"></script>
     <script src="scripts/custom-dialogs.js?v=3"></script>
-    <script src="scripts/workspace.bundle.js?v=6"></script>
+    <script src="scripts/workspace.bundle.js?v=7"></script>
     <script src="scripts/firepad.js?v=18"></script>
     <script src="scripts/interview-notes.js?v=4"></script>
     <script src="scripts/slack-integration.js?v=4"></script>
@@ -915,6 +915,6 @@
     <script src="scripts/session-tracking.js?v=1"></script>
     <script src="scripts/activity-monitor.js?v=2"></script>
     <script src="scripts/problem-library.js?v=5"></script>
-    <script src="scripts/app.js?v=15"></script>
+    <script src="scripts/app.js?v=16"></script>
   </body>
 </html>
