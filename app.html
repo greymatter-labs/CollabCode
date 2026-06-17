@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="author" content="Bernie Perez">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenCollab - Collaborative Code Editor</title>
+    <title>OpenCall Collab - Collaborative Code Editor</title>
     <link rel="apple-touch-icon" sizes="57x57" href="images/favicon/apple-touch-icon-57x57.png">
     <link rel="apple-touch-icon" sizes="60x60" href="images/favicon/apple-touch-icon-60x60.png">
     <link rel="apple-touch-icon" sizes="72x72" href="images/favicon/apple-touch-icon-72x72.png">
@@ -56,6 +56,12 @@
          <svg class="ic"><use href="#i-NAME"/></svg>. Sized via .ic / .ic-12..24.
     -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+      <symbol id="mark-opencall" viewBox="0 0 54 54">
+        <path d="M27,53c21.2,0,27-11.9,27-26.5S48.2,0,27,0S0,11.9,0,26.5S5.8,53,27,53z" fill="#0E2E28"/>
+        <path d="M27,53c21.2,0,27-11.9,27-26.5S48.2,0,27,0S0,11.9,0,26.5S5.8,53,27,53z" fill="none" stroke="#CDFA8A" stroke-opacity="0.16" stroke-width="1"/>
+        <path d="M33,8c4.7,0,7.8,1.2,9.8,3.2c2.4,2.4,3.2,5.9,3.2,9.8s-0.8,7.4-3.2,9.8c-2,2-5.2,3.2-9.8,3.2s-7.8-1.2-9.8-3.2C20.8,28.4,20,24.9,20,21s0.8-7.4,3.2-9.8C25.2,9.2,28.3,8,33,8z" fill="#0E2E28" stroke="#CDFA8A" stroke-width="2"/>
+        <path d="M21,20c4.7,0,7.8,1.2,9.8,3.2c2.4,2.4,3.2,5.9,3.2,9.8s-0.8,7.4-3.2,9.8c-2,2-5.2,3.2-9.8,3.2s-7.8-1.2-9.8-3.2C8.8,40.4,8,36.9,8,33s0.8-7.4,3.2-9.8C13.2,21.2,16.3,20,21,20z" fill="#CDFA8A" stroke="#0E2E28" stroke-width="2"/>
+      </symbol>
       <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
       <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
       <symbol id="i-chev-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
@@ -111,11 +117,9 @@
       <div class="modal-content landing-content atom-card">
         <div class="atom-logo-section">
           <div class="atom-logo">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="m8 6-6 6 6 6M16 6l6 6-6 6"/>
-            </svg>
+            <svg class="opencall-logo-mark" role="img" aria-label="OpenCall"><use href="#mark-opencall"/></svg>
           </div>
-          <h1 class="atom-title">OpenCollab</h1>
+          <h1 class="atom-title">OpenCall Collab</h1>
           <p class="atom-subtitle">Real-time collaborative coding for technical interviews</p>
         </div>
 
@@ -261,7 +265,7 @@
         <div class="dashboard-header-modern">
           <div class="dashboard-header-content">
             <div style="display: flex; align-items: center;">
-              <img src="/images/favicon/apple-touch-icon-76x76.png" alt="Atom Tickets" width="48" height="48" style="margin-right: 15px;">
+              <svg class="opencall-logo-mark dashboard-logo-mark" role="img" aria-label="OpenCall"><use href="#mark-opencall"/></svg>
               <div>
                 <h2 class="dashboard-title">Interview Control Center</h2>
                 <p class="dashboard-subtitle">Manage your technical interview sessions</p>
@@ -764,7 +768,7 @@
         </div>
 
         <div class="center-info">
-          <img src="/images/favicon/apple-touch-icon-57x57.png" alt="Atom Tickets" width="24" height="24" style="margin-right: 8px; vertical-align: middle;">
+          <svg class="opencall-logo-mark session-logo-mark" role="img" aria-label="OpenCall"><use href="#mark-opencall"/></svg>
           <span id="session-info"></span>
           <span id="user-count" class="user-count"></span>
           <div id="users-list"></div>

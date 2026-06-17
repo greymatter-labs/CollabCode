@@ -41,13 +41,13 @@
 .atom-logo-section{ margin-bottom:26px; text-align:center; }
 .atom-logo{
   display:inline-grid; place-items:center;
-  width:46px; height:46px; margin:0 auto 16px;
-  border-radius:13px;
-  background:linear-gradient(140deg,#7c87e8,var(--accent));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.25), 0 4px 14px rgba(94,106,210,.4);
+  width:54px; height:54px; margin:0 auto 16px;
+  border-radius:16px;
+  background:transparent;
+  box-shadow:0 10px 28px rgba(0,0,0,.28);
   animation:none;
 }
-.atom-logo svg{ width:24px; height:24px; }
+.atom-logo svg{ width:54px; height:54px; display:block; }
 .atom-title{
   color:var(--text-1);
   font-size:25px; font-weight:600; letter-spacing:-.025em;

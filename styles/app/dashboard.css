@@ -46,12 +46,14 @@
 .dashboard-header-content{
   gap:16px;
 }
-/* brand lockup — favicon + title sit tight and vertically centered */
-.dashboard-header-content > div:first-child img{
-  width:34px;height:34px;
-  margin-right:12px !important;
-  border-radius:var(--r-md);
-  border:1px solid var(--border-2);
+/* brand lockup — OpenCall mark + title sit tight and vertically centered */
+.dashboard-logo-mark{
+  flex:0 0 auto;
+  width:34px;
+  height:34px;
+  margin-right:12px;
+  border-radius:10px;
+  box-shadow:0 6px 18px rgba(0,0,0,.24);
 }
 .dashboard-title{
   font-size:18px;

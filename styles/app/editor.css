@@ -74,12 +74,14 @@
   padding:0 6px;
   overflow:visible;
 }
-/* the Atom favicon — quiet, rounded, aligned */
-.center-info > img{
-  width:20px !important;height:20px !important;
-  border-radius:var(--r-xs);
-  margin-right:2px !important;
-  opacity:.92;
+/* OpenCall mark — quiet, rounded, aligned */
+.session-logo-mark{
+  flex:0 0 auto;
+  width:20px;
+  height:20px;
+  margin-right:2px;
+  border-radius:6px;
+  opacity:.94;
 }
 
 #session-info{
