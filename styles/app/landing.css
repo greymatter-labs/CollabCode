@@ -7,11 +7,11 @@
    ============================================================ */
 
 /* ---- overlay + static background -------------------------- */
-.atom-landing{ background:#0e2e28 !important; }
+.atom-landing{ background:#08090a !important; }
 .atom-background{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
 .atom-gradient{
   position:absolute; inset:0;
-  background:linear-gradient(135deg,#0e2e28 0%,#123b33 34%,#0d1514 68%,#08090a 100%) !important;
+  background:linear-gradient(135deg,#08090a 0%,#111225 30%,#211a46 62%,#3a2568 100%) !important;
   animation:none !important;
   transform:none !important;
 }
