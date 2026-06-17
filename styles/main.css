@@ -25,7 +25,6 @@
 @import url('app/_legacy.css');
 
 @import url('app/base.css');
-@import url('app/landing.css');
 @import url('app/auth.css');
 @import url('app/dashboard.css');
 @import url('app/sessions.css');
