@@ -207,5 +207,5 @@ input[type="radio"]{accent-color:var(--accent);}
 .custom-modal-btn.cancel{background:var(--bg-3);color:var(--text-1);border-color:var(--border-2);}
 .custom-modal-btn.cancel:hover{background:#26282c;border-color:var(--border-strong);}
 
-/* keep app content above the ambient glow */
-.modal,.custom-modal,#main-container{position:relative;z-index:var(--z-base);}
+/* keep non-modal app content above the ambient glow without breaking overlays */
+#main-container{position:relative;z-index:var(--z-base);}

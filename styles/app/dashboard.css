@@ -8,21 +8,37 @@
    _legacy.css — only the visual skin + rhythm is retargeted here.
    ============================================================ */
 
-/* ---- modal shell -------------------------------------------------------- */
-/* Override base.css's 440px cap; this is the one wide modal in the app. */
+/* ---- app shell ---------------------------------------------------------- */
+#adminDashboardModal{
+  align-items:stretch;
+  justify-content:stretch;
+  padding:0;
+  background:var(--bg-app);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+  overflow:hidden;
+}
+
+/* The logged-in dashboard is the app surface, not a centered dialog. */
 .dashboard-modal-content{
-  max-width:1040px;
+  width:100%;
+  max-width:none;
+  height:100vh;
+  min-height:100vh;
   padding:0;
   background:var(--bg-2);
-  border:1px solid var(--border-2);
-  border-radius:var(--r-xl);
-  box-shadow:var(--shadow-lg);
+  border:0;
+  border-radius:0;
+  box-shadow:none;
   overflow:hidden;
+  display:flex;
+  flex-direction:column;
 }
 
 /* ---- header (was a blue→purple gradient) -------------------------------- */
 .dashboard-header-modern{
-  padding:18px 24px;
+  flex:0 0 auto;
+  padding:18px clamp(20px,3vw,36px);
   background:var(--bg-1);
   border-bottom:1px solid var(--border);
   color:var(--text-1);
@@ -76,7 +92,10 @@
 
 /* ---- body --------------------------------------------------------------- */
 .dashboard-body{
-  padding:24px;
+  flex:1 1 auto;
+  min-height:0;
+  overflow:auto;
+  padding:clamp(20px,3vw,36px);
   background:var(--bg-app);
 }
 
