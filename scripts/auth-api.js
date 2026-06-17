@@ -59,10 +59,17 @@ const Auth = (function() {
     
     try {
       const response = await fetch(`${API_CONFIG.baseUrl}${endpoint}`, config);
-      const data = await response.json();
+      let data = {};
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        data = {};
+      }
       
       if (!response.ok) {
-        throw new Error(data.error || `HTTP ${response.status}`);
+        const apiError = new Error(data.error || `Request failed (${response.status})`);
+        apiError.status = response.status;
+        throw apiError;
       }
       
       return data;
@@ -103,9 +110,11 @@ const Auth = (function() {
       return { success: false, error: data.error || 'Authentication failed' };
     } catch (error) {
       console.error('API login error:', error);
+      const message = error?.message || '';
+      const networkFailure = error instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(message);
       return { 
         success: false, 
-        error: 'Server connection failed. Please check if the API is running.'
+        error: networkFailure ? 'Server connection failed. Please check if the API is running.' : message
       };
     }
   }
