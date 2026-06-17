@@ -73,9 +73,15 @@
   function getAdminDisplayName() {
     const currentUser = Auth.getCurrentUser();
     const interviewerName = document.getElementById('interviewerName')?.value.trim();
-    return interviewerName
-      ? `${interviewerName} (${currentUser.email})`
-      : currentUser.email || 'Interviewer';
+    const email = currentUser.email || '';
+    if (interviewerName && email) return `${interviewerName} (${email})`;
+    return interviewerName || email || 'Interviewer';
+  }
+
+  function updateInterviewerPreview() {
+    const preview = document.getElementById('interviewerDisplayPreview');
+    if (!preview) return;
+    preview.textContent = getAdminDisplayName();
   }
 
   function clearSessionHash() {
@@ -356,10 +362,12 @@
       if (savedName) {
         interviewerNameInput.value = savedName;
       }
+      updateInterviewerPreview();
 
       // Save name when it changes
       interviewerNameInput.addEventListener('input', function() {
         localStorage.setItem('interviewerName', this.value.trim());
+        updateInterviewerPreview();
       });
     }
 
@@ -1075,26 +1083,22 @@
             <td class="session-time" title="${isArchivedView ? 'Ended' : 'Created'}: ${escapeHtml(displayTime)}">${escapeHtml(displayTime)}</td>
             <td>
               <div class="action-buttons-modern">
-                <button class="action-btn view-btn" data-code="${escapeHtml(session.code)}" title="View details">
+                <button class="action-btn view-btn" data-code="${escapeHtml(session.code)}" title="View details" aria-label="View session details">
                   ${iconMarkup('i-info')}
                   <span>View</span>
                 </button>
 
 
                 ${isArchivedView ?
-                  `<button class="action-btn slack-btn" data-code="${escapeHtml(session.code)}" title="Export to Slack">
-                    ${iconMarkup('i-slack')}
-                    <span>Slack</span>
-                  </button>
-                  <button class="action-btn delete-forever-btn" data-code="${escapeHtml(session.code)}" title="Permanently delete">
+                  `<button class="action-btn delete-forever-btn" data-code="${escapeHtml(session.code)}" title="Permanently delete" aria-label="Permanently delete session">
                     ${iconMarkup('i-trash')}
                     <span>Delete</span>
                   </button>` :
-                  `<button class="action-btn join-btn" data-code="${escapeHtml(session.code)}" ${session.isExpired || session.isTerminated ? 'disabled' : ''} title="Join session">
+                  `<button class="action-btn join-btn" data-code="${escapeHtml(session.code)}" ${session.isExpired || session.isTerminated ? 'disabled' : ''} title="Join session" aria-label="Join session">
                     ${iconMarkup('i-arrow-right')}
                     <span>Join</span>
                   </button>
-                   <button class="action-btn end-btn" data-code="${escapeHtml(session.code)}" ${session.isTerminated ? 'disabled' : ''} title="End session">
+                   <button class="action-btn end-btn" data-code="${escapeHtml(session.code)}" ${session.isTerminated ? 'disabled' : ''} title="End session" aria-label="End session">
                     ${iconMarkup('i-x')}
                     <span>End</span>
                   </button>`
@@ -1117,11 +1121,7 @@
           joinBtn.addEventListener('click', function() {
             const code = this.getAttribute('data-code');
             document.getElementById('sessionsModal').style.display = 'none';
-            const currentUser = Auth.getCurrentUser();
-            const interviewerName = document.getElementById('interviewerName')?.value.trim();
-            const adminName = interviewerName ?
-              `${interviewerName} (${currentUser.email})` :
-              currentUser.email || 'Interviewer';
+            const adminName = getAdminDisplayName();
             window.location.hash = code;
             startSession(adminName, code, false);
           });
@@ -1136,17 +1136,6 @@
             const fullSessionData = sessions[code];
             console.log('View details clicked for session:', code, fullSessionData);
             viewSessionDetails(code, fullSessionData);
-          });
-        }
-
-        // Add Slack export button handler
-        const slackBtn = row.querySelector('.slack-btn');
-        if (slackBtn) {
-          slackBtn.addEventListener('click', function() {
-            const code = this.getAttribute('data-code');
-            const fullSessionData = sessions[code];
-            console.log('Slack export clicked for session:', code);
-            exportSessionToSlack(code, fullSessionData);
           });
         }
 
@@ -1218,31 +1207,6 @@
     notification.style.cssText = `position: fixed; top: 20px; right: 20px; background: ${isError ? '#f44336' : '#4caf50'}; color: white; padding: 10px 20px; border-radius: 4px; z-index: 10000;`;
     document.body.appendChild(notification);
     setTimeout(() => notification.remove(), 3000);
-  }
-
-  // Export session to Slack directly from session row
-  function exportSessionToSlack(sessionCode, sessionData) {
-    console.log('Exporting session to Slack:', sessionCode);
-
-    // Load slack integration script if not already loaded
-    if (!window.initializeSlackIntegration) {
-      const script = document.createElement('script');
-      script.src = 'scripts/slack-integration.js';
-      script.onload = () => {
-        proceedWithSlackExport(sessionCode, sessionData);
-      };
-      document.body.appendChild(script);
-    } else {
-      proceedWithSlackExport(sessionCode, sessionData);
-    }
-  }
-
-  function proceedWithSlackExport(sessionCode, sessionData) {
-    // Initialize Slack integration
-    window.initializeSlackIntegration(sessionCode, sessionData);
-
-    // Open the Slack share modal directly
-    window.openSlackShareModal();
   }
 
   // Delete ALL sessions from Firebase - NUCLEAR OPTION
@@ -1538,11 +1502,6 @@
     // Set session code
     const codeElement = document.getElementById('detail-session-code');
     if (codeElement) codeElement.textContent = sessionCode;
-
-    // Initialize Slack integration
-    if (window.initializeSlackIntegration) {
-      window.initializeSlackIntegration(sessionCode, sessionData);
-    }
 
     // Load notes
     if (window.firebase) {

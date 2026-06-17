@@ -11,7 +11,7 @@
 
     <!-- styling -->
     <!-- Custom style -->
-    <link rel="stylesheet" href="styles/main.css?v=23">
+    <link rel="stylesheet" href="styles/main.css?v=24">
     <!-- Linear-style design system: tokens.css -> components.css -> app/*.css (see styles/main.css) -->
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -225,8 +225,7 @@
             <div class="dashboard-brand-lockup">
               <svg class="opencall-logo-mark dashboard-logo-mark" role="img" aria-label="OpenCall"><use href="#mark-opencall"/></svg>
               <div>
-                <h2 class="dashboard-title">Interviews</h2>
-                <p class="dashboard-subtitle">Manage technical interview sessions</p>
+                <h2 class="dashboard-title">OpenCall Collab</h2>
               </div>
             </div>
             <button id="adminLogoutBtn" class="logout-btn-modern">
@@ -245,9 +244,17 @@
                   <svg class="ic ic-20"><use href="#i-user"/></svg>
                 </div>
                 <div class="card-content">
-                  <label class="field-label">Interviewer Name</label>
-                  <input type="text" id="interviewerName" class="modern-input" placeholder="Enter your name (e.g., Tom Smith)">
-                  <span class="field-hint">This helps track who conducted each interview</span>
+                  <div class="interviewer-copy">
+                    <label class="field-label" for="interviewerName">Interviewer display</label>
+                    <span class="field-hint">Used in presence, notes, and session history.</span>
+                  </div>
+                  <div class="interviewer-control">
+                    <input type="text" id="interviewerName" class="modern-input" placeholder="Optional name">
+                    <div class="interviewer-preview" aria-live="polite">
+                      <span>Will appear as</span>
+                      <strong id="interviewerDisplayPreview">Interviewer</strong>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -533,9 +540,6 @@
         <div class="modal-header">
           <h2>Session Details</h2>
           <div style="display: flex; gap: 10px; align-items: center;">
-            <button id="shareToSlackBtn" class="slack-share-btn" title="Share to Slack">
-              <svg class="ic ic-18"><use href="#i-slack"/></svg>
-            </button>
             <button id="closeSessionDetailsBtn" class="close-modal-btn"><svg class="ic ic-18"><use href="#i-x"/></svg></button>
           </div>
         </div>
@@ -910,11 +914,10 @@
     <script src="scripts/workspace.bundle.js?v=7"></script>
     <script src="scripts/firepad.js?v=18"></script>
     <script src="scripts/interview-notes.js?v=4"></script>
-    <script src="scripts/slack-integration.js?v=4"></script>
     <script src="scripts/posthog-tracking.js?v=2"></script>
     <script src="scripts/session-tracking.js?v=1"></script>
     <script src="scripts/activity-monitor.js?v=2"></script>
-    <script src="scripts/problem-library.js?v=5"></script>
-    <script src="scripts/app.js?v=16"></script>
+    <script src="scripts/problem-library.js?v=6"></script>
+    <script src="scripts/app.js?v=17"></script>
   </body>
 </html>

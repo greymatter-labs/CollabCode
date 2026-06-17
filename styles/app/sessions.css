@@ -206,8 +206,8 @@
    SESSIONS TABLE  —  calm Linear data table
    ============================================================ */
 .sessions-table{
-  /* keep legacy width:100% / border-collapse:separate / overflow */
-  min-width:980px;
+  width:100%;
+  min-width:0;
   margin-top:0;
   border-radius:0;
   table-layout:fixed;
@@ -247,7 +247,11 @@
 .sessions-table th:nth-child(6),
 .sessions-table td:nth-child(6){width:108px;}
 .sessions-table th:nth-child(7),
-.sessions-table td:nth-child(7){width:224px;}
+.sessions-table td:nth-child(7){width:128px;}
+.sessions-table td:nth-child(7){
+  padding-left:10px;
+  padding-right:10px;
+}
 .sessions-table tbody tr{
   background:transparent;
   border-bottom:1px solid var(--border);
@@ -473,6 +477,7 @@
   align-items:center;
   gap:6px;
   flex-wrap:nowrap;
+  justify-content:flex-start;
 }
 
 .action-btn{
@@ -491,6 +496,22 @@
   box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
   transition:background .12s var(--ease),border-color .12s,color .12s,box-shadow .12s;
   white-space:nowrap;
+}
+.sessions-table .action-btn{
+  width:30px;
+  min-width:30px;
+  padding:0;
+}
+.sessions-table .action-btn span{
+  position:absolute;
+  width:1px;
+  height:1px;
+  padding:0;
+  margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+  border:0;
 }
 .action-btn:hover:not(:disabled){
   background:#26282c;
@@ -511,19 +532,6 @@
 .action-btn.view-btn:hover{
   background:var(--accent-hover)!important;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 2px 8px rgba(94,106,210,.34);
-}
-
-/* Slack = neutral with brand-tinted hover */
-.action-btn.slack-btn{
-  background:var(--bg-3)!important;
-  color:var(--text-2)!important;
-  border-color:var(--border-2);
-}
-.action-btn.slack-btn:hover{
-  background:#26282c!important;
-  color:var(--text-1)!important;
-  border-color:var(--border-strong);
-  box-shadow:none;
 }
 
 /* Join = green / go */

@@ -292,14 +292,20 @@
     if (!state.selectedProblem) {
       title.textContent = 'Blank workspace';
       version.textContent = 'No problem snapshot selected';
-      if (clear) clear.disabled = true;
+      if (clear) {
+        clear.disabled = true;
+        clear.hidden = true;
+      }
       if (createLabel) createLabel.textContent = 'Create Blank Session';
       return;
     }
 
     title.textContent = state.selectedProblem.title || 'Selected problem';
     version.textContent = `Snapshot ${state.selectedProblem.versionId}`;
-    if (clear) clear.disabled = false;
+    if (clear) {
+      clear.disabled = false;
+      clear.hidden = false;
+    }
     if (createLabel) createLabel.textContent = 'Create Session';
   }
 
