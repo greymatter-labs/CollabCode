@@ -86,6 +86,7 @@ module.exports = async (req, res) => {
         sessionPayload.problem = {
           problemId: selectedProblem.id,
           title: selectedProblem.title,
+          prompt: selectedVersion.prompt || '',
           versionId: selectedVersion.versionId,
           copiedAt: timestamp
         };

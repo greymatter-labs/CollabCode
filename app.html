@@ -11,7 +11,7 @@
 
     <!-- styling -->
     <!-- Custom style -->
-    <link rel="stylesheet" href="styles/main.css?v=19">
+    <link rel="stylesheet" href="styles/main.css?v=20">
     <!-- Linear-style design system: tokens.css -> components.css -> app/*.css (see styles/main.css) -->
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -275,7 +275,7 @@
                       </div>
                     </div>
                     <button id="createSessionBtn" class="action-btn-primary">
-                      <span>Create Session</span>
+                      <span>Create Blank Session</span>
                       <svg class="ic ic-14"><use href="#i-arrow-right"/></svg>
                     </button>
                   </div>
@@ -747,6 +747,10 @@
             <svg class="ic ic-14"><use href="#i-refresh"/></svg>
             <span>Reset</span>
           </button>
+          <button id="problem-toggle-btn" class="problem-button" type="button" title="Show problem" aria-expanded="false" style="display: none;">
+            <svg class="ic ic-14"><use href="#i-book"/></svg>
+            <span>Problem</span>
+          </button>
           <button id="notes-toggle-btn" class="notes-button" style="display: none;"><svg class="ic ic-14"><use href="#i-edit"/></svg><span>Notes</span></button>
           <button id="run-btn" class="run-button"><svg class="ic ic-14"><use href="#i-play"/></svg>Run</button>
           <button id="share-btn"><svg class="ic ic-14"><use href="#i-send"/></svg>Share</button>
@@ -780,6 +784,17 @@
             </div>
             <div id="firepad-container"></div>
           </div>
+
+          <aside id="problem-panel" aria-label="Problem" style="display: none;">
+            <div id="problem-header">
+              <span class="problem-title"><svg class="ic ic-14"><use href="#i-book"/></svg>Problem</span>
+              <button id="close-problem" type="button" aria-label="Hide problem"><svg class="ic"><use href="#i-x"/></svg></button>
+            </div>
+            <div id="problem-content">
+              <h2 id="problem-panel-title">Problem</h2>
+              <pre id="problem-prompt-text"></pre>
+            </div>
+          </aside>
           
           <!-- Interviewer Notes Panel -->
           <div id="notes-panel" style="display: none;">
@@ -893,13 +908,13 @@
     <script src="scripts/simple-templates.js?v=2"></script>
     <script src="scripts/custom-dialogs.js?v=3"></script>
     <script src="scripts/workspace.bundle.js?v=6"></script>
-    <script src="scripts/firepad.js?v=16"></script>
+    <script src="scripts/firepad.js?v=17"></script>
     <script src="scripts/interview-notes.js?v=4"></script>
     <script src="scripts/slack-integration.js?v=4"></script>
     <script src="scripts/posthog-tracking.js?v=2"></script>
     <script src="scripts/session-tracking.js?v=1"></script>
     <script src="scripts/activity-monitor.js?v=2"></script>
-    <script src="scripts/problem-library.js?v=4"></script>
+    <script src="scripts/problem-library.js?v=5"></script>
     <script src="scripts/app.js?v=15"></script>
   </body>
 </html>

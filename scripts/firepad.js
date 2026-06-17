@@ -6,6 +6,10 @@
   let usersRef = null;
   let sessionRef = null;
   let lastRunRef = null;
+  let problemSource = {};
+  let problemMeta = {};
+  let problemPanelOpen = null;
+  let problemPromptHydrateKey = '';
   let languageModes = {};
   let currentSessionCode = null;
   let previousUsers = {};
@@ -288,6 +292,9 @@
 
       // Share the latest run result with every participant.
       setupLastRunSync();
+
+      // Keep the problem prompt visible for both interviewers and candidates.
+      setupProblemSidebarSync();
       
     } catch (error) {
       console.error('❌ Failed to create workspace editor:', error);
@@ -315,6 +322,93 @@
     if (!version) return [];
 
     return (version.files || []).filter(file => file.visibility === 'hidden');
+  }
+
+  function setupProblemSidebarSync() {
+    const sourceRef = sessionRef.child('workspace/source');
+    const problemRef = sessionRef.child('problem');
+
+    sourceRef.on('value', function(snapshot) {
+      problemSource = snapshot.val() || {};
+      renderProblemSidebar();
+    });
+    problemRef.on('value', function(snapshot) {
+      problemMeta = snapshot.val() || {};
+      renderProblemSidebar();
+    });
+  }
+
+  function getProblemSidebarData() {
+    const title = String(problemMeta.title || problemSource.problemTitle || '').trim();
+    const prompt = String(problemMeta.prompt || problemSource.problemPrompt || '').trim();
+    const problemId = problemMeta.problemId || problemSource.problemId || null;
+    const versionId = problemMeta.versionId || problemSource.problemVersionId || problemSource.versionId || null;
+
+    return {
+      title,
+      prompt,
+      problemId,
+      versionId,
+      hasProblem: !!(problemId || title || prompt)
+    };
+  }
+
+  function renderProblemSidebar() {
+    const panel = document.getElementById('problem-panel');
+    const button = document.getElementById('problem-toggle-btn');
+    const title = document.getElementById('problem-panel-title');
+    const prompt = document.getElementById('problem-prompt-text');
+    if (!panel || !button || !title || !prompt) return;
+
+    const data = getProblemSidebarData();
+    if (!data.hasProblem) {
+      panel.style.display = 'none';
+      button.style.display = 'none';
+      button.classList.remove('active');
+      button.setAttribute('aria-expanded', 'false');
+      return;
+    }
+
+    if (problemPanelOpen === null) {
+      problemPanelOpen = true;
+    }
+
+    maybeHydrateMissingProblemPrompt(data);
+
+    title.textContent = data.title || 'Problem';
+    prompt.textContent = data.prompt || 'No problem instructions were saved for this session.';
+    button.style.display = 'inline-flex';
+    panel.style.display = problemPanelOpen ? 'flex' : 'none';
+    button.classList.toggle('active', problemPanelOpen);
+    button.setAttribute('aria-expanded', String(problemPanelOpen));
+  }
+
+  async function maybeHydrateMissingProblemPrompt(data) {
+    if (data.prompt || !currentUser?.isAdmin || !data.problemId || !data.versionId) return;
+
+    const key = `${data.problemId}:${data.versionId}`;
+    if (problemPromptHydrateKey === key) return;
+    problemPromptHydrateKey = key;
+
+    try {
+      const response = await fetch(`/api/problems/get?problemId=${encodeURIComponent(data.problemId)}`, {
+        headers: {
+          ...Auth.getAuthHeaders()
+        }
+      });
+      const body = await response.json().catch(() => ({}));
+      const version = body.problem?.versions?.[data.versionId];
+      const prompt = String(version?.prompt || '').trim();
+      if (!response.ok || !body.success || !prompt) return;
+
+      await sessionRef.update({
+        'problem/title': data.title || body.problem?.title || version.title || 'Problem',
+        'problem/prompt': prompt,
+        'workspace/source/problemPrompt': prompt
+      });
+    } catch (error) {
+      console.warn('Could not hydrate problem prompt for this session:', error);
+    }
   }
 
   function isWritableWorkspaceFile(file) {
@@ -800,6 +894,22 @@
     const shareBtn = document.getElementById('share-btn');
     if (shareBtn) {
       shareBtn.addEventListener('click', shareSession);
+    }
+
+    const problemToggleBtn = document.getElementById('problem-toggle-btn');
+    if (problemToggleBtn) {
+      problemToggleBtn.addEventListener('click', function() {
+        problemPanelOpen = !problemPanelOpen;
+        renderProblemSidebar();
+      });
+    }
+
+    const closeProblemBtn = document.getElementById('close-problem');
+    if (closeProblemBtn) {
+      closeProblemBtn.addEventListener('click', function() {
+        problemPanelOpen = false;
+        renderProblemSidebar();
+      });
     }
 
     // Run button
