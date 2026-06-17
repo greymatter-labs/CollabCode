@@ -22,20 +22,6 @@
   let suppressSnapshotSave = false;
   let joinedNotificationShown = false;
   
-  // Session termination modal HTML
-  const terminationModalHTML = `
-    <div id="session-terminated-modal" class="modal session-ended-modal" style="display: none;">
-      <div class="modal-content session-ended-card">
-        <div class="session-ended-icon" aria-hidden="true">
-          <svg class="ic ic-18"><use href="#i-x"/></svg>
-        </div>
-        <h2>Interview Ended</h2>
-        <p>This interview has been ended by the interviewer.</p>
-        <button id="return-home-after-ended" class="session-ended-action" type="button">Return to Home</button>
-      </div>
-    </div>
-  `;
-  
   // Language mode configurations
   const languageConfig = {
     javascript: { mode: 'ace/mode/javascript', ext: 'js' },
@@ -74,6 +60,22 @@
     // Fallback
     return '// Welcome to Collaborative Code Editor!\n// Start coding here...';
   };
+
+  function createIcon(symbolId, sizeClass = 'ic-14') {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.classList.add('ic');
+    String(sizeClass).split(/\s+/).filter(Boolean).forEach(className => svg.classList.add(className));
+
+    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttribute('href', `#${symbolId}`);
+    svg.appendChild(use);
+    return svg;
+  }
+
+  function setRunButtonIdle(runBtn) {
+    if (!runBtn) return;
+    runBtn.replaceChildren(createIcon('i-play'), document.createTextNode('Run'));
+  }
 
   // Initialize the application (called from app.js)
   window.initializeSession = function(options) {
@@ -605,14 +607,19 @@
     
     const notification = document.createElement('div');
     notification.className = `user-notification ${type}`;
-    notification.innerHTML = `
-      <span class="icon">${type === 'join' ? '👋' : '👋'}</span>
-      <span>${message}</span>
-    `;
+
+    const icon = document.createElement('span');
+    icon.className = 'icon';
+    icon.setAttribute('aria-hidden', 'true');
+
+    const text = document.createElement('span');
+    text.textContent = message;
+
+    notification.append(icon, text);
     document.body.appendChild(notification);
 
     setTimeout(() => {
-      notification.style.animation = 'fadeOut 0.3s ease';
+      notification.classList.add('is-exiting');
       setTimeout(() => {
         notification.remove();
         // Process next notification
@@ -666,7 +673,7 @@
     const usersList = document.getElementById('users-list');
     if (!usersList) return;
     
-    usersList.innerHTML = '';
+    usersList.replaceChildren();
     const entries = Object.keys(users).map(userId => ({ userId, user: users[userId] }));
     const visibleEntries = entries.slice(0, 5);
 
@@ -732,9 +739,25 @@
   // Setup session info
   function setupSessionInfo() {
     const sessionInfo = document.getElementById('session-info');
-    if (sessionInfo && !sessionInfo.innerHTML.includes(currentSessionCode)) {
-      const adminBadge = currentUser?.isAdmin ? '<span class="session-role-pill">Admin</span>' : '';
-      sessionInfo.innerHTML = `<span class="session-label">Session</span><strong>${currentSessionCode}</strong>${adminBadge}`;
+    if (!sessionInfo || sessionInfo.dataset.sessionCode === currentSessionCode) return;
+
+    sessionInfo.replaceChildren();
+    sessionInfo.dataset.sessionCode = currentSessionCode;
+
+    const label = document.createElement('span');
+    label.className = 'session-label';
+    label.textContent = 'Session';
+
+    const code = document.createElement('strong');
+    code.textContent = currentSessionCode;
+
+    sessionInfo.append(label, code);
+
+    if (currentUser?.isAdmin) {
+      const adminBadge = document.createElement('span');
+      adminBadge.className = 'session-role-pill';
+      adminBadge.textContent = 'Admin';
+      sessionInfo.appendChild(adminBadge);
     }
   }
 
@@ -1120,19 +1143,7 @@
   
   // Show session terminated modal
   function showSessionTerminatedModal() {
-    // Add modal to page if not already present
-    if (!document.getElementById('session-terminated-modal')) {
-      document.body.insertAdjacentHTML('beforeend', terminationModalHTML);
-      const returnHomeButton = document.getElementById('return-home-after-ended');
-      if (returnHomeButton) {
-        returnHomeButton.addEventListener('click', function() {
-          window.location.replace(window.location.pathname + window.location.search);
-        });
-      }
-    }
-    
-    // Show the modal
-    const modal = document.getElementById('session-terminated-modal');
+    const modal = ensureSessionTerminatedModal();
     if (modal) {
       modal.style.display = 'flex';
       
@@ -1142,6 +1153,43 @@
       }
       
     }
+  }
+
+  function ensureSessionTerminatedModal() {
+    const existing = document.getElementById('session-terminated-modal');
+    if (existing) return existing;
+
+    const modal = document.createElement('div');
+    modal.id = 'session-terminated-modal';
+    modal.className = 'modal session-ended-modal';
+
+    const card = document.createElement('div');
+    card.className = 'modal-content session-ended-card';
+
+    const icon = document.createElement('div');
+    icon.className = 'session-ended-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.appendChild(createIcon('i-x', 'ic-18'));
+
+    const title = document.createElement('h2');
+    title.textContent = 'Interview Ended';
+
+    const message = document.createElement('p');
+    message.textContent = 'This interview has been ended by the interviewer.';
+
+    const returnHomeButton = document.createElement('button');
+    returnHomeButton.id = 'return-home-after-ended';
+    returnHomeButton.className = 'session-ended-action';
+    returnHomeButton.type = 'button';
+    returnHomeButton.textContent = 'Return to Home';
+    returnHomeButton.addEventListener('click', function() {
+      window.location.replace(window.location.pathname + window.location.search);
+    });
+
+    card.append(icon, title, message, returnHomeButton);
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+    return modal;
   }
 
   // Run code execution
@@ -1212,7 +1260,7 @@
       await publishRunResult('error', { language, entryPath, error: message, output: message });
     } finally {
       runBtn.disabled = false;
-      runBtn.textContent = '▶ Run';
+      setRunButtonIdle(runBtn);
     }
   }
 
@@ -1254,25 +1302,11 @@
     
     const notification = document.createElement('div');
     notification.className = 'notification';
-    notification.style.cssText = `
-      position: fixed;
-      top: 70px;
-      right: 20px;
-      background: #4caf50;
-      color: white;
-      padding: 14px 20px;
-      border-radius: 6px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      z-index: 10001;
-      font-size: 14px;
-      max-width: 400px;
-      animation: slideIn 0.3s ease;
-    `;
     notification.textContent = message;
     document.body.appendChild(notification);
 
     setTimeout(() => {
-      notification.style.animation = 'slideOut 0.3s ease';
+      notification.classList.add('is-exiting');
       setTimeout(() => notification.remove(), 300);
     }, 4000);
   }

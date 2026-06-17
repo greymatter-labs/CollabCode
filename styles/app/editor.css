@@ -917,6 +917,14 @@
    USER JOIN / LEAVE TOAST  —  Linear toast surface
    ============================================================ */
 .user-notification{
+  position:fixed;
+  top:70px;
+  left:50%;
+  z-index:10002;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  transform:translateX(-50%);
   background:var(--bg-4);
   border:1px solid var(--border-2);
   color:var(--text-1);
@@ -925,6 +933,7 @@
   box-shadow:var(--shadow-lg);
   font-size:13px;
   font-weight:500;
+  animation:collab-toast-drop .18s var(--ease) both;
 }
 .user-notification.join{
   border-left:3px solid var(--green);
@@ -932,4 +941,53 @@
 .user-notification.leave{
   border-left:3px solid var(--yellow);
 }
-.user-notification .icon{font-size:16px;}
+.user-notification .icon{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:var(--green);
+  flex:none;
+}
+.user-notification.leave .icon{background:var(--yellow);}
+.user-notification.is-exiting{
+  animation:collab-toast-rise .18s var(--ease) both;
+}
+
+.notification{
+  position:fixed;
+  top:70px;
+  right:20px;
+  z-index:10001;
+  max-width:min(400px,calc(100vw - 40px));
+  padding:11px 16px;
+  background:var(--bg-4);
+  color:var(--text-1);
+  border:1px solid var(--border-2);
+  border-left:3px solid var(--green);
+  border-radius:var(--r-md);
+  box-shadow:var(--shadow-lg);
+  font-size:13px;
+  font-weight:500;
+  line-height:1.45;
+  animation:collab-toast-slide-in .18s var(--ease) both;
+}
+.notification.is-exiting{
+  animation:collab-toast-slide-out .18s var(--ease) both;
+}
+
+@keyframes collab-toast-drop{
+  from{opacity:0;transform:translateX(-50%) translateY(-8px);}
+  to{opacity:1;transform:translateX(-50%) translateY(0);}
+}
+@keyframes collab-toast-rise{
+  from{opacity:1;transform:translateX(-50%) translateY(0);}
+  to{opacity:0;transform:translateX(-50%) translateY(-8px);}
+}
+@keyframes collab-toast-slide-in{
+  from{opacity:0;transform:translateX(8px);}
+  to{opacity:1;transform:translateX(0);}
+}
+@keyframes collab-toast-slide-out{
+  from{opacity:1;transform:translateX(0);}
+  to{opacity:0;transform:translateX(8px);}
+}
