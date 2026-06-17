@@ -28,6 +28,8 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  let mode = String(req.body?.mode || 'starter').toLowerCase();
+
   try {
     const decoded = requireAdmin(req);
     const admin = getFirebaseAdmin();
@@ -42,10 +44,11 @@ module.exports = async (req, res) => {
 
     const selected = selectSource(record, req.body || {}, decoded.email);
     const command = req.body?.command || req.body?.customCommand || '';
-    const project = buildValidationProject(selected.record, selected.source, req.body?.mode || 'starter', {
+    const project = buildValidationProject(selected.record, selected.source, mode, {
       command,
       includeHidden: req.body?.includeHidden === true
     });
+    mode = project.mode;
     const result = await runProject({
       ...project,
       stdin: req.body?.stdin || '',
@@ -72,6 +75,34 @@ module.exports = async (req, res) => {
 
     res.status(200).json({ success: result.success, mode: project.mode, result });
   } catch (error) {
-    sendApiError(res, error, 'Failed to validate problem');
+    const status = error.statusCode || error.status || 500;
+    if (status < 500) {
+      sendApiError(res, error, 'Failed to validate problem');
+      return;
+    }
+
+    const run = error.result || {};
+    const stdout = String(run.stdout || '');
+    const stderr = String(run.stderr || '');
+    const logs = String(run.logs || '');
+    const message = error.message || stderr || stdout || logs || 'Failed to validate problem';
+
+    console.error('Failed to validate problem', error);
+    res.status(status).json({
+      success: false,
+      mode,
+      error: message,
+      result: {
+        success: false,
+        output: [stdout, stderr, logs].filter(Boolean).join('\n').trim() || message,
+        stdout,
+        stderr,
+        logs,
+        error: message,
+        exitCode: run.exitCode,
+        status: run.status,
+        provider: 'blaxel'
+      }
+    });
   }
 };

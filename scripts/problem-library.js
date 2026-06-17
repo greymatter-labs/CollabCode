@@ -180,7 +180,10 @@
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(data.error || `Request failed: ${response.status}`);
+      const error = new Error(data.error || `Request failed: ${response.status}`);
+      error.status = response.status;
+      error.data = data;
+      throw error;
     }
     return data;
   }
@@ -240,6 +243,16 @@
       result.output || result.error || '(No output)'
     ];
     return pieces.filter(piece => piece !== '').join('\n');
+  }
+
+  function summarizeApiError(error, fallback) {
+    if (error?.data?.result) {
+      return summarizeResult(error.data);
+    }
+    if (error?.data?.error) {
+      return error.data.error;
+    }
+    return error?.message || fallback;
   }
 
   function hydrateBuilder(problem) {
@@ -673,7 +686,7 @@
       });
       setRuntimeOutput(summarizeResult(data), data.success ? 'success' : 'error');
     } catch (error) {
-      setRuntimeOutput(error.message || `Failed to run ${mode}.`, 'error');
+      setRuntimeOutput(summarizeApiError(error, `Failed to run ${mode}.`), 'error');
     } finally {
       release();
     }
@@ -749,7 +762,7 @@
       setPendingCommandFiles(returnedFiles);
       setRuntimeOutput(summarizeResult(data), data.success ? 'success' : 'error');
     } catch (error) {
-      setRuntimeOutput(error.message || 'Command failed.', 'error');
+      setRuntimeOutput(summarizeApiError(error, 'Command failed.'), 'error');
     } finally {
       release();
     }

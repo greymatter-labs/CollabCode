@@ -11,7 +11,7 @@
 
     <!-- styling -->
     <!-- Custom style -->
-    <link rel="stylesheet" href="styles/main.css?v=17">
+    <link rel="stylesheet" href="styles/main.css?v=18">
     <!-- Linear-style design system: tokens.css -> components.css -> app/*.css (see styles/main.css) -->
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -219,14 +219,14 @@
     <!-- Admin Dashboard Modal - Professional Redesign -->
     <div id="adminDashboardModal" class="modal" style="display: none;">
       <div class="modal-content dashboard-modal-content">
-        <!-- Header with gradient background -->
+        <!-- Dashboard header -->
         <div class="dashboard-header-modern">
           <div class="dashboard-header-content">
-            <div style="display: flex; align-items: center;">
+            <div class="dashboard-brand-lockup">
               <svg class="opencall-logo-mark dashboard-logo-mark" role="img" aria-label="OpenCall"><use href="#mark-opencall"/></svg>
               <div>
-                <h2 class="dashboard-title">Interview Control Center</h2>
-                <p class="dashboard-subtitle">Manage your technical interview sessions</p>
+                <h2 class="dashboard-title">Interviews</h2>
+                <p class="dashboard-subtitle">Manage technical interview sessions</p>
               </div>
             </div>
             <button id="adminLogoutBtn" class="logout-btn-modern">
@@ -237,89 +237,95 @@
         </div>
         
         <div class="dashboard-body">
-          <!-- Interviewer Profile Card -->
-          <div class="interviewer-card">
-            <div class="card-icon">
-              <svg class="ic ic-20"><use href="#i-user"/></svg>
-            </div>
-            <div class="card-content">
-              <label class="field-label">Interviewer Name</label>
-              <input type="text" id="interviewerName" class="modern-input" placeholder="Enter your name (e.g., Tom Smith)">
-              <span class="field-hint">This helps track who conducted each interview</span>
-            </div>
-          </div>
-          
-          <!-- Quick Actions Section -->
-          <div class="quick-actions-section">
-            <h3 class="section-title">Quick Actions</h3>
-            
-            <!-- Create New Session Card -->
-            <div class="action-card primary-action">
-              <div class="action-icon">
-                <svg class="ic ic-20"><use href="#i-plus"/></svg>
+          <div class="dashboard-layout">
+            <div class="dashboard-main-pane">
+              <!-- Interviewer Profile Card -->
+              <div class="interviewer-card">
+                <div class="card-icon">
+                  <svg class="ic ic-20"><use href="#i-user"/></svg>
+                </div>
+                <div class="card-content">
+                  <label class="field-label">Interviewer Name</label>
+                  <input type="text" id="interviewerName" class="modern-input" placeholder="Enter your name (e.g., Tom Smith)">
+                  <span class="field-hint">This helps track who conducted each interview</span>
+                </div>
               </div>
-              <div class="action-content">
-                <h4>Start New Interview</h4>
-                <p>Create a fresh session for your candidate</p>
-                <div id="selectedProblemCard" class="selected-problem-card">
-                  <div>
-                    <span class="selected-problem-label">Problem</span>
-                    <strong id="selectedProblemTitle">Blank workspace</strong>
-                    <small id="selectedProblemVersion">No problem snapshot selected</small>
+
+              <!-- Quick Actions Section -->
+              <div class="quick-actions-section">
+                <h3 class="section-title">Quick Actions</h3>
+
+                <!-- Create New Session Card -->
+                <div class="action-card primary-action">
+                  <div class="action-icon">
+                    <svg class="ic ic-20"><use href="#i-plus"/></svg>
                   </div>
-                  <div class="selected-problem-actions">
-                    <button id="chooseProblemBtn" type="button">Choose</button>
-                    <button id="clearProblemSelectionBtn" type="button">Clear</button>
+                  <div class="action-content">
+                    <h4>Start New Interview</h4>
+                    <p>Create a fresh session for your candidate</p>
+                    <div id="selectedProblemCard" class="selected-problem-card">
+                      <div>
+                        <span class="selected-problem-label">Problem</span>
+                        <strong id="selectedProblemTitle">Blank workspace</strong>
+                        <small id="selectedProblemVersion">No problem snapshot selected</small>
+                      </div>
+                      <div class="selected-problem-actions">
+                        <button id="chooseProblemBtn" type="button">Choose</button>
+                        <button id="clearProblemSelectionBtn" type="button">Clear</button>
+                      </div>
+                    </div>
+                    <button id="createSessionBtn" class="action-btn-primary">
+                      <span>Create Session</span>
+                      <svg class="ic ic-14"><use href="#i-arrow-right"/></svg>
+                    </button>
                   </div>
                 </div>
-                <button id="createSessionBtn" class="action-btn-primary">
-                  <span>Create Session</span>
-                  <svg class="ic ic-14"><use href="#i-arrow-right"/></svg>
+              </div>
+            </div>
+
+            <div class="dashboard-side-pane">
+              <!-- Join Session Card -->
+              <div class="action-card secondary-action">
+                <div class="action-icon">
+                  <svg class="ic ic-20"><use href="#i-arrow-right"/></svg>
+                </div>
+                <div class="action-content">
+                  <h4>Join Existing Session</h4>
+                  <p>Enter a session code to join</p>
+                  <div class="join-session-group">
+                    <input type="text" id="adminSessionCode" class="session-code-input" placeholder="ABCD2345" maxlength="8">
+                    <button id="adminJoinBtn" class="action-btn-secondary">Join</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Active Session Display -->
+              <div id="activeSession" class="active-session-modern" style="display: none;">
+                <div class="session-status-badge">LIVE</div>
+                <h4>Active Session</h4>
+                <div class="session-code-display">
+                  <span id="activeSessionCode" class="code-text"></span>
+                  <button id="copyCodeBtn" class="copy-btn-modern">
+                    <svg class="ic ic-14"><use href="#i-copy"/></svg>
+                    <span>Copy</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Management Tools -->
+              <div class="management-tools">
+                <button id="problemLibraryBtn" class="tool-btn" type="button">
+                  <svg class="ic ic-16"><use href="#i-book"/></svg>
+                  <span>Problem Library</span>
+                  <span class="tool-badge">Build</span>
+                </button>
+                <button id="viewAllSessionsBtn" class="tool-btn">
+                  <svg class="ic ic-16"><use href="#i-grid"/></svg>
+                  <span>Session Manager</span>
+                  <span class="tool-badge">View All</span>
                 </button>
               </div>
             </div>
-            
-            <!-- Join Session Card -->
-            <div class="action-card secondary-action">
-              <div class="action-icon">
-                <svg class="ic ic-20"><use href="#i-arrow-right"/></svg>
-              </div>
-              <div class="action-content">
-                <h4>Join Existing Session</h4>
-                <p>Enter a session code to join</p>
-                <div class="join-session-group">
-                  <input type="text" id="adminSessionCode" class="session-code-input" placeholder="ABCD2345" maxlength="8">
-                  <button id="adminJoinBtn" class="action-btn-secondary">Join</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Active Session Display -->
-          <div id="activeSession" class="active-session-modern" style="display: none;">
-            <div class="session-status-badge">LIVE</div>
-            <h4>Active Session</h4>
-            <div class="session-code-display">
-              <span id="activeSessionCode" class="code-text"></span>
-              <button id="copyCodeBtn" class="copy-btn-modern">
-                <svg class="ic ic-14"><use href="#i-copy"/></svg>
-                <span>Copy</span>
-              </button>
-            </div>
-          </div>
-          
-          <!-- Management Tools -->
-          <div class="management-tools">
-            <button id="problemLibraryBtn" class="tool-btn" type="button">
-              <svg class="ic ic-16"><use href="#i-book"/></svg>
-              <span>Problem Library</span>
-              <span class="tool-badge">Build</span>
-            </button>
-            <button id="viewAllSessionsBtn" class="tool-btn">
-              <svg class="ic ic-16"><use href="#i-grid"/></svg>
-              <span>Session Manager</span>
-              <span class="tool-badge">View All</span>
-            </button>
           </div>
         </div>
       </div>
