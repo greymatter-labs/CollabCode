@@ -5,569 +5,436 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenCollab - Real-time Collaborative Coding Platform</title>
     <meta name="description" content="A secure, real-time collaborative coding platform for technical interviews and pair programming. Open source and self-hostable.">
-    
+
     <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="32x32" href="images/favicon/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="images/favicon/favicon-16x16.png">
-    
+
+    <!-- Shared design system (same source of truth as the app) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;510;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/tokens.css">
+    <link rel="stylesheet" href="styles/components.css">
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        /* ============================================================
+           OPENCOLLAB — MARKETING PAGE
+           Page-specific layout only. All color/type/depth comes from
+           tokens.css + components.css (the same system the app uses).
+           ============================================================ */
+
+        body{
+            background:var(--bg-app);
+            color:var(--text-1);
+            font-family:var(--font);
+            min-height:100vh;
+            overflow-x:hidden;
+            position:relative;
         }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-            overflow-x: hidden;
+
+        /* faint indigo radial glow behind the hero (Linear ambient) */
+        body::before{
+            content:"";
+            position:fixed;top:-300px;left:50%;transform:translateX(-50%);
+            width:1100px;height:680px;z-index:0;pointer-events:none;
+            background:radial-gradient(ellipse at center,rgba(94,106,210,.16),transparent 68%);
         }
-        
-        /* Animated background */
-        .bg-animation {
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            z-index: -1;
-            opacity: 0.3;
+
+        .container{
+            position:relative;z-index:1;
+            max-width:1080px;
+            margin:0 auto;
+            padding:0 24px;
         }
-        
-        .bg-animation span {
-            position: absolute;
-            display: block;
-            width: 20px;
-            height: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            animation: move 25s infinite;
-            bottom: -150px;
+
+        a{color:inherit;}
+
+        /* ---- top bar ---------------------------------------- */
+        .nav{
+            display:flex;align-items:center;justify-content:space-between;
+            height:60px;
+            border-bottom:1px solid var(--border);
         }
-        
-        .bg-animation span:nth-child(1) {
-            left: 25%;
-            width: 80px;
-            height: 80px;
-            animation-delay: 0s;
+        .nav-brand{display:flex;align-items:center;gap:10px;}
+        .brand-mark{
+            width:30px;height:30px;border-radius:8px;flex:none;
+            background:linear-gradient(140deg,#7c87e8,var(--accent));
+            display:grid;place-items:center;
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 10px rgba(94,106,210,.4);
         }
-        
-        .bg-animation span:nth-child(2) {
-            left: 10%;
-            width: 20px;
-            height: 20px;
-            animation-delay: 2s;
-            animation-duration: 12s;
+        .brand-mark svg{width:17px;height:17px;color:#fff;}
+        .brand-mark .ic{width:17px;height:17px;}
+        .brand-name{font-size:14.5px;font-weight:600;letter-spacing:-.01em;color:var(--text-1);}
+        .nav-links{display:flex;align-items:center;gap:8px;}
+        .nav-link{
+            padding:7px 11px;border-radius:var(--r-sm);
+            font-size:13px;font-weight:500;color:var(--text-3);
+            transition:background .12s var(--ease),color .12s;
         }
-        
-        .bg-animation span:nth-child(3) {
-            left: 70%;
-            width: 120px;
-            height: 120px;
-            animation-delay: 4s;
+        .nav-link:hover{color:var(--text-1);background:var(--bg-3);}
+
+        /* ---- hero ------------------------------------------- */
+        .hero{
+            text-align:center;
+            padding:96px 0 72px;
         }
-        
-        .bg-animation span:nth-child(4) {
-            left: 40%;
-            width: 60px;
-            height: 60px;
-            animation-delay: 0s;
-            animation-duration: 18s;
+        .hero .eyebrow{margin-bottom:22px;display:inline-block;}
+        .hero h1{
+            font-size:clamp(40px,6.4vw,68px);
+            font-weight:600;
+            line-height:1.02;
+            letter-spacing:-.03em;
+            color:var(--text-1);
+            margin:0 auto 20px;
+            max-width:13ch;
         }
-        
-        .bg-animation span:nth-child(5) {
-            left: 65%;
-            width: 20px;
-            height: 20px;
-            animation-delay: 0s;
+        .hero .subtitle{
+            font-size:clamp(16px,2vw,19px);
+            line-height:1.5;
+            color:var(--text-2);
+            max-width:60ch;
+            margin:0 auto 36px;
         }
-        
-        .bg-animation span:nth-child(6) {
-            left: 75%;
-            width: 110px;
-            height: 110px;
-            animation-delay: 3s;
+        .cta-buttons{
+            display:flex;gap:12px;justify-content:center;flex-wrap:wrap;
         }
-        
-        .bg-animation span:nth-child(7) {
-            left: 35%;
-            width: 150px;
-            height: 150px;
-            animation-delay: 7s;
+        /* page CTAs lean on .btn/.btn--lg primitives; size up the hero pair */
+        .hero .btn{height:42px;padding:0 20px;font-size:14px;border-radius:var(--r-md);}
+
+        /* ---- section heading -------------------------------- */
+        .section{padding:56px 0;border-top:1px solid var(--border);}
+        .section-head{text-align:center;max-width:62ch;margin:0 auto 44px;}
+        .section-head .eyebrow{margin-bottom:14px;display:inline-block;}
+        .section-head h2{
+            font-size:clamp(26px,3.4vw,34px);
+            font-weight:600;letter-spacing:-.025em;color:var(--text-1);
+            margin-bottom:12px;
         }
-        
-        .bg-animation span:nth-child(8) {
-            left: 50%;
-            width: 25px;
-            height: 25px;
-            animation-delay: 15s;
-            animation-duration: 45s;
+        .section-head p{font-size:15px;line-height:1.55;color:var(--text-3);}
+
+        /* ---- feature grid ----------------------------------- */
+        .features{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+            gap:16px;
         }
-        
-        .bg-animation span:nth-child(9) {
-            left: 20%;
-            width: 15px;
-            height: 15px;
-            animation-delay: 2s;
-            animation-duration: 35s;
+        .feature-card{
+            padding:24px;
+            transition:border-color .12s var(--ease),transform .12s var(--ease);
         }
-        
-        .bg-animation span:nth-child(10) {
-            left: 85%;
-            width: 150px;
-            height: 150px;
-            animation-delay: 0s;
-            animation-duration: 11s;
+        .feature-card:hover{
+            border-color:var(--border-strong);
+            transform:translateY(-2px);
         }
-        
-        @keyframes move {
-            0% {
-                transform: translateY(0) rotate(0deg);
-                opacity: 1;
-                border-radius: 0;
-            }
-            100% {
-                transform: translateY(-1000px) rotate(720deg);
-                opacity: 0;
-                border-radius: 50%;
-            }
+        .feature-icon{
+            width:38px;height:38px;border-radius:var(--r-md);
+            display:grid;place-items:center;
+            background:var(--bg-3);
+            border:1px solid var(--border-2);
+            color:var(--text-3);
+            margin-bottom:16px;
+            transition:border-color .12s var(--ease),background .12s,color .12s;
         }
-        
-        /* Main container */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+        .feature-card:hover .feature-icon{
+            background:var(--accent-soft);
+            border-color:var(--accent-border);
+            color:var(--accent-text);
         }
-        
-        /* Header */
-        header {
-            text-align: center;
-            padding: 60px 20px 40px;
-            animation: fadeInDown 1s ease;
+        .feature-card h3{
+            font-size:15px;font-weight:600;letter-spacing:-.01em;
+            color:var(--text-1);margin-bottom:7px;
         }
-        
-        .logo {
-            display: inline-block;
-            background: white;
-            padding: 20px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-            animation: pulse 2s infinite;
+        .feature-card p{font-size:13.5px;line-height:1.6;color:var(--text-3);}
+
+        /* ---- screenshot gallery ----------------------------- */
+        .gallery{display:grid;grid-template-columns:1fr;gap:20px;}
+        .shot{overflow:hidden;}
+        .shot-head{
+            display:flex;align-items:center;gap:9px;
+            padding:13px 16px;border-bottom:1px solid var(--border);
+            background:var(--bg-2);
         }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+        .shot-head .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px var(--green-soft);flex:none;}
+        .shot-head .shot-title{font-size:13px;font-weight:600;color:var(--text-1);}
+        .shot-head .shot-cap{
+            margin-left:auto;font-size:12px;color:var(--text-3);
+            font-family:var(--mono);letter-spacing:-.02em;
         }
-        
-        h1 {
-            color: white;
-            font-size: 3em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        .shot img{display:block;width:100%;height:auto;background:var(--bg-inset);}
+
+        /* ---- code preview ----------------------------------- */
+        .code-preview{
+            background:var(--bg-inset);
+            border:1px solid var(--border-2);
+            border-radius:var(--r-lg);
+            box-shadow:var(--shadow-md);
+            overflow:hidden;
+            max-width:760px;margin:0 auto;
         }
-        
-        .tagline {
-            color: rgba(255,255,255,0.9);
-            font-size: 1.3em;
-            margin-bottom: 30px;
+        .code-header{
+            display:flex;align-items:center;gap:8px;
+            padding:13px 16px;
+            border-bottom:1px solid var(--border);
+            background:var(--bg-1);
         }
-        
-        /* Action buttons */
-        .cta-buttons {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-bottom: 50px;
-            animation: fadeInUp 1s ease 0.3s both;
+        /* macOS-style traffic lights — mirrors the reference frame-dots */
+        .code-dot{width:11px;height:11px;border-radius:50%;background:var(--bg-4);}
+        .code-dot:nth-child(1){background:#ec6a5e;}
+        .code-dot:nth-child(2){background:#f4bf4f;}
+        .code-dot:nth-child(3){background:#61c554;}
+        .code-file{
+            margin-left:8px;font-family:var(--mono);font-size:12px;
+            color:var(--text-4);letter-spacing:-.02em;
         }
-        
-        .btn {
-            padding: 15px 35px;
-            font-size: 1.1em;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 600;
+        .code-preview pre{
+            margin:0;padding:20px 22px;overflow-x:auto;
+            font-family:var(--mono);font-size:13px;line-height:1.7;
+            color:var(--text-2);
         }
-        
-        .btn-primary {
-            background: white;
-            color: #667eea;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        /* token colors — mirror the editor primitives in components.css */
+        .tk-com{color:#5b6270;font-style:italic;}
+        .tk-key{color:#c397f0;}
+        .tk-str{color:#8fd18f;}
+        .tk-fn{color:#6ca8ff;}
+        .tk-num{color:#e2a05a;}
+
+        /* ---- tech stack ------------------------------------- */
+        .tech-stack{
+            display:flex;flex-wrap:wrap;gap:9px;justify-content:center;
+            margin-top:36px;
         }
-        
-        .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        .tech-stack .badge{height:26px;padding:0 12px;font-size:12.5px;}
+
+        /* ---- footer ----------------------------------------- */
+        footer{
+            border-top:1px solid var(--border);
+            padding:48px 0 56px;
+            text-align:center;
         }
-        
-        .btn-secondary {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: 2px solid white;
+        .footer-tag{font-size:13.5px;color:var(--text-3);margin-bottom:6px;}
+        .footer-by{font-size:13px;color:var(--text-4);margin-bottom:24px;}
+        .footer-by a{color:var(--text-2);text-decoration:underline;text-underline-offset:2px;}
+        .footer-by a:hover{color:var(--text-1);}
+        .footer-links{
+            display:flex;flex-wrap:wrap;gap:4px 6px;justify-content:center;
+            margin-bottom:28px;
         }
-        
-        .btn-secondary:hover {
-            background: white;
-            color: #667eea;
+        .footer-links a{
+            padding:6px 11px;border-radius:var(--r-sm);
+            font-size:13px;font-weight:500;color:var(--text-3);
+            transition:background .12s var(--ease),color .12s;
         }
-        
-        /* Features section */
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            margin: 50px 0;
-            animation: fadeIn 1s ease 0.6s both;
+        .footer-links a:hover{color:var(--text-1);background:var(--bg-3);}
+        .coffee-link{
+            display:inline-flex;align-items:center;gap:7px;
+            height:34px;padding:0 15px;border-radius:var(--r-md);
+            font-size:13px;font-weight:500;color:var(--text-2);
+            background:var(--bg-3);border:1px solid var(--border-2);
+            transition:border-color .12s var(--ease),background .12s,color .12s;
         }
-        
-        .feature-card {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
+        .coffee-link .ic{color:var(--text-4);transition:color .12s;}
+        .coffee-link:hover{
+            color:var(--text-1);background:#26282c;border-color:var(--border-strong);
         }
-        
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
-        }
-        
-        .feature-icon {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-            font-size: 28px;
-        }
-        
-        .feature-card h3 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 1.3em;
-        }
-        
-        .feature-card p {
-            color: #666;
-            line-height: 1.6;
-        }
-        
-        /* Demo section */
-        .demo-section {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            margin: 50px 0;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
-            animation: fadeIn 1s ease 0.9s both;
-        }
-        
-        .demo-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .demo-header h2 {
-            color: #333;
-            font-size: 2em;
-            margin-bottom: 10px;
-        }
-        
-        .code-preview {
-            background: #282c34;
-            border-radius: 10px;
-            padding: 20px;
-            overflow-x: auto;
-            position: relative;
-        }
-        
-        .code-header {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-        
-        .code-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-        
-        .dot-red { background: #ff5f56; }
-        .dot-yellow { background: #ffbd2e; }
-        .dot-green { background: #27c93f; }
-        
-        pre {
-            color: #abb2bf;
-            font-family: 'Monaco', 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.6;
-            margin: 0;
-        }
-        
-        .code-comment { color: #5c6370; }
-        .code-keyword { color: #c678dd; }
-        .code-string { color: #98c379; }
-        .code-function { color: #61afef; }
-        
-        /* Tech stack */
-        .tech-stack {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: center;
-            margin: 40px 0;
-            animation: fadeIn 1s ease 1.2s both;
-        }
-        
-        .tech-badge {
-            background: rgba(255,255,255,0.9);
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-weight: 600;
-            color: #667eea;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }
-        
-        .tech-badge:hover {
-            transform: scale(1.1);
-        }
-        
-        /* Footer */
-        footer {
-            text-align: center;
-            padding: 40px 20px;
-            color: white;
-            animation: fadeIn 1s ease 1.5s both;
-        }
-        
-        footer a {
-            color: white;
-            text-decoration: none;
-            margin: 0 15px;
-            transition: opacity 0.3s ease;
-        }
-        
-        footer a:hover {
-            opacity: 0.8;
-        }
-        
-        /* Animations */
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            h1 { font-size: 2em; }
-            .tagline { font-size: 1.1em; }
-            .features { grid-template-columns: 1fr; }
-            .cta-buttons { flex-direction: column; align-items: center; }
-            .btn { width: 250px; justify-content: center; }
+        .coffee-link:hover .ic{color:var(--text-2);}
+
+        /* ---- responsive ------------------------------------- */
+        @media (max-width:640px){
+            .hero{padding:64px 0 56px;}
+            .cta-buttons{flex-direction:column;align-items:stretch;}
+            .hero .btn{width:100%;}
+            .nav-link{display:none;}
+            .shot-head .shot-cap{display:none;}
         }
     </style>
 </head>
 <body>
-    <!-- Animated background -->
-    <div class="bg-animation">
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-    </div>
+    <!-- Shared monochrome icon set (mirrors the app sprite). Use <svg class="ic"><use href="#i-NAME"/></svg> -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 6-6 6 6 6M16 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" fill="currentColor"/></symbol>
+        <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18Z" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+        <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5.5v13a1 1 0 0 0 1.5.87l11-6.5a1 1 0 0 0 0-1.74l-11-6.5A1 1 0 0 0 7 5.5Z" fill="currentColor"/></symbol>
+        <symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6l7-3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3 8 4-16 3 8h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 21h8M12 17v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+        <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.2l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.7 6.8 19.2l1-5.8L3.6 9.3l5.8-.8Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+        <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
+        <symbol id="i-github" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.85 9.73.5.1.68-.22.68-.49 0-.24-.01-.88-.01-1.73-2.79.62-3.38-1.37-3.38-1.37-.46-1.19-1.11-1.5-1.11-1.5-.91-.63.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.56-1.14-4.56-5.07 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05A9.36 9.36 0 0 1 12 6.84c.85 0 1.71.12 2.51.34 1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.94-2.34 4.81-4.57 5.06.36.32.68.94.68 1.9 0 1.37-.01 2.48-.01 2.82 0 .27.18.6.69.49A10.26 10.26 0 0 0 22 12.25C22 6.58 17.52 2 12 2Z" fill="currentColor"/></symbol>
+        <symbol id="i-coffee" viewBox="0 0 24 24"><path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M17 10h2.2a2.8 2.8 0 0 1 0 5.6H17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 2.5c-.6.8-.6 1.7 0 2.5m4-2.5c-.6.8-.6 1.7 0 2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    </svg>
 
     <div class="container">
-        <header>
-            <div class="logo">
-                <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
-                    <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z" fill="#667eea"/>
-                    <path d="M11 17h2v-6h-2v6zm0-8h2V7h-2v2z" fill="#764ba2"/>
-                </svg>
+        <!-- top nav -->
+        <nav class="nav">
+            <div class="nav-brand">
+                <span class="brand-mark">
+                    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-code"/></svg>
+                </span>
+                <span class="brand-name">OpenCollab</span>
             </div>
-            <h1>OpenCollab</h1>
-            <p class="tagline">Real-time collaborative coding for technical interviews and pair programming</p>
-            
+            <div class="nav-links">
+                <a class="nav-link" href="https://github.com/humancto/CollabCode">GitHub</a>
+                <a class="nav-link" href="https://github.com/humancto/CollabCode/wiki">Docs</a>
+                <a class="btn btn--primary" href="app.html">Launch App</a>
+            </div>
+        </nav>
+
+        <!-- hero -->
+        <header class="hero">
+            <span class="eyebrow">Open source · Self-hostable</span>
+            <h1>Real-time collaborative coding for technical interviews</h1>
+            <p class="subtitle">OpenCollab is a secure, real-time editor for technical interviews and pair programming — watch candidates code live, run it in sandboxed environments, and review every keystroke.</p>
             <div class="cta-buttons">
-                <a href="app.html" class="btn btn-primary">
-                    <span>🚀</span>
-                    <span>Launch App</span>
-                </a>
-                <a href="https://github.com/humancto/CollabCode" class="btn btn-secondary">
-                    <span>⭐</span>
-                    <span>Star on GitHub</span>
-                </a>
+                <a href="app.html" class="btn btn--primary btn--lg">Launch App<svg class="ic"><use href="#i-arrow-right"/></svg></a>
+                <a href="https://github.com/humancto/CollabCode" class="btn btn--secondary btn--lg"><svg class="ic"><use href="#i-github"/></svg>Star on GitHub</a>
             </div>
         </header>
 
-        <div class="features">
-            <div class="feature-card">
-                <div class="feature-icon">⚡</div>
-                <h3>Real-time Collaboration</h3>
-                <p>See code changes instantly as multiple users type. Perfect for remote interviews and pair programming sessions.</p>
+        <!-- features -->
+        <section class="section">
+            <div class="section-head">
+                <span class="eyebrow">Features</span>
+                <h2>Everything an interview needs</h2>
+                <p>Built for remote technical interviews and pair programming, with collaboration and security at the core.</p>
             </div>
-            
-            <div class="feature-card">
-                <div class="feature-icon">🌍</div>
-                <h3>16+ Languages</h3>
-                <p>Support for JavaScript, Python, Java, C++, Go, Rust, Ruby, and more. Syntax highlighting and auto-completion included.</p>
+            <div class="features">
+                <div class="card feature-card">
+                    <div class="feature-icon"><svg class="ic ic-20"><use href="#i-bolt"/></svg></div>
+                    <h3>Real-time collaboration</h3>
+                    <p>See code changes instantly as multiple users type. Built for remote interviews and pair programming sessions.</p>
+                </div>
+                <div class="card feature-card">
+                    <div class="feature-icon"><svg class="ic ic-20"><use href="#i-globe"/></svg></div>
+                    <h3>16+ languages</h3>
+                    <p>JavaScript, Python, Java, C++, Go, Rust, Ruby, and more — with syntax highlighting and auto-completion included.</p>
+                </div>
+                <div class="card feature-card">
+                    <div class="feature-icon"><svg class="ic ic-20"><use href="#i-play"/></svg></div>
+                    <h3>Live code execution</h3>
+                    <p>Run code directly in the browser or via secure sandboxed environments. See output instantly without leaving the editor.</p>
+                </div>
+                <div class="card feature-card">
+                    <div class="feature-icon"><svg class="ic ic-20"><use href="#i-shield-check"/></svg></div>
+                    <h3>Secure by design</h3>
+                    <p>JWT authentication, encrypted sessions, and no account required for candidates. Your code and data stay private.</p>
+                </div>
+                <div class="card feature-card">
+                    <div class="feature-icon"><svg class="ic ic-20"><use href="#i-activity"/></svg></div>
+                    <h3>Interview analytics</h3>
+                    <p>Track candidate activity, code changes, and session history. Export results to Slack for team collaboration.</p>
+                </div>
+                <div class="card feature-card">
+                    <div class="feature-icon"><svg class="ic ic-20"><use href="#i-monitor"/></svg></div>
+                    <h3>Refined interface</h3>
+                    <p>A clean, focused editor with multiple themes. Optimized for both desktop and mobile devices.</p>
+                </div>
             </div>
-            
-            <div class="feature-card">
-                <div class="feature-icon">▶️</div>
-                <h3>Live Code Execution</h3>
-                <p>Run code directly in the browser or via secure sandboxed environments. See output instantly without leaving the editor.</p>
-            </div>
-            
-            <div class="feature-card">
-                <div class="feature-icon">🔒</div>
-                <h3>Secure by Design</h3>
-                <p>JWT authentication, encrypted sessions, and no account required for candidates. Your code and data stay private.</p>
-            </div>
-            
-            <div class="feature-card">
-                <div class="feature-icon">📊</div>
-                <h3>Interview Analytics</h3>
-                <p>Track candidate activity, code changes, and session history. Export results to Slack for team collaboration.</p>
-            </div>
-            
-            <div class="feature-card">
-                <div class="feature-icon">🎨</div>
-                <h3>Beautiful UI</h3>
-                <p>Clean, modern interface with multiple editor themes. Optimized for both desktop and mobile devices.</p>
-            </div>
-        </div>
+        </section>
 
-        <div class="demo-section">
-            <div class="demo-header">
-                <h2>See It In Action</h2>
-                <p style="color: #666;">Experience the smooth, real-time collaboration</p>
+        <!-- screenshots -->
+        <section class="section">
+            <div class="section-head">
+                <span class="eyebrow">A closer look</span>
+                <h2>See it in action</h2>
+                <p>Experience the smooth, real-time collaboration from sign-in to live coding session.</p>
             </div>
-            
-            <!-- Screenshot Gallery -->
-            <div style="margin: 30px 0;">
-                <div style="display: grid; grid-template-columns: 1fr; gap: 30px;">
-                    <!-- Landing Page Screenshot -->
-                    <div style="text-align: center;">
-                        <h3 style="color: #667eea; margin-bottom: 15px;">🏠 Beautiful Landing Page</h3>
-                        <img src="docs/screenshots/landing-page.png" alt="OpenCollab Landing Page" style="width: 100%; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-                        <p style="color: #666; margin-top: 10px; font-size: 14px;">Clean, modern interface with animated code particles</p>
-                    </div>
-                    
-                    <!-- Login Screenshot -->
-                    <div style="text-align: center; margin-top: 20px;">
-                        <h3 style="color: #667eea; margin-bottom: 15px;">🔐 Secure Interviewer Login</h3>
-                        <img src="docs/screenshots/interviewer-login2.png" alt="Interviewer Login" style="width: 100%; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-                        <p style="color: #666; margin-top: 10px; font-size: 14px;">JWT-based authentication for secure access</p>
-                    </div>
-                    
-                    <!-- Admin Dashboard Screenshot -->
-                    <div style="text-align: center; margin-top: 20px;">
-                        <h3 style="color: #667eea; margin-bottom: 15px;">📊 Admin Dashboard</h3>
-                        <img src="docs/screenshots/admin-dashboard.png" alt="Admin Dashboard" style="width: 100%; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-                        <p style="color: #666; margin-top: 10px; font-size: 14px;">Manage all interview sessions from one place</p>
-                    </div>
-                    
-                    <!-- Coding Session Screenshot -->
-                    <div style="text-align: center; margin-top: 20px;">
-                        <h3 style="color: #667eea; margin-bottom: 15px;">💻 Live Coding Session</h3>
-                        <img src="docs/screenshots/coding-session.png" alt="Coding Session" style="width: 100%; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-                        <p style="color: #666; margin-top: 10px; font-size: 14px;">Real-time collaborative coding with syntax highlighting</p>
-                    </div>
-                </div>
+            <div class="gallery">
+                <figure class="panel shot">
+                    <figcaption class="shot-head">
+                        <span class="dot"></span>
+                        <span class="shot-title">Landing page</span>
+                        <span class="shot-cap">Clean, modern entry point</span>
+                    </figcaption>
+                    <img src="docs/screenshots/landing-page.png" alt="OpenCollab landing page">
+                </figure>
+
+                <figure class="panel shot">
+                    <figcaption class="shot-head">
+                        <span class="dot"></span>
+                        <span class="shot-title">Interviewer login</span>
+                        <span class="shot-cap">JWT-based authentication</span>
+                    </figcaption>
+                    <img src="docs/screenshots/interviewer-login2.png" alt="Interviewer login">
+                </figure>
+
+                <figure class="panel shot">
+                    <figcaption class="shot-head">
+                        <span class="dot"></span>
+                        <span class="shot-title">Admin dashboard</span>
+                        <span class="shot-cap">Manage every session</span>
+                    </figcaption>
+                    <img src="docs/screenshots/admin-dashboard.png" alt="Admin dashboard">
+                </figure>
+
+                <figure class="panel shot">
+                    <figcaption class="shot-head">
+                        <span class="dot"></span>
+                        <span class="shot-title">Live coding session</span>
+                        <span class="shot-cap">Real-time, syntax-highlighted</span>
+                    </figcaption>
+                    <img src="docs/screenshots/coding-session.png" alt="Live coding session">
+                </figure>
             </div>
-            
-            <div class="code-preview" style="margin-top: 40px;">
+        </section>
+
+        <!-- code preview -->
+        <section class="section">
+            <div class="section-head">
+                <span class="eyebrow">In the editor</span>
+                <h2>Write, run, review</h2>
+                <p>Collaborative editing with full syntax highlighting and instant execution.</p>
+            </div>
+            <div class="code-preview">
                 <div class="code-header">
-                    <span class="code-dot dot-red"></span>
-                    <span class="code-dot dot-yellow"></span>
-                    <span class="code-dot dot-green"></span>
+                    <span class="code-dot"></span>
+                    <span class="code-dot"></span>
+                    <span class="code-dot"></span>
+                    <span class="code-file">fibonacci.js</span>
                 </div>
-                <pre><code><span class="code-comment">// Real-time collaborative coding example</span>
-<span class="code-keyword">function</span> <span class="code-function">fibonacci</span>(n) {
-    <span class="code-keyword">if</span> (n <= 1) <span class="code-keyword">return</span> n;
-    
-    <span class="code-keyword">const</span> cache = [0, 1];
-    
-    <span class="code-keyword">for</span> (<span class="code-keyword">let</span> i = 2; i <= n; i++) {
-        cache[i] = cache[i - 1] + cache[i - 2];
+                <pre><code><span class="tk-com">// Real-time collaborative coding example</span>
+<span class="tk-key">function</span> <span class="tk-fn">fibonacci</span>(n) {
+    <span class="tk-key">if</span> (n <= <span class="tk-num">1</span>) <span class="tk-key">return</span> n;
+
+    <span class="tk-key">const</span> cache = [<span class="tk-num">0</span>, <span class="tk-num">1</span>];
+
+    <span class="tk-key">for</span> (<span class="tk-key">let</span> i = <span class="tk-num">2</span>; i <= n; i++) {
+        cache[i] = cache[i - <span class="tk-num">1</span>] + cache[i - <span class="tk-num">2</span>];
     }
-    
-    <span class="code-keyword">return</span> cache[n];
+
+    <span class="tk-key">return</span> cache[n];
 }
 
-<span class="code-comment">// Test the function</span>
-console.log(<span class="code-string">'Fibonacci(10):'</span>, fibonacci(10));
-<span class="code-comment">// Output: 55</span></code></pre>
+<span class="tk-com">// Test the function</span>
+console.<span class="tk-fn">log</span>(<span class="tk-str">'Fibonacci(10):'</span>, <span class="tk-fn">fibonacci</span>(<span class="tk-num">10</span>));
+<span class="tk-com">// Output: 55</span></code></pre>
             </div>
-        </div>
 
-        <div class="tech-stack">
-            <span class="tech-badge">Node.js</span>
-            <span class="tech-badge">Firebase</span>
-            <span class="tech-badge">WebSockets</span>
-            <span class="tech-badge">ACE Editor</span>
-            <span class="tech-badge">JWT Auth</span>
-            <span class="tech-badge">Vercel</span>
-        </div>
+            <div class="tech-stack">
+                <span class="badge badge--neutral">Node.js</span>
+                <span class="badge badge--neutral">Firebase</span>
+                <span class="badge badge--neutral">WebSockets</span>
+                <span class="badge badge--neutral">ACE Editor</span>
+                <span class="badge badge--neutral">JWT Auth</span>
+                <span class="badge badge--neutral">Vercel</span>
+            </div>
+        </section>
 
+        <!-- footer -->
         <footer>
-            <p style="margin-bottom: 20px;">Open source and free forever ❤️</p>
-            <p style="margin-bottom: 20px;">Made with ❤️ by <a href="https://www.humancto.com" style="color: white; text-decoration: underline;">HumanCTO</a></p>
-            <div style="margin-bottom: 20px;">
+            <p class="footer-tag">Open source and free forever.</p>
+            <p class="footer-by">Made by <a href="https://www.humancto.com">HumanCTO</a></p>
+            <div class="footer-links">
                 <a href="https://github.com/humancto/CollabCode">GitHub</a>
                 <a href="https://github.com/humancto/CollabCode/wiki">Documentation</a>
                 <a href="https://github.com/humancto/CollabCode/issues">Support</a>
                 <a href="LICENSE">MIT License</a>
+                <a href="styles/component-reference.html">Component library</a>
             </div>
             <div>
-                <a href="https://www.buymeacoffee.com/humancto" style="background: #FFDD00; color: #000; padding: 10px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; display: inline-block;">
-                    ☕ Buy Me a Coffee
-                </a>
+                <a class="coffee-link" href="https://www.buymeacoffee.com/humancto"><svg class="ic ic-14"><use href="#i-coffee"/></svg>Buy me a coffee</a>
             </div>
         </footer>
     </div>

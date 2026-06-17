@@ -1,0 +1,445 @@
+/* styles/app/dashboard.css — token-driven surface partial (overrides _legacy.css). */
+
+/* ============================================================
+   INTERVIEWER DASHBOARD  (#adminDashboardModal)
+   Wide Linear-dark modal: layered near-black surfaces, hairline
+   borders, indigo accent reserved for primary intent only.
+   Layout (flex/grid/clamp/grid-template) is inherited from
+   _legacy.css — only the visual skin + rhythm is retargeted here.
+   ============================================================ */
+
+/* ---- modal shell -------------------------------------------------------- */
+/* Override base.css's 440px cap; this is the one wide modal in the app. */
+.dashboard-modal-content{
+  max-width:1040px;
+  padding:0;
+  background:var(--bg-2);
+  border:1px solid var(--border-2);
+  border-radius:var(--r-xl);
+  box-shadow:var(--shadow-lg);
+  overflow:hidden;
+}
+
+/* ---- header (was a blue→purple gradient) -------------------------------- */
+.dashboard-header-modern{
+  padding:18px 24px;
+  background:var(--bg-1);
+  border-bottom:1px solid var(--border);
+  color:var(--text-1);
+}
+.dashboard-header-content{
+  gap:16px;
+}
+/* brand lockup — favicon + title sit tight and vertically centered */
+.dashboard-header-content > div:first-child img{
+  width:34px;height:34px;
+  margin-right:12px !important;
+  border-radius:var(--r-md);
+  border:1px solid var(--border-2);
+}
+.dashboard-title{
+  font-size:18px;
+  font-weight:600;
+  letter-spacing:-.02em;
+  margin:0 0 1px 0;
+  color:var(--text-1);
+}
+.dashboard-subtitle{
+  font-size:13px;
+  opacity:1;
+  margin:0;
+  color:var(--text-3);
+}
+
+.logout-btn-modern{
+  gap:7px;
+  padding:0 12px;
+  height:32px;
+  background:var(--bg-3);
+  border:1px solid var(--border-2);
+  color:var(--text-2);
+  border-radius:var(--r-sm);
+  font-size:13px;
+  font-weight:500;
+  backdrop-filter:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+  transition:background .12s var(--ease),border-color .12s,color .12s;
+}
+.logout-btn-modern:hover{
+  background:#26282c;
+  border-color:var(--border-strong);
+  color:var(--text-1);
+  transform:none;
+}
+.logout-btn-modern .ic{color:var(--text-3);transition:color .12s;}
+.logout-btn-modern:hover .ic{color:var(--text-1);}
+
+/* ---- body --------------------------------------------------------------- */
+.dashboard-body{
+  padding:24px;
+  background:var(--bg-app);
+}
+
+/* ---- interviewer profile card ------------------------------------------- */
+.interviewer-card{
+  gap:16px;
+  align-items:center;
+  padding:18px 20px;
+  margin-bottom:24px;
+  background:var(--bg-1);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+}
+.card-icon{
+  width:40px;height:40px;
+  background:var(--bg-3);
+  border:1px solid var(--border-2);
+  border-radius:var(--r-md);
+  color:var(--text-3);
+}
+.card-icon .ic{width:20px;height:20px;}
+.card-content .field-label{
+  margin-bottom:7px;
+  font-size:12.5px;
+  font-weight:500;
+  color:var(--text-2);
+  text-transform:none;
+  letter-spacing:normal;
+}
+/* the name input — reuse the .input look (base.css already darkens it) */
+.card-content .modern-input{
+  height:34px;
+  font-size:13.5px;
+  border-width:1px;
+  border-radius:var(--r-sm);
+}
+.card-content .field-hint{margin-top:7px;color:var(--text-3);font-size:12px;}
+
+/* ---- quick actions ------------------------------------------------------ */
+.quick-actions-section{
+  gap:16px;
+  margin-bottom:24px;
+}
+.section-title{
+  margin:0 0 4px 0;
+  font-size:11px;
+  font-weight:600;
+  color:var(--text-3);
+  text-align:left;
+  text-transform:uppercase;
+  letter-spacing:.07em;
+}
+
+/* Linear list card: icon + body, subtle hover border. The two cards form
+   one tidy stack — content is a flex column so CTAs sit on a clean baseline. */
+.action-card{
+  gap:16px;
+  align-items:flex-start;
+  padding:20px;
+  background:var(--bg-1);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+  transition:border-color .12s var(--ease),background .12s,box-shadow .12s;
+}
+.action-card:hover{
+  background:var(--bg-2);
+  border-color:var(--border-strong);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),var(--shadow-sm);
+  transform:none;
+}
+/* drop the legacy colored left rails for a clean neutral card */
+.primary-action,
+.secondary-action{
+  border-left:1px solid var(--border);
+}
+
+.action-icon{
+  width:40px;height:40px;
+  background:var(--bg-3);
+  border:1px solid var(--border-2);
+  border-radius:var(--r-md);
+  color:var(--text-3);
+}
+.action-icon .ic{width:20px;height:20px;}
+/* a faint indigo wash on the primary action's icon — accent used sparingly */
+.primary-action .action-icon{
+  background:var(--accent-soft);
+  border-color:var(--accent-border);
+  color:var(--accent-text);
+}
+.secondary-action .action-icon{
+  background:var(--bg-3);
+  border-color:var(--border-2);
+  color:var(--text-3);
+}
+
+.action-content{
+  display:flex;
+  flex-direction:column;
+  height:100%;
+}
+.action-content h4{
+  margin:0 0 4px 0;
+  font-size:14px;
+  font-weight:600;
+  letter-spacing:-.01em;
+  color:var(--text-1);
+}
+.action-content p{
+  margin:0 0 14px 0;
+  font-size:13px;
+  line-height:1.5;
+  color:var(--text-3);
+}
+
+/* primary CTA — the accent button. Pinned to the bottom of the column so the
+   two action cards align even at unequal content heights. */
+.action-btn-primary{
+  gap:7px;
+  align-self:flex-start;
+  margin-top:auto;
+  padding:0 14px;
+  height:34px;
+  background:var(--accent);
+  color:#fff;
+  border:1px solid transparent;
+  border-radius:var(--r-sm);
+  font-size:13px;
+  font-weight:500;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 1px 2px rgba(0,0,0,.3),0 0 0 .5px rgba(0,0,0,.14);
+  transition:background .12s var(--ease),box-shadow .12s;
+}
+.action-btn-primary:hover{
+  background:var(--accent-hover);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 2px 8px rgba(94,106,210,.34);
+  transform:none;
+}
+.action-btn-primary .ic{width:15px;height:15px;}
+
+/* ---- selected-problem strip (inset card inside the primary action) ------ */
+.selected-problem-card{
+  width:100%;
+  margin:0 0 14px 0;
+  padding:12px;
+  gap:12px;
+  align-items:center;
+  background:var(--bg-inset);
+  border:1px solid var(--border);
+  border-radius:var(--r-md);
+}
+.selected-problem-label{
+  margin-bottom:5px;
+  font-size:10.5px;
+  font-weight:600;
+  color:var(--text-4);
+  text-transform:uppercase;
+  letter-spacing:.07em;
+}
+.selected-problem-card strong{
+  color:var(--text-1);
+  font-size:13.5px;
+  font-weight:600;
+}
+.selected-problem-card small{margin-top:2px;color:var(--text-3);font-size:12px;}
+
+.selected-problem-actions{gap:6px;}
+.selected-problem-actions button{
+  min-height:0;
+  height:28px;
+  padding:0 10px;
+  border-radius:var(--r-sm);
+  border:1px solid var(--border-2);
+  background:var(--bg-3);
+  color:var(--text-2);
+  font-size:12.5px;
+  font-weight:500;
+  transition:background .12s var(--ease),border-color .12s,color .12s;
+}
+.selected-problem-actions button:hover{
+  background:#26282c;
+  border-color:var(--border-strong);
+  color:var(--text-1);
+}
+
+/* ---- join-session group (mono, tabular code input) ---------------------- */
+.join-session-group{
+  gap:10px;
+  margin-top:auto;
+}
+.session-code-input{
+  flex:1;
+  max-width:none;
+  padding:0 12px;
+  height:34px;
+  font-family:var(--mono);
+  font-size:14px;
+  font-weight:500;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.16em;
+  text-align:center;
+  background:var(--bg-inset);
+  border:1px solid var(--border-2);
+  border-radius:var(--r-sm);
+  color:var(--text-1);
+  text-transform:uppercase;
+  transition:border-color .12s,box-shadow .12s,background .12s;
+}
+.session-code-input::placeholder{color:var(--text-4);letter-spacing:.16em;}
+.session-code-input:focus{
+  outline:none;
+  border-color:var(--accent-border);
+  box-shadow:0 0 0 3px var(--accent-soft);
+  background:var(--bg-1);
+}
+
+/* neutral secondary action (Join) */
+.action-btn-secondary{
+  flex:none;
+  padding:0 16px;
+  height:34px;
+  background:var(--bg-3);
+  color:var(--text-1);
+  border:1px solid var(--border-2);
+  border-radius:var(--r-sm);
+  font-size:13px;
+  font-weight:500;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+  transition:background .12s var(--ease),border-color .12s;
+}
+.action-btn-secondary:hover{
+  background:#26282c;
+  border-color:var(--border-strong);
+  transform:none;
+}
+
+/* ---- active session (LIVE) ---------------------------------------------- */
+.active-session-modern{
+  padding:20px 24px;
+  margin-bottom:24px;
+  text-align:center;
+  background:var(--bg-1);
+  border:1px solid rgba(76,183,130,.3);
+  border-radius:var(--r-lg);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+}
+/* LIVE = green status badge (matches .badge--green) */
+.session-status-badge{
+  top:16px;
+  right:16px;
+  gap:5px;
+  padding:0 9px;
+  height:21px;
+  display:inline-flex;
+  align-items:center;
+  background:var(--green-soft);
+  color:var(--green-text);
+  border:1px solid rgba(76,183,130,.3);
+  font-size:11px;
+  font-weight:600;
+  border-radius:var(--r-full);
+  letter-spacing:.06em;
+  animation:none;
+}
+/* live pulse dot inside the badge */
+.session-status-badge::before{
+  content:"";
+  width:6px;height:6px;border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 0 0 rgba(76,183,130,.5);
+  animation:livePulse 2.2s var(--ease) infinite;
+}
+@keyframes livePulse{
+  0%{box-shadow:0 0 0 0 rgba(76,183,130,.5);}
+  70%{box-shadow:0 0 0 6px rgba(76,183,130,0);}
+  100%{box-shadow:0 0 0 0 rgba(76,183,130,0);}
+}
+.active-session-modern h4{
+  margin:0 0 14px 0;
+  font-size:12px;
+  font-weight:600;
+  color:var(--text-3);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.session-code-display{gap:16px;}
+.code-text{
+  font-family:var(--mono);
+  font-size:30px;
+  font-weight:600;
+  color:var(--text-1);
+  letter-spacing:.14em;
+  font-variant-numeric:tabular-nums;
+}
+.copy-btn-modern{
+  gap:7px;
+  padding:0 12px;
+  height:32px;
+  background:var(--bg-3);
+  border:1px solid var(--border-2);
+  color:var(--text-2);
+  border-radius:var(--r-sm);
+  font-size:13px;
+  font-weight:500;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+  transition:background .12s var(--ease),border-color .12s,color .12s;
+}
+.copy-btn-modern:hover{
+  background:#26282c;
+  border-color:var(--border-strong);
+  color:var(--text-1);
+}
+.copy-btn-modern .ic{width:15px;height:15px;color:var(--text-3);transition:color .12s;}
+.copy-btn-modern:hover .ic{color:var(--text-1);}
+
+/* ---- management tools --------------------------------------------------- */
+.management-tools{
+  gap:10px;
+  padding-top:20px;
+  justify-content:flex-start;
+  border-top:1px solid var(--border);
+}
+.tool-btn{
+  gap:10px;
+  padding:0 16px;
+  height:38px;
+  background:var(--bg-1);
+  border:1px solid var(--border-2);
+  color:var(--text-2);
+  border-radius:var(--r-md);
+  font-size:13px;
+  font-weight:500;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+  transition:background .12s var(--ease),border-color .12s,color .12s;
+}
+.tool-btn:hover{
+  background:var(--bg-2);
+  border-color:var(--border-strong);
+  color:var(--text-1);
+  transform:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),var(--shadow-sm);
+}
+.tool-btn .ic{width:16px;height:16px;color:var(--text-4);transition:color .12s;}
+.tool-btn:hover .ic{color:var(--text-2);}
+.tool-badge{
+  margin-left:2px;
+  padding:1px 7px;
+  background:var(--bg-3);
+  color:var(--text-3);
+  border:1px solid var(--border-2);
+  font-size:10px;
+  font-weight:500;
+  border-radius:var(--r-full);
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+/* ---- responsive ---------------------------------------------------------- */
+@media (max-width:768px){
+  .dashboard-header-modern,
+  .dashboard-body{padding:18px;}
+  .logout-btn-modern{justify-content:center;}
+  .join-session-group{margin-top:14px;}
+  .session-code-input{max-width:none;}
+}

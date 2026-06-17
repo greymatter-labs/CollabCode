@@ -22,7 +22,8 @@
 
     <!-- styling -->
     <!-- Custom style -->
-    <link rel="stylesheet" href="styles/main.css?v=9">
+    <link rel="stylesheet" href="styles/main.css?v=10">
+    <!-- Linear-style design system: tokens.css -> components.css -> app/*.css (see styles/main.css) -->
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
@@ -50,6 +51,55 @@
     -->
   </head>
   <body>
+    <!-- ===================== ICON SPRITE =====================
+         Shared monochrome icon set (Linear-style). Reference with
+         <svg class="ic"><use href="#i-NAME"/></svg>. Sized via .ic / .ic-12..24.
+    -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+      <symbol id="i-chev-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-chev-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M11 6 5 12l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.3-4.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5.5v13a1 1 0 0 0 1.5.87l11-6.5a1 1 0 0 0 0-1.74l-11-6.5A1 1 0 0 0 7 5.5Z" fill="currentColor"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-folder-plus" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 11v5M9.5 13.5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+      <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 4h4M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5 5 5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4m0 0 7-1 7 2-1 6 1 6-7-2-7 1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+      <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v5M12 8h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3.5 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-terminal" viewBox="0 0 24 24"><path d="m5 8 4 4-4 4M12 16h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 6-6 6 6 6M16 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6.5L4.8 18a2 2 0 0 0 1.7 3h11a2 2 0 0 0 1.7-3L14 9.5V3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Zm0 0v5h5M9 13h6M9 17h6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+      <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 17l9 5 9-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 5.2a3.4 3.4 0 0 1 0 6.6M17.5 14.5a5.5 5.5 0 0 1 3 5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+      <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 21h8M12 17v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" fill="currentColor"/></symbol>
+      <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-.97 1.47V21a2 2 0 0 1-4 0v-.1a1.6 1.6 0 0 0-1.05-1.47 1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.6 1.6 0 0 0 4.6 15a1.6 1.6 0 0 0-1.47-.97H3a2 2 0 0 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.6 1.6 0 0 0 9 4.6a1.6 1.6 0 0 0 .97-1.47V3a2 2 0 0 1 4 0v.1A1.6 1.6 0 0 0 15 4.6a1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.6 1.6 0 0 0 19.4 9a1.6 1.6 0 0 0 1.47.97H21a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5.97Z" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+      <symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6l7-3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3 8 4-16 3 8h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+      <symbol id="i-slack" viewBox="0 0 24 24"><path fill="currentColor" d="M5.04 15.17a2.53 2.53 0 0 1-2.52 2.52A2.53 2.53 0 0 1 0 15.17a2.53 2.53 0 0 1 2.52-2.53h2.52v2.53zM6.31 15.17a2.53 2.53 0 0 1 2.52-2.53 2.53 2.53 0 0 1 2.52 2.53v6.31A2.53 2.53 0 0 1 8.83 24a2.53 2.53 0 0 1-2.52-2.52v-6.31zM8.83 5.04a2.53 2.53 0 0 1-2.52-2.52A2.53 2.53 0 0 1 8.83 0a2.53 2.53 0 0 1 2.52 2.52v2.52H8.83zM8.83 6.31a2.53 2.53 0 0 1 2.52 2.52 2.53 2.53 0 0 1-2.52 2.52H2.52A2.53 2.53 0 0 1 0 8.83a2.53 2.53 0 0 1 2.52-2.52h6.31zM18.96 8.83a2.53 2.53 0 0 1 2.52-2.52A2.53 2.53 0 0 1 24 8.83a2.53 2.53 0 0 1-2.52 2.52h-2.52V8.83zM17.69 8.83a2.53 2.53 0 0 1-2.52 2.52 2.53 2.53 0 0 1-2.52-2.52V2.52A2.53 2.53 0 0 1 15.17 0a2.53 2.53 0 0 1 2.52 2.52v6.31zM15.17 18.96a2.53 2.53 0 0 1 2.52 2.52A2.53 2.53 0 0 1 15.17 24a2.53 2.53 0 0 1-2.52-2.52v-2.52h2.52zM15.17 17.69a2.53 2.53 0 0 1-2.52-2.52 2.53 2.53 0 0 1 2.52-2.52h6.31A2.53 2.53 0 0 1 24 15.17a2.53 2.53 0 0 1-2.52 2.52h-6.31z"/></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.2l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.7 6.8 19.2l1-5.8L3.6 9.3l5.8-.8Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+      <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18Z" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+      <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></symbol>
+    </svg>
+
     <!-- Landing Modal -->
     <div id="landingModal" class="modal atom-landing">
       <div class="atom-background">
@@ -57,88 +107,79 @@
         <!-- Animated floating code particles -->
         <div class="code-particles" id="codeParticles"></div>
       </div>
-      
+
       <div class="modal-content landing-content atom-card">
         <div class="atom-logo-section">
           <div class="atom-logo">
-            <img src="images/favicon/apple-touch-icon-120x120.png" alt="Atom Tickets" width="80" height="80" style="display: block; margin: 0 auto;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m8 6-6 6 6 6M16 6l6 6-6 6"/>
+            </svg>
           </div>
-          <h1 class="atom-title">OpenCollab Platform</h1>
-          <p class="atom-subtitle">Real-time Collaborative Coding</p>
+          <h1 class="atom-title">OpenCollab</h1>
+          <p class="atom-subtitle">Real-time collaborative coding for technical interviews</p>
         </div>
-        
+
         <div class="role-selection atom-roles">
-          <div class="role-card atom-role-card" id="candidateCard">
-            <div class="role-icon atom-icon">
-              <svg width="60" height="60" viewBox="0 0 24 24" fill="none">
-                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="#018ef5"/>
-                <path d="M8.5 12.5L7 14l3 3 5-5-1.5-1.5L10.5 13.5z" fill="#4CAF50"/>
-              </svg>
-            </div>
-            <h3>Join as Candidate</h3>
-            <p>Enter your interview session</p>
-            <button class="role-btn atom-btn atom-btn-secondary" onclick="document.getElementById('landingModal').style.display='none'; document.getElementById('candidateModal').style.display='flex'; return false;">
-              <span>I'm a Candidate</span>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" fill="currentColor"/>
-              </svg>
+          <div class="role-card atom-role-card is-primary" id="adminCard">
+            <button class="role-btn" type="button" onclick="document.getElementById('landingModal').style.display='none'; document.getElementById('adminLoginModal').style.display='flex'; return false;">
+              <span class="role-ic">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 3l7 3v5c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6l7-3Z"/>
+                  <path d="m9 12 2 2 4-4"/>
+                </svg>
+              </span>
+              <span class="role-text">
+                <span class="role-title">Login as Interviewer</span>
+                <span class="role-sub">Create &amp; manage interview sessions</span>
+              </span>
+              <span class="role-arrow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+              </span>
             </button>
           </div>
-          
-          <div class="role-divider atom-divider">
-            <span>OR</span>
-          </div>
-          
-          <div class="role-card atom-role-card" id="adminCard">
-            <div class="role-icon atom-icon">
-              <svg width="60" height="60" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="#018ef5"/>
-              </svg>
-            </div>
-            <h3>Login as Interviewer</h3>
-            <p>Create & manage sessions</p>
-            <button class="role-btn atom-btn atom-btn-primary" onclick="document.getElementById('landingModal').style.display='none'; document.getElementById('adminLoginModal').style.display='flex'; return false;">
-              <span>I'm an Interviewer</span>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" fill="currentColor"/>
-              </svg>
+
+          <div class="role-card atom-role-card" id="candidateCard">
+            <button class="role-btn" type="button" onclick="document.getElementById('landingModal').style.display='none'; document.getElementById('candidateModal').style.display='flex'; return false;">
+              <span class="role-ic">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>
+                </svg>
+              </span>
+              <span class="role-text">
+                <span class="role-title">Join as Candidate</span>
+                <span class="role-sub">Enter your interview session</span>
+              </span>
+              <span class="role-arrow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+              </span>
             </button>
           </div>
         </div>
-        
+
         <div class="atom-features">
           <div class="feature-item">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="#018ef5">
-              <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>
-            </svg>
-            <span>Real-time Collaboration</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>
+            <span>Real-time collaboration</span>
           </div>
           <div class="feature-item">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="#018ef5">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
-            <span>16+ Languages</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18Z"/></svg>
+            <span>16+ languages</span>
           </div>
           <div class="feature-item">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="#018ef5">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
-            </svg>
-            <span>Live Code Execution</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l5.5-3.5L10 8.5Z" fill="currentColor" stroke="none"/></svg>
+            <span>Live code execution</span>
           </div>
         </div>
       </div>
-      
+
       <footer class="atom-footer">
         <div class="footer-content">
-          <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
-            <img src="images/favicon/apple-touch-icon-60x60.png" alt="Atom Tickets" width="30" height="30" style="margin-right: 10px;">
-            <p style="margin: 0;">Made with ❤️ by <a href="https://www.humancto.com" target="_blank" class="atom-link">HumanCTO</a></p>
-          </div>
+          <p class="footer-made">Made by <a href="https://www.humancto.com" target="_blank" class="atom-link">HumanCTO</a></p>
           <div class="footer-links">
             <a href="https://github.com/humancto/CollabCode" target="_blank">GitHub</a>
-            <span class="footer-separator">•</span>
+            <span class="footer-separator">·</span>
             <a href="https://github.com/humancto/CollabCode/issues" target="_blank">Issues</a>
-            <span class="footer-separator">•</span>
+            <span class="footer-separator">·</span>
             <a href="https://github.com/humancto/CollabCode/wiki" target="_blank">Documentation</a>
           </div>
         </div>
@@ -148,7 +189,7 @@
     <!-- Candidate Join Modal -->
     <div id="candidateModal" class="modal" style="display: none;">
       <div class="modal-content">
-        <button class="back-btn" id="candidateBack">← Back</button>
+        <button class="back-btn" id="candidateBack"><svg class="ic"><use href="#i-arrow-left"/></svg>Back</button>
         <h2>Join Interview Session</h2>
         <p class="modal-subtitle">Enter your details to join the session</p>
         
@@ -163,28 +204,25 @@
           <small>Your interviewer will provide this code</small>
         </div>
         
-        <div style="margin: 20px 0; padding: 15px; background: rgba(66, 165, 245, 0.05); border: 1px solid rgba(66, 165, 245, 0.2); border-radius: 8px;">
-          <div style="display: flex; align-items: center; margin-bottom: 10px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#42a5f5" stroke-width="2" style="margin-right: 8px;">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-            </svg>
-            <strong style="color: #42a5f5; font-size: 14px;">Privacy & Monitoring Notice</strong>
+        <div class="privacy-notice">
+          <div class="privacy-notice__head">
+            <svg class="ic"><use href="#i-shield-check"/></svg>
+            <strong>Privacy &amp; Monitoring Notice</strong>
           </div>
-          <label style="display: flex; align-items: flex-start; cursor: pointer; font-size: 13px; color: #555;">
-            <input type="checkbox" id="candidatePrivacyConsent" style="margin-right: 10px; margin-top: 2px; cursor: pointer;">
+          <label class="privacy-consent">
+            <input type="checkbox" id="candidatePrivacyConsent">
             <span>
               I understand that during this interview session, the following may be monitored for evaluation purposes:
-              <ul style="margin: 8px 0 8px 20px; padding: 0; font-size: 12px; color: #666; line-height: 1.5;">
+              <ul>
                 <li>Tab switching and window focus events</li>
                 <li>Activity patterns and idle time</li>
                 <li>General interaction metrics</li>
               </ul>
-              <span style="font-size: 11px; color: #888;">
+              <span class="privacy-fine">
                 This data is used solely for interview assessment and is handled in accordance with our privacy policy.
               </span>
-              <br>
-              <a href="#" style="color: #42a5f5; text-decoration: none; margin-top: 8px; display: inline-block; font-size: 12px;">
-                📄 View Privacy Policy →
+              <a href="#" class="privacy-link">
+                <svg class="ic"><use href="#i-doc"/></svg>View Privacy Policy
               </a>
             </span>
           </label>
@@ -197,7 +235,7 @@
     <!-- Admin Login Modal -->
     <div id="adminLoginModal" class="modal" style="display: none;">
       <div class="modal-content">
-        <button class="back-btn" id="adminLoginBack">← Back</button>
+        <button class="back-btn" id="adminLoginBack"><svg class="ic"><use href="#i-arrow-left"/></svg>Back</button>
         <h2>Interviewer Login</h2>
         <p class="modal-subtitle">Login to create and manage sessions</p>
         
@@ -230,11 +268,7 @@
               </div>
             </div>
             <button id="adminLogoutBtn" class="logout-btn-modern">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                <polyline points="16 17 21 12 16 7"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12"></line>
-              </svg>
+              <svg class="ic ic-14"><use href="#i-logout"/></svg>
               <span>Logout</span>
             </button>
           </div>
@@ -244,9 +278,7 @@
           <!-- Interviewer Profile Card -->
           <div class="interviewer-card">
             <div class="card-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-              </svg>
+              <svg class="ic ic-20"><use href="#i-user"/></svg>
             </div>
             <div class="card-content">
               <label class="field-label">Interviewer Name</label>
@@ -262,11 +294,7 @@
             <!-- Create New Session Card -->
             <div class="action-card primary-action">
               <div class="action-icon">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="12" y1="8" x2="12" y2="16"></line>
-                  <line x1="8" y1="12" x2="16" y2="12"></line>
-                </svg>
+                <svg class="ic ic-20"><use href="#i-plus"/></svg>
               </div>
               <div class="action-content">
                 <h4>Start New Interview</h4>
@@ -284,10 +312,7 @@
                 </div>
                 <button id="createSessionBtn" class="action-btn-primary">
                   <span>Create Session</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                    <polyline points="12 5 19 12 12 19"></polyline>
-                  </svg>
+                  <svg class="ic ic-14"><use href="#i-arrow-right"/></svg>
                 </button>
               </div>
             </div>
@@ -295,11 +320,7 @@
             <!-- Join Session Card -->
             <div class="action-card secondary-action">
               <div class="action-icon">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-                  <polyline points="10 17 15 12 10 7"></polyline>
-                  <line x1="15" y1="12" x2="3" y2="12"></line>
-                </svg>
+                <svg class="ic ic-20"><use href="#i-arrow-right"/></svg>
               </div>
               <div class="action-content">
                 <h4>Join Existing Session</h4>
@@ -319,10 +340,7 @@
             <div class="session-code-display">
               <span id="activeSessionCode" class="code-text"></span>
               <button id="copyCodeBtn" class="copy-btn-modern">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
+                <svg class="ic ic-14"><use href="#i-copy"/></svg>
                 <span>Copy</span>
               </button>
             </div>
@@ -331,20 +349,12 @@
           <!-- Management Tools -->
           <div class="management-tools">
             <button id="problemLibraryBtn" class="tool-btn" type="button">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-              </svg>
+              <svg class="ic ic-16"><use href="#i-book"/></svg>
               <span>Problem Library</span>
               <span class="tool-badge">Build</span>
             </button>
             <button id="viewAllSessionsBtn" class="tool-btn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="7" height="7"></rect>
-                <rect x="14" y="3" width="7" height="7"></rect>
-                <rect x="14" y="14" width="7" height="7"></rect>
-                <rect x="3" y="14" width="7" height="7"></rect>
-              </svg>
+              <svg class="ic ic-16"><use href="#i-grid"/></svg>
               <span>Session Manager</span>
               <span class="tool-badge">View All</span>
             </button>
@@ -359,14 +369,17 @@
         <div class="modal-header">
           <h2>Problem Library</h2>
           <div class="problem-modal-actions">
-            <button id="newProblemBtn" class="problem-primary-btn" type="button">New Problem</button>
-            <button id="refreshProblemsBtn" class="problem-secondary-btn" type="button">Refresh</button>
+            <button id="newProblemBtn" class="problem-primary-btn" type="button"><svg class="ic"><use href="#i-plus"/></svg>New Problem</button>
+            <button id="refreshProblemsBtn" class="problem-secondary-btn" type="button"><svg class="ic"><use href="#i-refresh"/></svg>Refresh</button>
             <button id="closeProblemLibraryBtn" class="close-modal-btn" type="button">×</button>
           </div>
         </div>
         <div class="problem-library-toolbar">
-          <input id="problemSearchInput" type="text" placeholder="Search problems">
-          <select id="problemStatusFilter">
+          <div class="input-wrap">
+            <svg class="ic i-lead"><use href="#i-search"/></svg>
+            <input id="problemSearchInput" type="text" placeholder="Search problems">
+          </div>
+          <select id="problemStatusFilter" class="select-native">
             <option value="all">All statuses</option>
             <option value="published">Published</option>
             <option value="draft">Draft</option>
@@ -389,9 +402,9 @@
             </div>
           </div>
           <div class="problem-modal-actions">
-            <button id="saveProblemDraftBtn" class="problem-secondary-btn" type="button">Save</button>
-            <button id="publishProblemBtn" class="problem-primary-btn" type="button">Publish frozen version</button>
-            <button id="createFromProblemBtn" class="problem-secondary-btn" type="button">Create session</button>
+            <button id="saveProblemDraftBtn" class="problem-secondary-btn" type="button"><svg class="ic"><use href="#i-check"/></svg>Save</button>
+            <button id="publishProblemBtn" class="problem-primary-btn" type="button"><svg class="ic"><use href="#i-bolt"/></svg>Publish frozen version</button>
+            <button id="createFromProblemBtn" class="problem-secondary-btn" type="button"><svg class="ic"><use href="#i-send"/></svg>Create session</button>
             <button id="closeProblemBuilderBtn" class="close-modal-btn" type="button">×</button>
           </div>
         </div>
@@ -440,12 +453,12 @@
             <div class="problem-ide-panel-header">
               <span>Files</span>
               <div class="problem-file-toolbar">
-                <button id="addProblemFileBtn" type="button" title="New file" aria-label="New file">+</button>
-                <button id="addProblemFolderBtn" type="button" title="New folder" aria-label="New folder">+/</button>
-                <button id="uploadProblemFilesBtn" type="button">Upload</button>
-                <button id="uploadProblemFolderBtn" type="button">Folder</button>
-                <button id="uploadHiddenTestsBtn" type="button">Tests</button>
-                <button id="deleteProblemFileBtn" class="danger" type="button" title="Delete selected" aria-label="Delete selected">×</button>
+                <button id="addProblemFileBtn" class="icon-only" type="button" title="New file" aria-label="New file"><svg class="ic"><use href="#i-plus"/></svg></button>
+                <button id="addProblemFolderBtn" class="icon-only" type="button" title="New folder" aria-label="New folder"><svg class="ic"><use href="#i-folder-plus"/></svg></button>
+                <button id="uploadProblemFilesBtn" type="button"><svg class="ic"><use href="#i-upload"/></svg>Upload</button>
+                <button id="uploadProblemFolderBtn" type="button"><svg class="ic"><use href="#i-folder"/></svg>Folder</button>
+                <button id="uploadHiddenTestsBtn" type="button"><svg class="ic"><use href="#i-flask"/></svg>Tests</button>
+                <button id="deleteProblemFileBtn" class="danger icon-only" type="button" title="Delete selected" aria-label="Delete selected"><svg class="ic"><use href="#i-trash"/></svg></button>
               </div>
             </div>
             <input id="problemFilesUploadInput" type="file" multiple style="display: none;">
@@ -473,10 +486,10 @@
               <span id="problemRuntimeStatus">Not prepared</span>
             </div>
             <div class="runtime-actions">
-              <button id="runStarterBtn" class="problem-secondary-btn" type="button">Run</button>
-              <button id="runTestsBtn" class="problem-secondary-btn" type="button">Test</button>
-              <button id="prepareRuntimeBtn" class="problem-primary-btn" type="button">Prepare</button>
-              <button id="resetRuntimeBtn" class="problem-danger-btn" type="button">Reset</button>
+              <button id="runStarterBtn" class="problem-secondary-btn" type="button"><svg class="ic"><use href="#i-play"/></svg>Run</button>
+              <button id="runTestsBtn" class="problem-secondary-btn" type="button"><svg class="ic"><use href="#i-flask"/></svg>Test</button>
+              <button id="prepareRuntimeBtn" class="problem-primary-btn" type="button"><svg class="ic"><use href="#i-bolt"/></svg>Prepare</button>
+              <button id="resetRuntimeBtn" class="problem-danger-btn" type="button"><svg class="ic"><use href="#i-refresh"/></svg>Reset</button>
             </div>
             <pre id="problemRuntimeOutput"></pre>
           </aside>
@@ -489,30 +502,31 @@
       <div class="modal-content" style="max-width: 600px;">
         <div class="modal-header">
           <h2>Share to Slack</h2>
-          <button id="closeSlackConfigBtn" class="close-modal-btn">×</button>
+          <button id="closeSlackConfigBtn" class="close-modal-btn"><svg class="ic ic-18"><use href="#i-x"/></svg></button>
         </div>
         
         <div class="slack-config-content">
-          <div class="slack-info-section" style="padding: 10px; background: #2a2a2a; border-radius: 4px; margin-bottom: 20px;">
-            <p style="color: #888; margin: 0;">
-              <strong>📌 Note:</strong> Slack integration is configured server-side for security.
-              Contact your administrator if notifications are not working.
+          <div class="slack-info-section" style="padding: 12px 14px; background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--r-md); margin-bottom: 20px;">
+            <p style="color: var(--text-3); margin: 0;">
+              <svg class="ic ic-14"><use href="#i-info"/></svg>
+              <span><strong>Note:</strong> Slack integration is configured server-side for security.
+              Contact your administrator if notifications are not working.</span>
             </p>
           </div>
           
           <div class="slack-preview-section" style="margin-top: 20px;">
             <h3>Preview:</h3>
-            <div id="slackMessagePreview" style="background: #1a1a1a; padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50;">
-              <div style="font-weight: bold; margin-bottom: 10px;">Interview Feedback</div>
-              <div id="slackPreviewContent" style="color: #ccc;">
+            <div id="slackMessagePreview" style="background: var(--bg-inset); padding: 15px; border-radius: var(--r-md); border: 1px solid var(--border); border-left: 3px solid var(--green);">
+              <div style="font-weight: 600; margin-bottom: 10px; color: var(--text-1);">Interview Feedback</div>
+              <div id="slackPreviewContent" style="color: var(--text-2);">
                 <!-- Preview content will be inserted here -->
               </div>
             </div>
           </div>
           
           <div class="slack-actions" style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
-            <button id="cancelSlackShare" style="padding: 8px 16px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
-            <button id="sendToSlack" style="padding: 8px 16px; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer;">Send to Slack</button>
+            <button id="cancelSlackShare" class="btn btn--secondary">Cancel</button>
+            <button id="sendToSlack" class="btn btn--primary">Send to Slack</button>
           </div>
         </div>
       </div>
@@ -525,11 +539,9 @@
           <h2>Session Details</h2>
           <div style="display: flex; gap: 10px; align-items: center;">
             <button id="shareToSlackBtn" class="slack-share-btn" title="Share to Slack">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/>
-              </svg>
+              <svg class="ic ic-18"><use href="#i-slack"/></svg>
             </button>
-            <button id="closeSessionDetailsBtn" class="close-modal-btn">×</button>
+            <button id="closeSessionDetailsBtn" class="close-modal-btn"><svg class="ic ic-18"><use href="#i-x"/></svg></button>
           </div>
         </div>
         
@@ -540,9 +552,9 @@
           </div>
           
           <div class="session-detail-tabs">
-            <button class="detail-tab active" data-tab="notes">📝 Notes</button>
-            <button class="detail-tab" data-tab="info">ℹ️ Session Info</button>
-            <button class="detail-tab" data-tab="activity">📊 Candidate Behavior</button>
+            <button class="detail-tab active" data-tab="notes"><svg class="ic ic-14"><use href="#i-doc"/></svg><span>Notes</span></button>
+            <button class="detail-tab" data-tab="info"><svg class="ic ic-14"><use href="#i-info"/></svg><span>Session Info</span></button>
+            <button class="detail-tab" data-tab="activity"><svg class="ic ic-14"><use href="#i-activity"/></svg><span>Candidate Behavior</span></button>
           </div>
           
           <div class="tab-content" id="notes-tab" style="display: block;">
@@ -566,9 +578,9 @@
           
           <div class="tab-content" id="info-tab" style="display: none;">
             <div class="session-info-display" style="padding: 20px;">
-              <h4>📅 Session Details</h4>
+              <h4><svg class="ic ic-18"><use href="#i-calendar"/></svg>Session Details</h4>
               <div style="display: grid; grid-template-columns: 150px 1fr; gap: 15px; margin-top: 15px;">
-                <strong>Session Code:</strong> <span id="detail-session-code" style="font-family: monospace; color: #42a5f5;"></span>
+                <strong>Session Code:</strong> <span id="detail-session-code" style="font-family: var(--mono); color: var(--accent-text);"></span>
                 <strong>Status:</strong> <span id="display-status"></span>
                 <strong>Started:</strong> <span id="display-created"></span>
                 <strong>Duration:</strong> <span id="display-duration"></span>
@@ -580,9 +592,10 @@
           
           <div class="tab-content" id="activity-tab" style="display: none;">
             <div class="activity-info-display" style="padding: 20px;">
-              <h4>📊 Candidate Behavior Monitoring</h4>
-              <div style="background: rgba(255, 193, 7, 0.1); padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-                <small style="color: #ffc107;">⚠️ This data is collected only when candidates consent to activity monitoring</small>
+              <h4><svg class="ic ic-18"><use href="#i-activity"/></svg>Candidate Behavior Monitoring</h4>
+              <div style="background: var(--yellow-soft); border: 1px solid rgba(242,201,76,.3); padding: 10px 12px; border-radius: var(--r-sm); margin-bottom: 15px;">
+                <svg class="ic ic-14"><use href="#i-alert"/></svg>
+                <small style="color: var(--yellow-text);">This data is collected only when candidates consent to activity monitoring</small>
               </div>
               <div id="activity-tracking-data">
                 <p class="loading-message">Loading activity data...</p>
@@ -598,7 +611,7 @@
       <div class="modal-content sessions-modal-content">
         <div class="modal-header">
           <h2>Sessions Management</h2>
-          <button id="closeSessionsModalBtn" class="close-modal-btn">×</button>
+          <button id="closeSessionsModalBtn" class="close-modal-btn"><svg class="ic ic-18"><use href="#i-x"/></svg></button>
         </div>
         
         <div class="sessions-stats">
@@ -733,8 +746,8 @@
 
         <div class="right-controls">
           <div id="users-list"></div>
-          <button id="notes-toggle-btn" class="notes-button" style="display: none;">📝 Notes</button>
-          <button id="run-btn" class="run-button">▶ Run</button>
+          <button id="notes-toggle-btn" class="notes-button" style="display: none;"><svg class="ic ic-14"><use href="#i-edit"/></svg>Notes</button>
+          <button id="run-btn" class="run-button"><svg class="ic ic-14"><use href="#i-play"/></svg>Run</button>
           <button id="share-btn">Share</button>
         </div>
       </div>
@@ -746,11 +759,11 @@
             <div id="workspace-header">
               <span>Files</span>
               <div id="workspace-actions">
-                <button id="workspace-new-file" type="button" title="New file" aria-label="New file">+</button>
-                <button id="workspace-new-folder" type="button" title="New folder" aria-label="New folder">+/</button>
-                <button id="workspace-rename-file" type="button" title="Rename file" aria-label="Rename file">Aa</button>
-                <button id="workspace-delete-file" type="button" title="Delete file" aria-label="Delete file">×</button>
-                <button id="workspace-set-entry" type="button" title="Set as entry file" aria-label="Set as entry file">▶</button>
+                <button id="workspace-new-file" type="button" title="New file" aria-label="New file"><svg class="ic ic-14"><use href="#i-plus"/></svg></button>
+                <button id="workspace-new-folder" type="button" title="New folder" aria-label="New folder"><svg class="ic ic-14"><use href="#i-folder-plus"/></svg></button>
+                <button id="workspace-rename-file" type="button" title="Rename file" aria-label="Rename file"><svg class="ic ic-14"><use href="#i-edit"/></svg></button>
+                <button id="workspace-delete-file" type="button" title="Delete file" aria-label="Delete file"><svg class="ic ic-14"><use href="#i-trash"/></svg></button>
+                <button id="workspace-set-entry" type="button" title="Set as entry file" aria-label="Set as entry file"><svg class="ic ic-14"><use href="#i-flag"/></svg></button>
               </div>
             </div>
             <div id="workspace-tree"></div>
@@ -770,13 +783,13 @@
           <!-- Interviewer Notes Panel -->
           <div id="notes-panel" style="display: none;">
             <div id="notes-header">
-              <span>📝 Interview Notes</span>
-              <span id="notes-save-status" style="font-size: 12px; color: #888; margin-left: 10px;"></span>
+              <span class="notes-title"><svg class="ic ic-14"><use href="#i-edit"/></svg>Interview Notes</span>
+              <span id="notes-save-status" style="font-size: 12px; color: var(--text-4); margin-left: 10px;"></span>
               <span id="behavior-alert-badge" class="alert-badge" style="display: none;">0</span>
-              <button id="close-notes">×</button>
+              <button id="close-notes" aria-label="Close notes"><svg class="ic"><use href="#i-x"/></svg></button>
             </div>
             <!-- Activity Monitoring Dashboard -->
-            <div id="activity-dashboard" style="display: none; background: rgba(66,165,245,0.05); border: 1px solid rgba(66,165,245,0.2); border-radius: 4px; padding: 12px; margin: 10px;">
+            <div id="activity-dashboard" style="display: none; background: var(--bg-3); border: 1px solid var(--border-2); border-radius: var(--r-md); padding: 12px; margin: 10px;">
               <!-- Activity metrics will be inserted here -->
             </div>
             <div id="notes-content">
@@ -820,7 +833,7 @@
               </div>
               
               <div class="notes-actions">
-                <button id="save-notes-btn" class="save-notes-btn">Save Notes</button>
+                <button id="save-notes-btn" class="save-notes-btn"><svg class="ic"><use href="#i-check"/></svg>Save Notes</button>
               </div>
             </div>
           </div>
@@ -828,8 +841,8 @@
           <div id="output-panel" style="display: none;">
             <div id="output-header">
               <span>Output</span>
-              <button id="clear-output">Clear</button>
-              <button id="close-output">×</button>
+              <button id="clear-output"><svg class="ic"><use href="#i-refresh"/></svg>Clear</button>
+              <button id="close-output"><svg class="ic"><use href="#i-x"/></svg></button>
             </div>
             <div id="last-run-summary"></div>
             <div id="output-content">

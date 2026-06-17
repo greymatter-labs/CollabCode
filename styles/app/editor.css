@@ -1,0 +1,555 @@
+/* styles/app/editor.css — token-driven surface partial (overrides _legacy.css). */
+
+/* ============================================================
+   LIVE EDITOR IDE  —  Linear dark reskin
+   Surface: #main-container shell, #top-bar, workspace, firepad,
+   output, status bar, ACE chrome, join/leave toast.
+   Layout (flex/grid/heights/min-width/overflow) is INHERITED from
+   _legacy.css and PRESERVED — this file only swaps the visual skin.
+   ============================================================ */
+
+/* ---- app shell --------------------------------------------- */
+#main-container{
+  background:var(--bg-app);
+}
+
+/* ============================================================
+   TOP BAR  —  thin dark app bar, hairline bottom border.
+   Three balanced groups: left (selects) · center (session) · right (actions).
+   Legacy keeps the flex row + space-between; we tune rhythm + alignment.
+   ============================================================ */
+#top-bar{
+  background:var(--bg-1);
+  border-bottom:1px solid var(--border);
+  min-height:48px;
+  padding:0 var(--sp-3);
+  gap:var(--sp-4);
+}
+
+/* left + right groups — tight, consistent gaps */
+.left-controls,.right-controls{
+  gap:var(--sp-2);
+}
+
+/* center — session identity + participants, sits flush-center */
+.center-info{
+  color:var(--text-2);
+  font-size:13px;
+  font-weight:500;
+  gap:var(--sp-2);
+  min-width:0;
+}
+/* the Atom favicon — quiet, rounded, aligned */
+.center-info > img{
+  width:20px !important;height:20px !important;
+  border-radius:var(--r-xs);
+  margin-right:2px !important;
+  opacity:.92;
+}
+
+#session-info{
+  color:var(--text-2);
+  font-weight:500;
+  letter-spacing:-.01em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* thin hairline divider between session id and the End/Reset controls */
+.center-info #end-session-btn{
+  margin-left:var(--sp-3) !important;
+  position:relative;
+}
+.center-info #end-session-btn::before{
+  content:"";
+  position:absolute;
+  left:calc(-1 * var(--sp-2));
+  top:50%;transform:translateY(-50%);
+  width:1px;height:18px;
+  background:var(--border-2);
+}
+.center-info #reset-session-btn{
+  margin-left:var(--sp-1) !important;
+}
+
+/* user count pill — neutral chip with green count */
+.user-count{
+  display:inline-flex;align-items:center;
+  height:24px;
+  background:var(--bg-3);
+  border:1px solid var(--border-2);
+  padding:0 10px;
+  margin-left:var(--sp-1);
+  border-radius:var(--r-full);
+  font-size:12px;
+  font-weight:500;
+  color:var(--green-text);
+  font-variant-numeric:tabular-nums;
+}
+.user-count:empty{display:none;}
+
+/* ============================================================
+   NATIVE SELECTS  —  language / theme / fontSize (Linear .select-native)
+   ============================================================ */
+#top-bar select{
+  -webkit-appearance:none;appearance:none;
+  height:30px;
+  min-width:0;
+  padding:0 28px 0 11px;
+  background-color:var(--bg-3);
+  color:var(--text-1);
+  border:1px solid var(--border-2);
+  border-radius:var(--r-sm);
+  font-family:var(--font);
+  font-size:13px;
+  cursor:pointer;
+  transition:background-color .12s var(--ease),border-color .12s,box-shadow .12s;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a8f98' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 9px center;
+}
+/* tighter, balanced select widths (legacy set wide 150–180 mins) */
+#top-bar #language-selector{min-width:150px;max-width:172px;}
+#top-bar #theme-selector{min-width:118px;}
+#top-bar #fontSize-selector{min-width:74px;}
+#top-bar select:hover{
+  background-color:#26282c;
+  border-color:var(--border-strong);
+}
+#top-bar select:focus{
+  outline:none;
+  border-color:var(--accent-border);
+  box-shadow:0 0 0 3px var(--accent-soft);
+}
+#top-bar select optgroup{
+  background:var(--bg-2);
+  color:var(--text-3);
+  font-weight:600;
+  font-size:12px;
+}
+#top-bar select option{
+  background:var(--bg-2);
+  color:var(--text-1);
+}
+
+/* ============================================================
+   TOP-BAR BUTTONS  —  reuse the .btn visual language
+   ============================================================ */
+/* icons inside top-bar action buttons inherit currentColor */
+#run-btn .ic,#share-btn .ic,.notes-button .ic{
+  width:14px;height:14px;flex:none;
+}
+
+/* Run — primary intent (accent) */
+#run-btn,.run-button{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  height:30px;
+  padding:0 13px;
+  background:var(--accent);
+  color:#fff;
+  border:1px solid transparent;
+  border-radius:var(--r-sm);
+  font-size:13px;
+  font-weight:500;
+  cursor:pointer;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 1px 2px rgba(0,0,0,.3);
+  transition:background .12s var(--ease),box-shadow .12s,opacity .12s;
+}
+#run-btn:hover,.run-button:hover{
+  background:var(--accent-hover);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 2px 8px rgba(94,106,210,.34);
+}
+#run-btn:disabled,.run-button:disabled{
+  background:var(--bg-4);
+  color:var(--text-4);
+  box-shadow:none;
+  opacity:.5;
+  cursor:not-allowed;
+}
+
+/* Share — neutral secondary */
+#share-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  height:30px;
+  padding:0 13px;
+  background:var(--bg-3);
+  color:var(--text-1);
+  border:1px solid var(--border-2);
+  border-radius:var(--r-sm);
+  font-size:13px;
+  font-weight:500;
+  cursor:pointer;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+  transition:background .12s var(--ease),border-color .12s;
+}
+#share-btn:hover{
+  background:#26282c;
+  border-color:var(--border-strong);
+}
+
+/* End Interview — danger (legacy uses !important, so we must too) */
+.end-session-button,#end-session-btn{
+  display:inline-flex !important;align-items:center;justify-content:center;
+  height:30px;
+  padding:0 13px !important;
+  background-color:var(--red) !important;
+  color:#fff !important;
+  border:1px solid transparent !important;
+  border-radius:var(--r-sm) !important;
+  font-size:13px;
+  font-weight:500;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.15);
+  transition:background-color .12s var(--ease);
+}
+.end-session-button:hover,#end-session-btn:hover{
+  background-color:#f06363 !important;
+}
+
+/* Reset Workspace — neutral (legacy uses !important + orange) */
+.reset-session-button,#reset-session-btn{
+  display:inline-flex !important;align-items:center;justify-content:center;
+  height:30px;
+  padding:0 13px !important;
+  background-color:var(--bg-3) !important;
+  color:var(--text-1) !important;
+  border:1px solid var(--border-2) !important;
+  border-radius:var(--r-sm) !important;
+  font-size:13px;
+  font-weight:500;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+  transition:background-color .12s var(--ease),border-color .12s;
+}
+.reset-session-button:hover,#reset-session-btn:hover{
+  background-color:#26282c !important;
+  border-color:var(--border-strong) !important;
+}
+
+/* Notes toggle — neutral secondary; .active = accent intent.
+   notes.css loads after this and owns the panel internals. */
+.notes-button{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  height:30px;
+  padding:0 13px;
+  background:var(--bg-3);
+  color:var(--text-1);
+  border:1px solid var(--border-2);
+  border-radius:var(--r-sm);
+  font-size:13px;
+  font-weight:500;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+  transition:background .12s var(--ease),border-color .12s,color .12s;
+}
+.notes-button:hover{
+  background:#26282c;
+  border-color:var(--border-strong);
+}
+.notes-button.active{
+  background:var(--accent-soft);
+  border-color:var(--accent-border);
+  color:var(--accent-text);
+}
+
+/* ============================================================
+   USERS LIST  —  presence chips (.user-badge)
+   ============================================================ */
+.user-badge{
+  gap:6px;
+  padding:0 10px;
+  height:24px;
+  background:var(--bg-3);
+  border:1px solid var(--border-2);
+  border-radius:var(--r-full);
+  font-size:12px;
+  font-weight:500;
+  color:var(--text-1);
+}
+.user-badge::before{
+  width:6px;height:6px;
+  background:var(--green);
+  margin-right:0;
+}
+.user-badge.current-user{
+  background:var(--accent-soft);
+  border-color:var(--accent-border);
+  color:var(--accent-text);
+}
+.user-badge.current-user::before{
+  background:var(--accent);
+}
+.user-badge-name{color:inherit;}
+.user-badge-role{
+  padding:1px 6px;
+  border-radius:var(--r-full);
+  background:rgba(255,255,255,.08);
+  color:var(--text-3);
+  font-size:10px;
+  font-weight:600;
+  text-transform:uppercase;
+}
+.user-badge.current-user .user-badge-role{
+  background:rgba(174,181,243,.18);
+  color:var(--accent-text);
+}
+
+/* ============================================================
+   WORKSPACE PANEL  —  file sidebar
+   ============================================================ */
+#workspace-panel{
+  background:var(--bg-1);
+  border-right:1px solid var(--border);
+  color:var(--text-2);
+}
+
+#workspace-header{
+  background:var(--bg-1);
+  border-bottom:1px solid var(--border);
+  color:var(--text-3);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.08em;
+}
+
+#workspace-actions{gap:2px;}
+#workspace-actions button{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:26px;height:26px;
+  border:1px solid transparent;
+  border-radius:var(--r-sm);
+  background:transparent;
+  color:var(--text-3);
+  font-size:12px;
+  transition:background .12s var(--ease),border-color .12s,color .12s;
+}
+#workspace-actions button .ic{width:14px;height:14px;flex:none;}
+#workspace-actions button:hover{
+  background:var(--bg-3);
+  border-color:var(--border-2);
+  color:var(--text-1);
+}
+/* set-entry reads as the "promote" action — quiet green on hover */
+#workspace-set-entry:hover{color:var(--green-text);}
+#workspace-delete-file:hover{color:var(--red-text);}
+
+#workspace-tree{
+  color:var(--text-2);
+}
+
+#workspace-footer{
+  border-top:1px solid var(--border);
+  background:var(--bg-1);
+  color:var(--text-3);
+  font-size:12px;
+  font-family:var(--mono);
+}
+#entry-file-path{color:var(--text-3);}
+
+/* ============================================================
+   EDITOR SHELL  —  active-file bar + firepad host
+   ============================================================ */
+#editor-shell{
+  background:var(--bg-inset);
+}
+
+#active-file-bar{
+  min-height:38px;
+  background:var(--bg-1);
+  border-bottom:1px solid var(--border);
+  color:var(--text-2);
+  font-size:12.5px;
+  font-family:var(--mono);
+  gap:var(--sp-2);
+}
+#active-file-path{
+  color:var(--text-2);
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Entry badge — green "active" semantic, badge geometry */
+#entry-file-badge{
+  padding:2px 7px;
+  border-radius:var(--r-xs);
+  background:var(--green-soft);
+  color:var(--green-text);
+  border:1px solid rgba(76,183,130,.3);
+  font-family:var(--font);
+  font-size:10.5px;
+  font-weight:600;
+  letter-spacing:.02em;
+  text-transform:uppercase;
+}
+
+#firepad-container{
+  background:var(--bg-inset);
+}
+
+/* ============================================================
+   OUTPUT PANEL  —  run output (mono, inset surface)
+   ============================================================ */
+#output-panel{
+  background:var(--bg-1);
+  border-left:1px solid var(--border);
+}
+
+#output-header{
+  background:var(--bg-1);
+  border-bottom:1px solid var(--border);
+  color:var(--text-2);
+  font-size:12.5px;
+  font-weight:600;
+  padding:0 8px 0 13px;
+  min-height:39px;
+}
+#output-header > span{display:flex;align-items:center;gap:8px;}
+
+#output-header button{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  background:transparent;
+  border:1px solid transparent;
+  color:var(--text-3);
+  padding:4px 9px;
+  border-radius:var(--r-sm);
+  font-size:12px;
+  transition:background .12s var(--ease),color .12s,border-color .12s;
+}
+#output-header button .ic{width:13px;height:13px;flex:none;}
+#output-header button:hover{
+  background:var(--bg-3);
+  color:var(--text-1);
+  border-color:var(--border-2);
+}
+#close-output{
+  width:26px;height:26px;
+  padding:0;
+  line-height:1;
+}
+#close-output .ic{width:14px;height:14px;}
+
+/* run summary line — semantic states */
+#last-run-summary{
+  border-bottom:1px solid var(--border);
+  background:var(--bg-2);
+  color:var(--text-3);
+  font-size:12px;
+  font-family:var(--mono);
+}
+#last-run-summary.success{color:var(--green-text);}
+#last-run-summary.error{color:var(--red-text);}
+#last-run-summary.info{color:var(--blue-text);}
+
+#output-content{
+  background:var(--bg-inset);
+}
+
+#output-text{
+  font-family:var(--mono);
+  font-size:12.5px;
+  line-height:1.6;
+  color:var(--text-2);
+}
+#output-text.error{color:var(--red-text);}
+#output-text.success{color:var(--green-text);}
+
+/* stdin input section */
+#input-section{
+  border-top:1px solid var(--border);
+  background:var(--bg-1);
+}
+#input-section label{
+  color:var(--text-3);
+  font-size:12px;
+  font-weight:500;
+}
+#stdin-input{
+  background:var(--bg-inset);
+  border:1px solid var(--border-2);
+  color:var(--text-1);
+  font-family:var(--mono);
+  font-size:12.5px;
+  border-radius:var(--r-sm);
+  transition:border-color .12s var(--ease),box-shadow .12s,background .12s;
+}
+#stdin-input::placeholder{color:var(--text-4);}
+#stdin-input:hover{border-color:var(--border-strong);}
+#stdin-input:focus{
+  outline:none;
+  border-color:var(--accent-border);
+  box-shadow:0 0 0 3px var(--accent-soft);
+  background:var(--bg-1);
+}
+
+/* ============================================================
+   STATUS BAR  —  thin neutral footer (was bright blue)
+   ============================================================ */
+#status-bar{
+  background:var(--bg-1);
+  border-top:1px solid var(--border);
+  color:var(--text-3);
+  padding:0 var(--sp-3);
+  font-size:11.5px;
+  font-family:var(--mono);
+  font-variant-numeric:tabular-nums;
+}
+
+#cursor-position{color:var(--text-3);}
+
+#connection-status{
+  gap:6px;
+  font-family:var(--font);
+  font-variant-numeric:normal;
+  color:var(--text-3);
+}
+#connection-status::before{
+  width:7px;height:7px;
+  background:var(--text-4);
+}
+#connection-status.connected{color:var(--green-text);}
+#connection-status.connected::before{background:var(--green);}
+#connection-status.disconnected{color:var(--red-text);}
+#connection-status.disconnected::before{background:var(--red);}
+
+/* ============================================================
+   ACE EDITOR CHROME  —  light reskin (gutter / active line / cursor)
+   Keep ACE's own syntax theme; only blend its frame into the surface.
+   ============================================================ */
+.ace_editor{
+  background:var(--bg-inset);
+}
+.ace_gutter{
+  background:var(--bg-1) !important;
+  color:var(--text-4) !important;
+  border-right:1px solid var(--border);
+}
+.ace_gutter-active-line{
+  background:var(--bg-3) !important;
+  color:var(--text-2) !important;
+}
+.ace_gutter-cell.ace_gutter-active-line{color:var(--text-2) !important;}
+.ace_active-line,.ace_marker-layer .ace_active-line{
+  background:rgba(255,255,255,.035) !important;
+}
+.ace_cursor{color:var(--accent) !important;}
+.ace_print-margin{background:var(--border) !important;}
+.ace_scroller{font-variant-numeric:tabular-nums;}
+
+/* ============================================================
+   USER JOIN / LEAVE TOAST  —  Linear toast surface
+   ============================================================ */
+.user-notification{
+  background:var(--bg-4);
+  border:1px solid var(--border-2);
+  color:var(--text-1);
+  padding:11px 16px;
+  border-radius:var(--r-md);
+  box-shadow:var(--shadow-lg);
+  font-size:13px;
+  font-weight:500;
+}
+.user-notification.join{
+  border-left:3px solid var(--green);
+}
+.user-notification.leave{
+  border-left:3px solid var(--yellow);
+}
+.user-notification .icon{font-size:16px;}

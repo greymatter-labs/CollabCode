@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OpenCollab · Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;510;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- ============================================================
+     THE SAME CSS THAT DRIVES index.html AND app.html.
+     tokens.css (custom properties) -> components.css (primitives).
+     Nothing below re-declares a component; the catalogue is rendered
+     by the exact stylesheets that ship in the product.
+     ============================================================ -->
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+
+<style>
+/* ============================================================
+   DOC-SHELL SCAFFOLDING ONLY
+   Pulled from styles/reference/linear-interview-components.html.
+   This block contains NO component definitions — only the page
+   chrome (sidebar, topbar, sections) and the demo/specimen stages
+   used to lay components out. Every .btn / .field / .badge / .editor
+   etc. comes from the linked components.css above.
+   ============================================================ */
+
+/* ---- layout shell ---- */
+.app{display:grid;grid-template-columns:248px 1fr;min-height:100vh;position:relative;z-index:1;}
+.sidebar{position:sticky;top:0;height:100vh;border-right:1px solid var(--border);background:rgba(13,14,16,.7);backdrop-filter:blur(10px);display:flex;flex-direction:column;}
+.sb-head{display:flex;align-items:center;gap:10px;padding:16px 16px 14px;border-bottom:1px solid var(--border);}
+.logo{width:26px;height:26px;border-radius:7px;background:linear-gradient(140deg,#7c87e8,var(--accent));display:grid;place-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 8px rgba(94,106,210,.4);}
+.logo svg{width:15px;height:15px;color:#fff;}
+.sb-title{font-size:13.5px;font-weight:600;letter-spacing:-.01em;}
+.sb-title small{display:block;font-size:11px;font-weight:450;color:var(--text-3);letter-spacing:.02em;}
+.sb-nav{flex:1;overflow-y:auto;padding:10px;}
+.nav-group-label{font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-4);padding:10px 10px 4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:6.5px 10px;border-radius:var(--r-sm);font-size:13px;color:var(--text-3);cursor:pointer;transition:background .12s,color .12s;font-weight:450;}
+.nav-item:hover{background:var(--bg-3);color:var(--text-1);}
+.nav-item.is-active{background:var(--accent-soft);color:#aeb5f3;}
+.nav-item .ni-ic{width:15px;height:15px;opacity:.85;flex:none;}
+.sb-foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:9px;}
+
+.main{position:relative;}
+.topbar{position:sticky;top:0;z-index:40;height:53px;border-bottom:1px solid var(--border);background:rgba(8,9,10,.72);backdrop-filter:blur(14px) saturate(140%);display:flex;align-items:center;justify-content:space-between;padding:0 26px;}
+.tb-left{display:flex;align-items:center;gap:11px;font-size:13px;color:var(--text-3);}
+.tb-left .crumb-now{color:var(--text-1);font-weight:500;}
+.cmdk{display:flex;align-items:center;gap:8px;height:30px;padding:0 9px 0 11px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--r-sm);color:var(--text-3);font-size:12.5px;cursor:text;min-width:200px;transition:.12s;}
+.cmdk:hover{border-color:var(--border-strong);}
+.tb-right{display:flex;align-items:center;gap:10px;}
+
+.content{max-width:1060px;margin:0 auto;padding:44px 34px 140px;}
+section.block{padding:46px 0;border-top:1px solid var(--border);scroll-margin-top:70px;}
+section.block:first-of-type{border-top:none;padding-top:8px;}
+.block-head{margin-bottom:26px;}
+.block-head h2{font-size:23px;font-weight:600;letter-spacing:-.025em;}
+.block-head p{color:var(--text-3);font-size:14px;margin-top:7px;max-width:64ch;}
+.sub{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-4);margin:28px 0 13px;display:flex;align-items:center;gap:9px;}
+.sub::after{content:"";flex:1;height:1px;background:var(--border);}
+
+/* ---- demo + specimen stages ---- */
+.demo{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.025);}
+.demo--col{flex-direction:column;align-items:stretch;}
+.demo--center{justify-content:center;}
+.cap{font-size:11px;color:var(--text-4);font-family:var(--mono);letter-spacing:-.02em;}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.col{display:flex;flex-direction:column;gap:12px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.specimens{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;}
+.specimen{background:var(--bg-1);padding:24px 18px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:16px;min-height:128px;}
+.specimen .cap{margin-top:auto;}
+
+/* ---- "Used in the product" annotation ---- */
+.usage{display:flex;align-items:flex-start;gap:9px;margin-top:14px;padding:11px 14px;background:var(--bg-2);border:1px solid var(--border);border-left:2px solid var(--accent-border);border-radius:var(--r-md);font-size:12.5px;color:var(--text-3);line-height:1.55;}
+.usage svg{width:14px;height:14px;flex:none;margin-top:2px;color:var(--accent-text);}
+.usage b{color:var(--text-2);font-weight:600;}
+.usage code{font-family:var(--mono);font-size:11.5px;background:var(--bg-4);border:1px solid var(--border);padding:1px 5px;border-radius:4px;color:var(--text-2);}
+
+/* ---- intro / token-files callout ---- */
+.intro-card{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 22px;margin-top:26px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);}
+.intro-card p{color:var(--text-2);font-size:14px;line-height:1.62;}
+.token-files{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;margin-top:18px;}
+.token-file{background:var(--bg-2);padding:13px 15px;display:flex;align-items:flex-start;gap:11px;}
+.token-file svg{width:16px;height:16px;flex:none;margin-top:1px;color:var(--accent-text);}
+.token-file .tf-path{font-family:var(--mono);font-size:12px;color:var(--text-1);}
+.token-file .tf-desc{font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.45;}
+
+.foot-note{margin-top:24px;font-size:12px;color:var(--text-4);display:flex;align-items:center;gap:8px;}
+.foot-note svg{color:var(--accent-text);}
+
+/* ---- test-runner collapse interaction (mirrors the production catalogue) ---- */
+.test-chev{color:var(--text-4);transition:transform .15s var(--ease);}
+.test-row.is-open .test-chev{transform:rotate(90deg);color:var(--text-3);}
+.test-body{display:none;}
+.test-row.is-open .test-body{display:block;animation:testBodyIn .16s var(--ease);}
+@keyframes testBodyIn{from{opacity:0;transform:translateY(-2px);}to{opacity:1;}}
+
+@media(max-width:980px){
+  .app{grid-template-columns:1fr;}
+  .sidebar{display:none;}
+  .grid2,.grid3,.token-files{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body class="app-glow">
+
+<!-- ============================================================
+     ICON SPRITE — pulled from the reference doc-shell.
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chev-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-chev-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.3-4.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5.5v13a1 1 0 0 0 1.5.87l11-6.5a1 1 0 0 0 0-1.74l-11-6.5A1 1 0 0 0 7 5.5Z" fill="currentColor"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-phone-off" viewBox="0 0 24 24"><path fill="currentColor" d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v5M12 8h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3.5 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-terminal" viewBox="0 0 24 24"><path d="m5 8 4 4-4 4M12 16h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 6-6 6 6 6M16 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6.5L4.8 18a2 2 0 0 0 1.7 3h11a2 2 0 0 0 1.7-3L14 9.5V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Zm0 0v5h5M9 13h6M9 17h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 17l9 5 9-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-type" viewBox="0 0 24 24"><path d="M4 7V5h16v2M9 5v14M7 19h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-cursor" viewBox="0 0 24 24"><path d="M5 3v18M19 3v18M5 4h3M5 20h3M16 4h3M16 20h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 21h8M12 17v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" fill="currentColor"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 2 9 9l-6 1 4.5 4-1 6 5.5-3 5.5 3-1-6L21 10l-6-1-3-7Z" fill="currentColor"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.4L12 17l-1.9-5.6L4.5 10l5.6-1.4Z" fill="currentColor"/><path d="M19 14l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7Z" fill="currentColor" opacity=".7"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M 9.37 4.76 L 10.09 2.18 L 13.91 2.18 L 14.63 4.76 L 15.25 5.02 L 17.59 3.71 L 20.29 6.41 L 18.98 8.75 L 19.24 9.37 L 21.82 10.09 L 21.82 13.91 L 19.24 14.63 L 18.98 15.25 L 20.29 17.59 L 17.59 20.29 L 15.25 18.98 L 14.63 19.24 L 13.91 21.82 L 10.09 21.82 L 9.37 19.24 L 8.75 18.98 L 6.41 20.29 L 3.71 17.59 L 5.02 15.25 L 4.76 14.63 L 2.18 13.91 L 2.18 10.09 L 4.76 9.37 L 5.02 8.75 L 3.71 6.41 L 6.41 3.71 L 8.75 5.02 Z M 7.6 12.0 A 4.4 4.4 0 0 0 16.4 12.0 A 4.4 4.4 0 0 0 7.6 12.0 Z"/></symbol>
+</svg>
+
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="sb-head">
+      <div class="logo"><svg><use href="#i-code"/></svg></div>
+      <div class="sb-title">OpenCollab<small>Design system</small></div>
+    </div>
+    <nav class="sb-nav" id="sbNav">
+      <div class="nav-group-label">Get started</div>
+      <a class="nav-item is-active" href="#overview"><svg class="ni-ic"><use href="#i-grid"/></svg>Overview</a>
+      <a class="nav-item" href="#foundations"><svg class="ni-ic"><use href="#i-layers"/></svg>Foundations</a>
+      <div class="nav-group-label">Primitives</div>
+      <a class="nav-item" href="#buttons"><svg class="ni-ic"><use href="#i-bolt"/></svg>Buttons &amp; actions</a>
+      <a class="nav-item" href="#forms"><svg class="ni-ic"><use href="#i-cursor"/></svg>Form controls</a>
+      <a class="nav-item" href="#data"><svg class="ni-ic"><use href="#i-type"/></svg>Data display</a>
+      <a class="nav-item" href="#navigation"><svg class="ni-ic"><use href="#i-link"/></svg>Tabs &amp; nav</a>
+      <a class="nav-item" href="#feedback"><svg class="ni-ic"><use href="#i-bell"/></svg>Feedback</a>
+      <div class="nav-group-label">Code surfaces</div>
+      <a class="nav-item" href="#editor"><svg class="ni-ic"><use href="#i-code"/></svg>Editor</a>
+      <a class="nav-item" href="#console"><svg class="ni-ic"><use href="#i-terminal"/></svg>Console</a>
+      <a class="nav-item" href="#tests"><svg class="ni-ic"><use href="#i-flask"/></svg>Test runner</a>
+    </nav>
+    <div class="sb-foot">
+      <div class="avatar avatar--sm" style="background:linear-gradient(135deg,#7c87e8,#5e6ad2)">OC</div>
+      <div style="font-size:12px;line-height:1.3"><div style="color:var(--text-1);font-weight:500">OpenCollab</div><div style="color:var(--text-4);font-size:11px">v1.0 · dark</div></div>
+      <svg class="ic ic-14" style="color:var(--text-4);margin-left:auto"><use href="#i-settings"/></svg>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+    <header class="topbar">
+      <div class="tb-left">
+        <span>OpenCollab</span>
+        <svg class="ic ic-12" style="color:var(--text-4)"><use href="#i-chev-right"/></svg>
+        <span class="crumb-now">Design system</span>
+      </div>
+      <div class="tb-right">
+        <div class="cmdk"><svg class="ic ic-14"><use href="#i-search"/></svg><span>Search components</span><kbd class="kbd" style="margin-left:auto">⌘K</kbd></div>
+        <button class="btn btn--icon btn--ghost" data-tip="Notifications"><svg class="ic"><use href="#i-bell"/></svg></button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ====== OVERVIEW ====== -->
+      <section class="block" id="overview">
+        <div class="eyebrow">OpenCollab · Technical Interview Platform</div>
+        <h1 style="font-size:38px;font-weight:600;letter-spacing:-.03em;margin:14px 0 12px;line-height:1.1">Design System</h1>
+        <p style="color:var(--text-2);font-size:16px;max-width:64ch;line-height:1.6">This is the OpenCollab design system. The same <span class="mono" style="color:var(--text-1)">tokens.css</span> + <span class="mono" style="color:var(--text-1)">components.css</span> render this page and drive <span class="mono" style="color:var(--text-1)">index.html</span> and <span class="mono" style="color:var(--text-1)">app.html</span>. A living catalogue — every component below is the real one, not a copy.</p>
+
+        <div class="intro-card">
+          <p>Edit one place, change it everywhere. Tokens are the single source of truth; primitives read from them; the live app inherits both. No component CSS is duplicated here — this catalogue links the production stylesheets directly.</p>
+          <div class="token-files">
+            <div class="token-file">
+              <svg><use href="#i-layers"/></svg>
+              <div><div class="tf-path">styles/tokens.css</div><div class="tf-desc">CSS custom properties — surfaces, borders, text, accent, semantic colors, radii, spacing, shadows, type &amp; motion.</div></div>
+            </div>
+            <div class="token-file">
+              <svg><use href="#i-grid"/></svg>
+              <div><div class="tf-path">styles/components.css</div><div class="tf-desc">Token-driven primitives — buttons, fields, badges, diffs, tags, avatars, tabs, toasts, dialogs, editor &amp; test rows.</div></div>
+            </div>
+            <div class="token-file">
+              <svg><use href="#i-code"/></svg>
+              <div><div class="tf-path">styles/app/base.css + app/*.css</div><div class="tf-desc">Per-surface partials (auth, dashboard, sessions, problem, editor, notes) that compose the primitives into screens.</div></div>
+            </div>
+            <div class="token-file">
+              <svg><use href="#i-doc"/></svg>
+              <div><div class="tf-path">styles/reference/linear-interview-components.html</div><div class="tf-desc">The visual north star — the Linear interview library this system is modelled on.</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:24px">
+          <span class="badge badge--accent"><span class="dot" style="background:var(--accent)"></span>v1.0.0</span>
+          <span class="badge badge--neutral">Dark theme</span>
+          <span class="badge badge--neutral">Inter · JetBrains Mono</span>
+          <span class="badge badge--green"><svg class="ic" style="width:11px;height:11px"><use href="#i-check"/></svg>Token-driven</span>
+        </div>
+
+        <div class="grid3" style="margin-top:30px">
+          <div class="panel" style="padding:18px">
+            <svg class="ic ic-20" style="color:var(--accent)"><use href="#i-bolt"/></svg>
+            <div style="font-size:14px;font-weight:600;margin-top:12px">Primitives</div>
+            <p class="muted" style="font-size:12.5px;margin-top:5px;line-height:1.5">Buttons, fields, badges, tags, avatars — the small surfaces that carry intent and status everywhere.</p>
+          </div>
+          <div class="panel" style="padding:18px">
+            <svg class="ic ic-20" style="color:var(--green)"><use href="#i-code"/></svg>
+            <div style="font-size:14px;font-weight:600;margin-top:12px">Code surfaces</div>
+            <p class="muted" style="font-size:12.5px;margin-top:5px;line-height:1.5">Editor with line gutters and syntax tokens, console output, and a pass/fail test runner.</p>
+          </div>
+          <div class="panel" style="padding:18px">
+            <svg class="ic ic-20" style="color:var(--yellow)"><use href="#i-bell"/></svg>
+            <div style="font-size:14px;font-weight:600;margin-top:12px">Feedback</div>
+            <p class="muted" style="font-size:12.5px;margin-top:5px;line-height:1.5">Toasts that slide in from the corner, and dialogs that gate destructive actions.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== FOUNDATIONS ====== -->
+      <section class="block" id="foundations">
+        <div class="eyebrow">Tokens</div>
+        <div class="block-head" style="margin-top:12px"><h2>Foundations</h2><p>The tokens everything else is built from. Surfaces stack as near-black layers separated by hairline borders, with a single indigo accent used sparingly for intent. Each swatch reads its color directly from a <span class="mono">--bg-*</span> / semantic token.</p></div>
+
+        <div class="sub">Surfaces</div>
+        <div class="specimens">
+          <div class="specimen"><div style="width:46px;height:46px;border-radius:10px;background:var(--bg-app);border:1px solid var(--border)"></div><span class="cap">--bg-app</span></div>
+          <div class="specimen"><div style="width:46px;height:46px;border-radius:10px;background:var(--bg-1);border:1px solid var(--border)"></div><span class="cap">--bg-1</span></div>
+          <div class="specimen"><div style="width:46px;height:46px;border-radius:10px;background:var(--bg-2);border:1px solid var(--border)"></div><span class="cap">--bg-2</span></div>
+          <div class="specimen"><div style="width:46px;height:46px;border-radius:10px;background:var(--bg-3);border:1px solid var(--border)"></div><span class="cap">--bg-3</span></div>
+          <div class="specimen"><div style="width:46px;height:46px;border-radius:10px;background:var(--bg-4);border:1px solid var(--border)"></div><span class="cap">--bg-4</span></div>
+          <div class="specimen"><div style="width:46px;height:46px;border-radius:10px;background:var(--bg-inset);border:1px solid var(--border)"></div><span class="cap">--bg-inset</span></div>
+        </div>
+
+        <div class="sub">Borders &amp; text</div>
+        <div class="specimens">
+          <div class="specimen"><div style="width:46px;height:46px;border-radius:10px;background:var(--bg-2);border:1px solid var(--border)"></div><span class="cap">--border</span></div>
+          <div class="specimen"><div style="width:46px;height:46px;border-radius:10px;background:var(--bg-2);border:1px solid var(--border-2)"></div><span class="cap">--border-2</span></div>
+          <div class="specimen"><div style="width:46px;height:46px;border-radius:10px;background:var(--bg-2);border:1px solid var(--border-strong)"></div><span class="cap">--border-strong</span></div>
+          <div class="specimen"><div style="font-size:22px;font-weight:600;color:var(--text-1)">Aa</div><span class="cap">--text-1</span></div>
+          <div class="specimen"><div style="font-size:22px;font-weight:600;color:var(--text-3)">Aa</div><span class="cap">--text-3</span></div>
+          <div class="specimen"><div style="font-size:22px;font-weight:600;color:var(--text-4)">Aa</div><span class="cap">--text-4</span></div>
+        </div>
+
+        <div class="sub">Accent &amp; semantic</div>
+        <div class="specimens">
+          <div class="specimen"><div style="width:46px;height:46px;border-radius:10px;background:var(--accent)"></div><span class="cap">accent #5E6AD2</span></div>
+          <div class="specimen"><div style="width:46px;height:46px;border-radius:10px;background:var(--green)"></div><span class="cap">green · pass</span></div>
+          <div class="specimen"><div style="width:46px;height:46px;border-radius:10px;background:var(--yellow)"></div><span class="cap">yellow · running</span></div>
+          <div class="specimen"><div style="width:46px;height:46px;border-radius:10px;background:var(--red)"></div><span class="cap">red · fail</span></div>
+          <div class="specimen"><div style="width:46px;height:46px;border-radius:10px;background:var(--blue)"></div><span class="cap">blue · info</span></div>
+          <div class="specimen"><div style="width:46px;height:46px;border-radius:10px;background:var(--orange)"></div><span class="cap">orange</span></div>
+        </div>
+
+        <div class="sub">Type scale — Inter</div>
+        <div class="demo demo--col">
+          <div style="font-size:38px;font-weight:600;letter-spacing:-.03em">Display · 38 / 600</div>
+          <div style="font-size:23px;font-weight:600;letter-spacing:-.025em;color:var(--text-1)">Heading · 23 / 600</div>
+          <div style="font-size:16px;font-weight:600;color:var(--text-1)">Subtitle · 16 / 600</div>
+          <div style="font-size:14px;color:var(--text-2)">Body · 14 / 450 — the default reading size for descriptions and content.</div>
+          <div style="font-size:12.5px;color:var(--text-3)">Small · 12.5 / 450 — secondary metadata and helper text.</div>
+          <div style="font-family:var(--mono);font-size:13px;color:var(--text-2);font-variant-numeric:tabular-nums">Mono · JetBrains Mono — code, timers, IO values · 0123456789</div>
+        </div>
+
+        <div class="sub">Radius &amp; elevation</div>
+        <div class="demo">
+          <div style="width:64px;height:48px;background:var(--bg-3);border:1px solid var(--border-2);border-radius:var(--r-xs)" data-tip="--r-xs · 4px"></div>
+          <div style="width:64px;height:48px;background:var(--bg-3);border:1px solid var(--border-2);border-radius:var(--r-sm)" data-tip="--r-sm · 6px"></div>
+          <div style="width:64px;height:48px;background:var(--bg-3);border:1px solid var(--border-2);border-radius:var(--r-md)" data-tip="--r-md · 8px"></div>
+          <div style="width:64px;height:48px;background:var(--bg-3);border:1px solid var(--border-2);border-radius:var(--r-lg)" data-tip="--r-lg · 12px"></div>
+          <div style="width:64px;height:48px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--r-md);box-shadow:var(--shadow-md)" data-tip="--shadow-md"></div>
+          <div style="width:64px;height:48px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--r-md);box-shadow:var(--shadow-lg)" data-tip="--shadow-lg"></div>
+        </div>
+
+        <div class="sub">Status glyphs</div>
+        <div class="statuses">
+          <span class="status-chip"><svg class="st-ic" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="#8a8f98" stroke-width="1.6" stroke-dasharray="1.6 1.9"/></svg>Backlog</span>
+          <span class="status-chip"><svg class="st-ic" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="#8a8f98" stroke-width="1.6"/></svg>Not started</span>
+          <span class="status-chip"><svg class="st-ic" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="#f2c94c" stroke-width="1.5"/><path d="M8 8 V3 A5 5 0 0 1 8 13 Z" fill="#f2c94c"/></svg>In progress</span>
+          <span class="status-chip"><svg class="st-ic" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#5e6ad2"/><path d="M5.2 8.2 7.1 10.1 10.9 5.9" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Completed</span>
+          <span class="status-chip"><svg class="st-ic" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#4a4e56"/><path d="M5.6 5.6 10.4 10.4M10.4 5.6 5.6 10.4" stroke="#c7cace" stroke-width="1.5" stroke-linecap="round"/></svg>Ended</span>
+        </div>
+        <div class="usage"><svg><use href="#i-info"/></svg><span><b>Used in the product:</b> surface tokens layer every screen — <code>--bg-app</code> behind the dashboard, <code>--bg-1</code> for cards, <code>--bg-inset</code> for the editor. Status glyphs back the session-status indicators in the sessions table.</span></div>
+      </section>
+
+      <!-- ============ BUTTONS ============ -->
+      <section class="block" id="buttons">
+        <div class="eyebrow">Actions</div>
+        <h2 style="font-size:23px;font-weight:600;letter-spacing:-.025em;margin:12px 0 6px">Buttons</h2>
+        <p class="muted" style="font-size:14px;max-width:62ch;line-height:1.6">Primary drives the single most important action on a surface — creating a session, running code. Everything else recedes into neutral grayscale.</p>
+
+        <div class="sub">Variants</div>
+        <div class="demo">
+          <button class="btn btn--primary">Create session</button>
+          <button class="btn btn--secondary">Save draft</button>
+          <button class="btn btn--ghost">Reset</button>
+          <button class="btn btn--success"><svg class="ic"><use href="#i-check"/></svg>Submit solution</button>
+          <button class="btn btn--danger-soft">End session</button>
+          <button class="btn btn--danger">Delete</button>
+        </div>
+
+        <div class="sub">Sizes</div>
+        <div class="demo">
+          <button class="btn btn--primary btn--sm">Small</button>
+          <button class="btn btn--primary">Medium</button>
+          <button class="btn btn--primary btn--lg">Large</button>
+        </div>
+
+        <div class="sub">With icons &amp; shortcuts</div>
+        <div class="demo">
+          <button class="btn btn--primary"><svg class="ic"><use href="#i-play"/></svg>Run<span class="kbd kbd--on-accent">⌘</span><span class="kbd kbd--on-accent">↵</span></button>
+          <button class="btn btn--secondary"><svg class="ic"><use href="#i-refresh"/></svg>Run all tests</button>
+          <button class="btn btn--ghost"><svg class="ic"><use href="#i-plus"/></svg>New problem</button>
+          <button class="btn btn--secondary">Format<span class="kbd">⇧</span><span class="kbd">⌥F</span></button>
+        </div>
+
+        <div class="sub">Icon-only</div>
+        <div class="demo">
+          <button class="btn btn--secondary btn--icon btn--sm" data-tip="Settings"><svg class="ic"><use href="#i-settings"/></svg></button>
+          <button class="btn btn--secondary btn--icon" data-tip="Run"><svg class="ic"><use href="#i-play"/></svg></button>
+          <button class="btn btn--ghost btn--icon" data-tip="More"><svg class="ic"><use href="#i-more"/></svg></button>
+          <button class="btn btn--secondary btn--icon btn--lg" data-tip="Share link"><svg class="ic"><use href="#i-link"/></svg></button>
+        </div>
+
+        <div class="sub">States</div>
+        <div class="demo">
+          <button class="btn btn--primary" disabled>Disabled</button>
+          <button class="btn btn--primary" id="loadBtn"><span class="spinner"></span>Running…</button>
+          <button class="btn btn--secondary" aria-disabled="true">Read-only</button>
+        </div>
+        <div class="demo demo--col" style="max-width:320px;margin-top:14px">
+          <button class="btn btn--primary btn--block">Block — full width</button>
+        </div>
+
+        <div class="usage"><svg><use href="#i-info"/></svg><span><b>Used in the product:</b> <code>.btn--primary</code> drives dashboard actions and the login submit; <code>.btn--secondary</code> and <code>.btn--ghost</code> carry session-list and toolbar actions; <code>.btn--danger</code> gates session deletion. Legacy <code>.primary-btn</code> / <code>.secondary-btn</code> in <span class="mono">app.html</span> are reskinned to match via <code>app/base.css</code>.</span></div>
+      </section>
+
+      <!-- ============ FORMS ============ -->
+      <section class="block" id="forms">
+        <div class="eyebrow">Input</div>
+        <h2 style="font-size:23px;font-weight:600;letter-spacing:-.025em;margin:12px 0 6px">Form controls</h2>
+        <p class="muted" style="font-size:14px;max-width:62ch;line-height:1.6">Inset fields with a 3px accent focus ring, toggles, checks, segmented controls, and a native-select skin — used across login, session setup, and interviewer notes.</p>
+
+        <div class="grid2" style="margin-top:22px;align-items:start">
+          <div class="field">
+            <label class="label">Display name</label>
+            <input class="input" value="Jordan Reyes" />
+            <span class="hint">As it appears to other participants.</span>
+          </div>
+          <div class="field">
+            <label class="label">Search problems<span class="opt">optional</span></label>
+            <div class="input-wrap">
+              <svg class="ic i-lead"><use href="#i-search"/></svg>
+              <input class="input" placeholder="Try &ldquo;graphs&rdquo; or &ldquo;two pointers&rdquo;…" />
+            </div>
+            <span class="hint">Filters the problem bank live.</span>
+          </div>
+          <div class="field">
+            <label class="label">Email</label>
+            <input class="input input--err" value="jordan@@example" />
+            <span class="hint err"><svg class="ic" style="width:12px;height:12px;vertical-align:-2px"><use href="#i-alert"/></svg> Enter a valid email address.</span>
+          </div>
+          <div class="field">
+            <label class="label">Notes</label>
+            <textarea class="textarea" placeholder="Private — visible only to the panel…">Strong on recursion. Probe scaling next.</textarea>
+          </div>
+        </div>
+
+        <div class="sub">Toggles &amp; choices</div>
+        <div class="demo demo--col" style="gap:18px">
+          <label style="display:flex;align-items:center;gap:11px;cursor:pointer">
+            <span class="switch is-on" data-switch><input type="checkbox" checked/><span class="track"></span><span class="thumb"></span></span>
+            <span style="font-size:13px">Record session &amp; transcript</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:11px;cursor:pointer">
+            <span class="switch" data-switch><input type="checkbox"/><span class="track"></span><span class="thumb"></span></span>
+            <span style="font-size:13px">Allow candidate to run hidden tests</span>
+          </label>
+
+          <div class="row" style="gap:22px">
+            <span class="check is-checked" data-check><span class="box"><svg class="ic"><use href="#i-check"/></svg></span>Autocomplete</span>
+            <span class="check" data-check><span class="box"><svg class="ic"><use href="#i-check"/></svg></span>Vim keybindings</span>
+            <span class="check is-checked" data-check><span class="box"><svg class="ic"><use href="#i-check"/></svg></span>Syntax linting</span>
+          </div>
+
+          <div class="row" data-radio-group style="gap:22px">
+            <span class="check is-radio is-checked" data-radio><span class="box"><span class="dot"></span></span>45 minutes</span>
+            <span class="check is-radio" data-radio><span class="box"><span class="dot"></span></span>60 minutes</span>
+            <span class="check is-radio" data-radio><span class="box"><span class="dot"></span></span>90 minutes</span>
+          </div>
+        </div>
+
+        <div class="sub">Segmented &amp; select</div>
+        <div class="demo" style="gap:18px">
+          <div class="segmented" data-segmented>
+            <button class="seg is-active">Editor</button>
+            <button class="seg">Split</button>
+            <button class="seg">Output</button>
+          </div>
+
+          <select class="select-native">
+            <option>Python 3.12</option>
+            <option>JavaScript</option>
+            <option>TypeScript 5.4</option>
+            <option>Go 1.22</option>
+            <option>Java 21</option>
+          </select>
+        </div>
+
+        <div class="usage"><svg><use href="#i-info"/></svg><span><b>Used in the product:</b> <code>.field</code> / <code>.input</code> / <code>.textarea</code> back the login form, the join-by-code input, and the notes panel; <code>.select-native</code> is the live IDE language picker; <code>.segmented</code> switches editor views. Legacy <code>.session-code-input</code> and <code>.form-group</code> inherit the same skin.</span></div>
+      </section>
+
+      <!-- ============ DATA DISPLAY ============ -->
+      <section class="block" id="data">
+        <div class="eyebrow">Display</div>
+        <h2 style="font-size:23px;font-weight:600;letter-spacing:-.025em;margin:12px 0 6px">Data display</h2>
+        <p class="muted" style="font-size:14px;max-width:62ch;line-height:1.6">Badges, difficulty pills, tags, avatars, progress, spinners, keys, and tooltips — the small surfaces that carry status across the whole product.</p>
+
+        <div class="sub">Badges</div>
+        <div class="demo">
+          <span class="badge badge--neutral">Draft</span>
+          <span class="badge badge--accent"><span class="dot" style="background:var(--accent)"></span>Live now</span>
+          <span class="badge badge--green"><svg class="ic" style="width:11px;height:11px"><use href="#i-check"/></svg>Submitted</span>
+          <span class="badge badge--yellow">In review</span>
+          <span class="badge badge--blue">Scheduled</span>
+          <span class="badge badge--red">Ended</span>
+        </div>
+        <div class="usage"><svg><use href="#i-info"/></svg><span><b>Used in the product:</b> <code>.badge--*</code> render session status in the sessions table (legacy <code>.session-status-badge</code>) — green for active, yellow in progress, red ended.</span></div>
+
+        <div class="sub">Difficulty</div>
+        <div class="demo">
+          <span class="diff diff--easy"><span class="dot"></span>Easy</span>
+          <span class="diff diff--med"><span class="dot"></span>Medium</span>
+          <span class="diff diff--hard"><span class="dot"></span>Hard</span>
+        </div>
+        <div class="usage"><svg><use href="#i-info"/></svg><span><b>Used in the product:</b> <code>.diff--*</code> pills label problem difficulty in the problem header and the question nav.</span></div>
+
+        <div class="sub">Tags</div>
+        <div class="demo">
+          <span class="tag">Arrays<button class="x"><svg class="ic"><use href="#i-x"/></svg></button></span>
+          <span class="tag">Hash map<button class="x"><svg class="ic"><use href="#i-x"/></svg></button></span>
+          <span class="tag">Dynamic programming<button class="x"><svg class="ic"><use href="#i-x"/></svg></button></span>
+          <span class="tag no-x">O(n) target</span>
+        </div>
+
+        <div class="sub">Avatars &amp; presence</div>
+        <div class="demo" style="gap:20px">
+          <span class="avatar avatar--sm" style="background:linear-gradient(135deg,#e0789a,#c0436a)">JR</span>
+          <span class="avatar avatar--md" style="background:linear-gradient(135deg,#56c8c8,#2e8f8f)">JR<span class="presence presence--online"></span></span>
+          <span class="avatar avatar--lg" style="background:linear-gradient(135deg,#7c87e8,#5e6ad2)">OS<span class="presence presence--busy"></span></span>
+          <div class="avatar-group">
+            <span class="avatar avatar--md" style="background:linear-gradient(135deg,#7c87e8,#5e6ad2)">OS</span>
+            <span class="avatar avatar--md" style="background:linear-gradient(135deg,#56c8c8,#2e8f8f)">AM</span>
+            <span class="avatar avatar--md" style="background:linear-gradient(135deg,#e2a05a,#c47a2a)">EM</span>
+            <span class="avatar-more">+3</span>
+          </div>
+        </div>
+        <div class="usage"><svg><use href="#i-info"/></svg><span><b>Used in the product:</b> avatars mark participants in the live session header and presence in the collaborator list.</span></div>
+
+        <div class="sub">Progress &amp; loading</div>
+        <div class="demo demo--col" style="max-width:440px;gap:16px">
+          <div style="width:100%"><div class="row" style="justify-content:space-between;margin-bottom:7px"><span style="font-size:12.5px;color:var(--text-2)">Questions answered</span><span style="font-size:12px;color:var(--text-3);font-family:var(--mono);font-variant-numeric:tabular-nums">2 / 3</span></div><div class="progress"><div class="bar" style="width:66%"></div></div></div>
+          <div style="width:100%"><div class="row" style="justify-content:space-between;margin-bottom:7px"><span style="font-size:12.5px;color:var(--text-2)">Test coverage</span><span style="font-size:12px;color:#7fd6a7;font-family:var(--mono);font-variant-numeric:tabular-nums">100%</span></div><div class="progress green"><div class="bar" style="width:100%"></div></div></div>
+        </div>
+        <div class="demo" style="margin-top:14px">
+          <span class="spinner"></span>
+          <span class="spinner spinner--accent"></span>
+          <span class="row" style="gap:9px;color:var(--text-3);font-size:13px"><span class="spinner spinner--accent"></span>Compiling…</span>
+        </div>
+
+        <div class="sub">Keys &amp; tooltips</div>
+        <div class="demo">
+          <span class="row" style="gap:6px;color:var(--text-3);font-size:13px">Run code<span class="kbd">⌘</span><span class="kbd">↵</span></span>
+          <span class="row" style="gap:6px;color:var(--text-3);font-size:13px;margin-left:8px">Command menu<span class="kbd">⌘</span><span class="kbd">K</span></span>
+          <button class="btn btn--secondary btn--icon" data-tip="Copy invite link" style="margin-left:8px"><svg class="ic"><use href="#i-link"/></svg></button>
+          <span class="tag no-x" data-tip="Hover targets work on any element">Hover me</span>
+        </div>
+      </section>
+
+      <!-- ============ TABS & NAV ============ -->
+      <section class="block" id="navigation">
+        <div class="eyebrow">Wayfinding</div>
+        <h2 style="font-size:23px;font-weight:600;letter-spacing:-.025em;margin:12px 0 6px">Tabs &amp; navigation</h2>
+        <p class="muted" style="font-size:14px;max-width:62ch;line-height:1.6">Tabs switch panels within a problem; sidebar items move between sections. The active tab carries an accent underline.</p>
+
+        <div class="sub">Tabs</div>
+        <div class="tabs" data-tabs style="margin-bottom:16px">
+          <button class="tab is-active">Description</button>
+          <button class="tab">Solutions<span class="tab-count">2</span></button>
+          <button class="tab">Submissions<span class="tab-count">14</span></button>
+          <button class="tab">Discussion</button>
+        </div>
+        <div class="panel" style="padding:16px 18px;color:var(--text-3);font-size:13px">Panel content switches with the active tab. Try clicking through them.</div>
+        <div class="usage"><svg><use href="#i-info"/></svg><span><b>Used in the product:</b> <code>.tabs</code> drive the session detail view (legacy <code>.session-tabs</code> / <code>.session-detail-tabs</code>) and the problem description / tests split.</span></div>
+      </section>
+
+      <!-- ============ FEEDBACK ============ -->
+      <section class="block" id="feedback">
+        <div class="eyebrow">Feedback</div>
+        <h2 style="font-size:23px;font-weight:600;letter-spacing:-.025em;margin:12px 0 6px">Toasts &amp; dialogs</h2>
+        <p class="muted" style="font-size:14px;max-width:62ch;line-height:1.6">Transient confirmations slide in from the corner; destructive actions are gated behind a modal. Both are live — click below.</p>
+
+        <div class="demo" style="margin-top:20px">
+          <button class="btn btn--secondary" data-toast="success"><svg class="ic"><use href="#i-check"/></svg>Success toast</button>
+          <button class="btn btn--secondary" data-toast="info"><svg class="ic"><use href="#i-info"/></svg>Info toast</button>
+          <button class="btn btn--secondary" data-toast="error"><svg class="ic"><use href="#i-alert"/></svg>Error toast</button>
+          <button class="btn btn--danger-soft" data-open-modal><svg class="ic"><use href="#i-phone-off"/></svg>Open confirm dialog</button>
+        </div>
+        <div class="usage"><svg><use href="#i-info"/></svg><span><b>Used in the product:</b> <code>.toast</code> confirms saves and run results; the <code>.c-modal</code> / <code>.c-overlay</code> dialog primitives back the &ldquo;end session&rdquo; and &ldquo;delete&rdquo; confirmations. The legacy fullscreen <code>.modal</code> overlay is reskinned separately in <code>app/base.css</code>.</span></div>
+      </section>
+
+      <!-- ============ CODE EDITOR ============ -->
+      <section class="block" id="editor">
+        <div class="eyebrow">Coding surface</div>
+        <h2 style="font-size:23px;font-weight:600;letter-spacing:-.025em;margin:12px 0 6px">Code editor</h2>
+        <p class="muted" style="font-size:14px;max-width:62ch;line-height:1.6">Monospaced, line-numbered, with an active-line marker and a blinking caret. File tabs, language selection, and run live in one compact bar. Syntax colors come from the <span class="mono">.tk-*</span> token classes.</p>
+
+        <div class="editor" style="margin-top:20px">
+          <div class="editor-bar">
+            <div class="file-tabs">
+              <div class="file-tab is-active"><svg class="ic ic-14" style="color:#3776ab"><use href="#i-code"/></svg>solution.py<span class="dirty"></span></div>
+              <div class="file-tab"><svg class="ic ic-14"><use href="#i-flask"/></svg>test_main.py</div>
+            </div>
+            <div class="editor-actions">
+              <span class="tag no-x" style="height:26px"><span class="lang-dot" style="background:#3776ab"></span>Python 3.12</span>
+              <button class="btn btn--ghost btn--sm btn--icon" data-tip="Reset to starter"><svg class="ic"><use href="#i-refresh"/></svg></button>
+              <button class="btn btn--primary btn--sm" id="runBtn"><svg class="ic"><use href="#i-play"/></svg>Run<span class="kbd kbd--on-accent">⌘</span><span class="kbd kbd--on-accent">↵</span></button>
+            </div>
+          </div>
+          <div class="editor-scroll">
+            <div class="code-row"><span class="gutter">1</span><span class="line"><span class="tk-key">from</span> typing <span class="tk-key">import</span> <span class="tk-bif">List</span></span></div>
+            <div class="code-row"><span class="gutter">2</span><span class="line"> </span></div>
+            <div class="code-row"><span class="gutter">3</span><span class="line"><span class="tk-key">class</span> <span class="tk-cls">Solution</span><span class="tk-pn">:</span></span></div>
+            <div class="code-row"><span class="gutter">4</span><span class="line">    <span class="tk-key">def</span> <span class="tk-fn">twoSum</span><span class="tk-pn">(</span><span class="tk-self">self</span><span class="tk-pn">,</span> nums<span class="tk-pn">:</span> <span class="tk-bif">List</span><span class="tk-pn">[</span><span class="tk-bif">int</span><span class="tk-pn">]</span><span class="tk-pn">,</span> target<span class="tk-pn">:</span> <span class="tk-bif">int</span><span class="tk-pn">)</span> <span class="tk-op">-&gt;</span> <span class="tk-bif">List</span><span class="tk-pn">[</span><span class="tk-bif">int</span><span class="tk-pn">]</span><span class="tk-pn">:</span></span></div>
+            <div class="code-row"><span class="gutter">5</span><span class="line">        seen <span class="tk-op">=</span> <span class="tk-pn">{}</span></span></div>
+            <div class="code-row"><span class="gutter">6</span><span class="line">        <span class="tk-key">for</span> i<span class="tk-pn">,</span> num <span class="tk-key">in</span> <span class="tk-bif">enumerate</span><span class="tk-pn">(</span>nums<span class="tk-pn">)</span><span class="tk-pn">:</span></span></div>
+            <div class="code-row is-active"><span class="gutter">7</span><span class="line">            complement <span class="tk-op">=</span> target <span class="tk-op">-</span> num<span class="cursor"></span></span></div>
+            <div class="code-row"><span class="gutter">8</span><span class="line">            <span class="tk-key">if</span> complement <span class="tk-key">in</span> seen<span class="tk-pn">:</span></span></div>
+            <div class="code-row"><span class="gutter">9</span><span class="line">                <span class="tk-key">return</span> <span class="tk-pn">[</span>seen<span class="tk-pn">[</span>complement<span class="tk-pn">]</span><span class="tk-pn">,</span> i<span class="tk-pn">]</span></span></div>
+            <div class="code-row"><span class="gutter">10</span><span class="line">            seen<span class="tk-pn">[</span>num<span class="tk-pn">]</span> <span class="tk-op">=</span> i</span></div>
+            <div class="code-row"><span class="gutter">11</span><span class="line">        <span class="tk-key">return</span> <span class="tk-pn">[]</span></span></div>
+          </div>
+          <div class="editor-foot">
+            <div class="ef-group">
+              <span class="ef-item">Ln 7, Col 35</span>
+              <span class="ef-item">Spaces: 4</span>
+              <span class="ef-item">UTF-8</span>
+            </div>
+            <div class="ef-group">
+              <span class="ef-item">Python</span>
+              <span class="ef-item"><svg class="ic ic-14" style="color:#7fd6a7"><use href="#i-check"/></svg>No errors</span>
+            </div>
+          </div>
+        </div>
+        <div class="usage"><svg><use href="#i-info"/></svg><span><b>Used in the product:</b> the editor primitives skin the live IDE in <span class="mono">app.html</span> — the ACE editor host (<code>.editor</code>), file/run bar, and footer status line. The same look applies whether code runs locally or through a Blaxel sandbox.</span></div>
+      </section>
+
+      <!-- ============ CONSOLE ============ -->
+      <section class="block" id="console">
+        <div class="eyebrow">Output</div>
+        <h2 style="font-size:23px;font-weight:600;letter-spacing:-.025em;margin:12px 0 6px">Console</h2>
+        <p class="muted" style="font-size:14px;max-width:62ch;line-height:1.6">Program output and run logs stream here with semantic coloring — dim prompts, green success, red failures, blue info, yellow warnings.</p>
+
+        <div class="console" style="margin-top:20px">
+          <div class="console-head">
+            <span class="ch-title"><svg class="ic ic-14"><use href="#i-terminal"/></svg>Console</span>
+            <span class="muted" style="margin-left:auto;font-size:11.5px;font-family:var(--mono)">exit 1</span>
+          </div>
+          <div class="console-body"><span class="c-dim">$ python -m pytest -q</span>
+<span class="c-info">collecting … 4 items</span>
+<span class="c-ok">...</span><span class="c-err">F</span>
+<span class="c-warn">warning: index stored before complement check</span>
+<span class="c-err">FAILED test_main.py::case_4 — assert [1, 1] == [0, 1]</span>
+<span class="c-dim">3 passed, 1 failed in 0.42s</span></div>
+        </div>
+        <div class="usage"><svg><use href="#i-info"/></svg><span><b>Used in the product:</b> the <code>.console</code> surface renders stdout/stderr from executed code in the live IDE output panel.</span></div>
+      </section>
+
+      <!-- ============ TEST RUNNER ============ -->
+      <section class="block" id="tests">
+        <div class="eyebrow">Verification</div>
+        <h2 style="font-size:23px;font-weight:600;letter-spacing:-.025em;margin:12px 0 6px">Test runner</h2>
+        <p class="muted" style="font-size:14px;max-width:62ch;line-height:1.6">A summary line, then each case expands to show input, expected, and actual. Failures diff in red, passes in green.</p>
+
+        <div class="test-summary" style="margin-top:20px">
+          <span class="ts-count"><b>3</b> / 4 passing</span>
+          <span class="muted" style="font-size:12px;font-family:var(--mono)">1 failed · 0.42s</span>
+          <div style="flex:1"></div>
+          <div class="progress green" style="width:120px"><div class="bar" style="width:75%"></div></div>
+        </div>
+
+        <div class="tests">
+          <div class="test-row is-open">
+            <div class="test-row-head" data-test-toggle>
+              <span class="test-ic test-ic--fail"><svg class="ic"><use href="#i-x"/></svg></span>
+              <span class="test-name">Case 4 · duplicate values</span>
+              <span class="test-meta">12ms<svg class="ic ic-14 test-chev"><use href="#i-chev-right"/></svg></span>
+            </div>
+            <div class="test-body" style="padding:2px 13px 13px 43px">
+              <div class="io-row" style="font-family:var(--mono);font-size:12px;display:flex;gap:10px;padding:3.5px 0;align-items:baseline"><span class="k" style="color:var(--text-4);width:74px;flex:none">Input</span><span class="v" style="color:var(--text-2)">nums = [3, 3], target = 6</span></div>
+              <div class="io-row" style="font-family:var(--mono);font-size:12px;display:flex;gap:10px;padding:3.5px 0;align-items:baseline"><span class="k" style="color:var(--text-4);width:74px;flex:none">Expected</span><span class="v" style="color:#7fd6a7">[0, 1]</span></div>
+              <div class="io-row" style="font-family:var(--mono);font-size:12px;display:flex;gap:10px;padding:3.5px 0;align-items:baseline"><span class="k" style="color:var(--text-4);width:74px;flex:none">Received</span><span class="v" style="color:#f08a8a">[1, 1]</span></div>
+            </div>
+          </div>
+          <div class="test-row">
+            <div class="test-row-head" data-test-toggle>
+              <span class="test-ic test-ic--pass"><svg class="ic"><use href="#i-check"/></svg></span>
+              <span class="test-name">Case 1 · basic</span>
+              <span class="test-meta">8ms<svg class="ic ic-14 test-chev"><use href="#i-chev-right"/></svg></span>
+            </div>
+            <div class="test-body" style="padding:2px 13px 13px 43px">
+              <div class="io-row" style="font-family:var(--mono);font-size:12px;display:flex;gap:10px;padding:3.5px 0;align-items:baseline"><span class="k" style="color:var(--text-4);width:74px;flex:none">Input</span><span class="v" style="color:var(--text-2)">nums = [2, 7, 11, 15], target = 9</span></div>
+              <div class="io-row" style="font-family:var(--mono);font-size:12px;display:flex;gap:10px;padding:3.5px 0;align-items:baseline"><span class="k" style="color:var(--text-4);width:74px;flex:none">Received</span><span class="v" style="color:#7fd6a7">[0, 1]</span></div>
+            </div>
+          </div>
+          <div class="test-row">
+            <div class="test-row-head" data-test-toggle>
+              <span class="test-ic test-ic--pass"><svg class="ic"><use href="#i-check"/></svg></span>
+              <span class="test-name">Case 2 · unordered</span>
+              <span class="test-meta">9ms<svg class="ic ic-14 test-chev"><use href="#i-chev-right"/></svg></span>
+            </div>
+            <div class="test-body" style="padding:2px 13px 13px 43px">
+              <div class="io-row" style="font-family:var(--mono);font-size:12px;display:flex;gap:10px;padding:3.5px 0;align-items:baseline"><span class="k" style="color:var(--text-4);width:74px;flex:none">Input</span><span class="v" style="color:var(--text-2)">nums = [3, 2, 4], target = 6</span></div>
+              <div class="io-row" style="font-family:var(--mono);font-size:12px;display:flex;gap:10px;padding:3.5px 0;align-items:baseline"><span class="k" style="color:var(--text-4);width:74px;flex:none">Received</span><span class="v" style="color:#7fd6a7">[1, 2]</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="usage"><svg><use href="#i-info"/></svg><span><b>Used in the product:</b> <code>.test-row</code> / <code>.test-ic--pass|fail</code> render the per-case results panel beside the IDE when a candidate runs the test suite.</span></div>
+
+        <div class="foot-note"><svg class="ic ic-14"><use href="#i-sparkle"/></svg>OpenCollab design system · one set of tokens + primitives · rendered by the production stylesheets</div>
+      </section>
+
+    </div><!-- /.content -->
+  </main>
+</div><!-- /.app -->
+
+<!-- TOAST ZONE -->
+<div class="toast-zone" id="toastZone"></div>
+
+<!-- CONFIRM DIALOG (uses .c-* primitives from components.css) -->
+<div class="c-overlay" id="endModal">
+  <div class="c-modal">
+    <div class="c-modal-head">
+      <span class="m-ic"><svg class="ic"><use href="#i-phone-off"/></svg></span>
+      <div>
+        <h3>End this session?</h3>
+        <p>The session will close for both participants and the recording will be saved. This can't be undone.</p>
+      </div>
+    </div>
+    <div class="c-modal-foot">
+      <button class="btn btn--ghost" data-close-modal>Keep going</button>
+      <button class="btn btn--danger" data-close-modal>End session</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ---- scroll-spy ---- */
+  var navItems = [].slice.call(document.querySelectorAll('#sbNav .nav-item'));
+  var byHash = {};
+  navItems.forEach(function(a){ byHash[a.getAttribute('href')] = a; });
+  var spy = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        navItems.forEach(function(a){ a.classList.remove('is-active'); });
+        var a = byHash['#'+e.target.id];
+        if(a) a.classList.add('is-active');
+      }
+    });
+  }, { rootMargin: '-45% 0px -50% 0px', threshold: 0 });
+  document.querySelectorAll('section.block').forEach(function(s){ spy.observe(s); });
+
+  /* ---- tabs ---- */
+  document.querySelectorAll('[data-tabs]').forEach(function(group){
+    group.addEventListener('click', function(e){
+      var t = e.target.closest('.tab'); if(!t) return;
+      group.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('is-active'); });
+      t.classList.add('is-active');
+    });
+  });
+
+  /* ---- switches ---- */
+  document.querySelectorAll('[data-switch]').forEach(function(sw){
+    sw.addEventListener('click', function(e){
+      e.preventDefault();
+      sw.classList.toggle('is-on');
+      var box = sw.querySelector('input'); if(box) box.checked = sw.classList.contains('is-on');
+    });
+  });
+
+  /* ---- checkboxes ---- */
+  document.querySelectorAll('[data-check]').forEach(function(c){
+    c.addEventListener('click', function(){ c.classList.toggle('is-checked'); });
+  });
+
+  /* ---- radios ---- */
+  document.querySelectorAll('[data-radio-group]').forEach(function(grp){
+    grp.querySelectorAll('[data-radio]').forEach(function(r){
+      r.addEventListener('click', function(){
+        grp.querySelectorAll('[data-radio]').forEach(function(x){ x.classList.remove('is-checked'); });
+        r.classList.add('is-checked');
+      });
+    });
+  });
+
+  /* ---- segmented ---- */
+  document.querySelectorAll('[data-segmented]').forEach(function(seg){
+    seg.addEventListener('click', function(e){
+      var b = e.target.closest('.seg'); if(!b) return;
+      seg.querySelectorAll('.seg').forEach(function(x){ x.classList.remove('is-active'); });
+      b.classList.add('is-active');
+    });
+  });
+
+  /* ---- test rows ---- */
+  document.querySelectorAll('[data-test-toggle]').forEach(function(h){
+    h.addEventListener('click', function(){ h.closest('.test-row').classList.toggle('is-open'); });
+  });
+
+  /* ---- toasts ---- */
+  var zone = document.getElementById('toastZone');
+  var TOASTS = {
+    success: { ic:'#i-check', bg:'rgba(76,183,130,.16)', col:'#7fd6a7', title:'Solution submitted', desc:'All visible tests passed. Sent to the panel.' },
+    info:    { ic:'#i-info',  bg:'rgba(78,167,252,.16)', col:'#86c2ff', title:'Autosaved', desc:'Draft saved 3 seconds ago.' },
+    error:   { ic:'#i-alert', bg:'rgba(235,87,87,.16)',  col:'#f08a8a', title:'1 test failed', desc:'Case 4 — check duplicate values.' }
+  };
+  function toast(kind){
+    var t = TOASTS[kind] || TOASTS.info;
+    var el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = '<span class="t-ic" style="background:'+t.bg+';color:'+t.col+'"><svg class="ic"><use href="'+t.ic+'"/></svg></span>'
+      + '<div style="flex:1;min-width:0"><div class="t-title">'+t.title+'</div><div class="t-desc">'+t.desc+'</div></div>'
+      + '<button class="t-close"><svg class="ic ic-14"><use href="#i-x"/></svg></button>';
+    zone.appendChild(el);
+    var kill = function(){ el.classList.add('is-out'); setTimeout(function(){ el.remove(); }, 240); };
+    el.querySelector('.t-close').addEventListener('click', kill);
+    setTimeout(kill, 4200);
+  }
+  document.querySelectorAll('[data-toast]').forEach(function(b){
+    b.addEventListener('click', function(){ toast(b.getAttribute('data-toast')); });
+  });
+
+  /* ---- run button ---- */
+  var runBtn = document.getElementById('runBtn');
+  if(runBtn){
+    var original = runBtn.innerHTML;
+    runBtn.addEventListener('click', function(){
+      if(runBtn.dataset.busy) return;
+      runBtn.dataset.busy = '1';
+      runBtn.innerHTML = '<span class="spinner"></span>Running…';
+      setTimeout(function(){
+        runBtn.innerHTML = original;
+        delete runBtn.dataset.busy;
+        toast('error');
+      }, 1100);
+    });
+  }
+
+  /* ---- dialog ---- */
+  var modal = document.getElementById('endModal');
+  document.querySelectorAll('[data-open-modal]').forEach(function(b){
+    b.addEventListener('click', function(){ modal.classList.add('is-open'); });
+  });
+  modal.querySelectorAll('[data-close-modal]').forEach(function(b){
+    b.addEventListener('click', function(){ modal.classList.remove('is-open'); });
+  });
+  modal.addEventListener('click', function(e){ if(e.target === modal) modal.classList.remove('is-open'); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') modal.classList.remove('is-open'); });
+})();
+</script>
+</body>
+</html>

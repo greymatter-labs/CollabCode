@@ -1,0 +1,225 @@
+/* ============================================================
+   APP · AUTH  —  candidate join + interviewer login + custom dialogs
+   Token-driven surface partial. Loads after _legacy.css / base.css,
+   so it wins without !important (used only to beat legacy !important).
+   Surfaces:
+     #candidateModal   — candidate join + privacy/consent box
+     #adminLoginModal  — interviewer email/password login
+     #customAlertModal / #customConfirmModal — .custom-modal dialogs
+   Every id/class here is a JS hook — restyled, never renamed.
+   ============================================================ */
+
+/* ============================================================
+   1 · BACK BUTTON  ("← Back" -> i-arrow-left icon + "Back")
+   Legacy pinned .back-btn position:absolute top/left — that pulls
+   it out of flow and over the heading. Re-flow it inline at the top.
+   ============================================================ */
+#candidateModal .back-btn,
+#adminLoginModal .back-btn{
+  position:static;
+  display:inline-flex;align-items:center;gap:6px;
+  height:26px;margin:0 0 16px -6px;padding:0 8px 0 6px;
+  border:1px solid transparent;border-radius:var(--r-sm);
+  background:transparent;color:var(--text-3);
+  font-size:13px;font-weight:500;line-height:1;
+  transition:color .12s var(--ease),background .12s var(--ease);
+}
+#candidateModal .back-btn:hover,
+#adminLoginModal .back-btn:hover{
+  color:var(--text-1);background:var(--bg-3);
+}
+#candidateModal .back-btn:focus-visible,
+#adminLoginModal .back-btn:focus-visible{
+  outline:none;box-shadow:0 0 0 3px var(--accent-soft);
+}
+#candidateModal .back-btn .ic,
+#adminLoginModal .back-btn .ic{
+  width:14px;height:14px;color:currentColor;
+}
+
+/* ============================================================
+   2 · CANDIDATE + ADMIN MODAL SHELL
+   Tighten heading rhythm; subtitle is set by base .modal-subtitle.
+   ============================================================ */
+#candidateModal .modal-content,
+#adminLoginModal .modal-content{
+  padding:24px;
+}
+#candidateModal .modal-content h2,
+#adminLoginModal .modal-content h2{
+  font-size:19px;line-height:1.25;margin:0;
+}
+#candidateModal .modal-subtitle,
+#adminLoginModal .modal-subtitle{
+  margin-top:5px;margin-bottom:22px;font-size:13.5px;
+}
+
+/* consistent field rhythm */
+#candidateModal .form-group,
+#adminLoginModal .form-group{
+  margin-bottom:16px;
+}
+#candidateModal .form-group label,
+#adminLoginModal .form-group label{
+  font-size:12.5px;font-weight:500;color:var(--text-2);
+}
+#candidateModal .form-group small{
+  color:var(--text-3);font-size:12px;margin-top:1px;
+}
+/* session code reads as a code token */
+#candidateSessionCode{
+  font-family:var(--mono);
+  letter-spacing:.06em;text-transform:uppercase;
+  font-variant-numeric:tabular-nums;
+}
+#candidateSessionCode::placeholder{
+  font-family:var(--font);letter-spacing:normal;text-transform:none;
+}
+
+/* primary submit sits flush after the last field */
+#candidateJoinBtn,
+#adminLoginBtn{
+  margin-top:4px;
+}
+
+/* ============================================================
+   3 · PRIVACY / MONITORING CONSENT BOX
+   Rebuilt as a Linear inset panel: shield header + a clean
+   .check-style native checkbox + tidy monitored-items list.
+   (Inline styles on the markup are replaced by these classes.)
+   ============================================================ */
+.privacy-notice{
+  margin:20px 0;
+  background:var(--bg-inset);
+  border:1px solid var(--border);
+  border-radius:var(--r-md);
+  padding:14px 15px;
+}
+.privacy-notice__head{
+  display:flex;align-items:center;gap:9px;
+  margin-bottom:12px;
+}
+.privacy-notice__head .ic{
+  width:16px;height:16px;color:var(--accent-text);flex:none;
+}
+.privacy-notice__head strong{
+  font-size:13px;font-weight:600;color:var(--text-1);
+  letter-spacing:-.01em;
+}
+
+/* the consent row: native checkbox skinned like .check .box */
+.privacy-consent{
+  display:flex;align-items:flex-start;gap:11px;cursor:pointer;
+  font-size:13px;line-height:1.5;color:var(--text-2);
+}
+.privacy-consent #candidatePrivacyConsent{
+  appearance:none;-webkit-appearance:none;
+  width:17px;height:17px;flex:none;margin:1px 0 0;
+  border:1.5px solid var(--border-strong);border-radius:var(--r-xs);
+  background:var(--bg-1);cursor:pointer;
+  display:grid;place-items:center;
+  transition:background .12s var(--ease),border-color .12s var(--ease);
+}
+.privacy-consent #candidatePrivacyConsent::before{
+  content:"";
+  width:10px;height:10px;
+  background:#fff;
+  clip-path:polygon(91% 17%,38% 86%,9% 53%,18% 44%,38% 65%,82% 8%);
+  transform:scale(.4);opacity:0;
+  transition:.13s var(--ease);
+}
+.privacy-consent #candidatePrivacyConsent:checked{
+  background:var(--accent);border-color:var(--accent);
+}
+.privacy-consent #candidatePrivacyConsent:checked::before{
+  transform:scale(1);opacity:1;
+}
+.privacy-consent #candidatePrivacyConsent:hover{
+  border-color:var(--accent-border);
+}
+.privacy-consent #candidatePrivacyConsent:focus-visible{
+  outline:none;box-shadow:0 0 0 3px var(--accent-soft);
+}
+
+/* monitored-items list */
+.privacy-consent ul{
+  margin:8px 0;padding:0;list-style:none;
+  display:flex;flex-direction:column;gap:5px;
+}
+.privacy-consent ul li{
+  position:relative;padding-left:16px;
+  font-size:12px;color:var(--text-3);line-height:1.45;
+}
+.privacy-consent ul li::before{
+  content:"";position:absolute;left:3px;top:7px;
+  width:4px;height:4px;border-radius:50%;background:var(--text-4);
+}
+.privacy-consent .privacy-fine{
+  display:block;margin-top:6px;
+  font-size:11.5px;color:var(--text-4);line-height:1.5;
+}
+.privacy-consent .privacy-link{
+  display:inline-flex;align-items:center;gap:5px;
+  margin-top:9px;
+  font-size:12px;font-weight:500;color:var(--accent-text);
+  transition:color .12s var(--ease);
+}
+.privacy-consent .privacy-link:hover{color:var(--accent-hover);}
+.privacy-consent .privacy-link .ic{width:13px;height:13px;color:currentColor;}
+
+/* ============================================================
+   4 · LOGIN ERROR
+   base.css styles .error-message; JS sets its textContent, so no
+   static icon can live inside it. Just refine spacing/leading.
+   ============================================================ */
+#loginError.error-message{
+  margin-top:16px;line-height:1.45;
+}
+
+/* ============================================================
+   5 · CUSTOM ALERT / CONFIRM DIALOGS
+   base.css draws the .custom-modal shell; here we (a) type-tint the
+   .custom-modal-icon by its JS-applied type class, and (b) tighten
+   the dialog so it reads like a Linear confirmation card.
+   JS sets iconEl.textContent to a glyph + class `custom-modal-icon TYPE`.
+   ============================================================ */
+.custom-modal-content{
+  max-width:404px;
+  padding:22px 22px 20px;
+  text-align:center;
+}
+.custom-modal-icon{
+  width:42px;height:42px;margin:0 auto 14px;
+  border-radius:var(--r-lg);
+  display:grid;place-items:center;
+  font-size:20px;font-weight:600;line-height:1;
+}
+.custom-modal-icon:empty{display:none;}
+
+/* type tints — match the JS `type` classes */
+.custom-modal-icon.success{background:var(--green-soft);color:var(--green-text);}
+.custom-modal-icon.error{background:var(--red-soft);color:var(--red-text);}
+.custom-modal-icon.warning{background:var(--yellow-soft);color:var(--yellow-text);}
+.custom-modal-icon.danger{background:var(--red-soft);color:var(--red-text);}
+.custom-modal-icon.info{background:var(--blue-soft);color:var(--blue-text);}
+.custom-modal-icon.question{background:var(--accent-soft);color:var(--accent-text);}
+
+.custom-modal-title{
+  font-size:15.5px;font-weight:600;color:var(--text-1);
+  letter-spacing:-.01em;margin-bottom:7px;
+}
+.custom-modal-message{
+  font-size:13px;color:var(--text-3);line-height:1.55;
+  margin-bottom:20px;
+}
+.custom-modal-buttons{display:flex;gap:8px;justify-content:center;}
+.custom-modal-btn{
+  height:36px;min-width:92px;
+  font-size:13px;font-weight:510;border-radius:var(--r-sm);
+}
+.custom-modal-btn:focus-visible{
+  outline:none;box-shadow:0 0 0 3px var(--accent-soft);
+}
+.custom-modal-btn.cancel:focus-visible{
+  box-shadow:0 0 0 3px var(--border-strong);
+}

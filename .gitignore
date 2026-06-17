@@ -77,3 +77,4 @@ local-data/
 Thumbs.db
 .Spotlight-V100
 .Trashes
+.gstack/

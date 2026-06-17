@@ -1,0 +1,429 @@
+/* styles/app/problem.css — token-driven surface partial (overrides _legacy.css). */
+
+/* ============================================================
+   APP · PROBLEM  —  Problem library + builder IDE
+   Surfaces:  #problemLibraryModal  (.problem-library-modal)
+              #problemBuilderModal   (.problem-builder-modal.problem-ide-modal)
+   Linear dark restyle of EXISTING markup. Core layout (grid
+   tracks / heights / panes) is owned by _legacy.css and preserved;
+   this partial re-tokenises the skin and tightens spacing,
+   alignment, and iconography. Loaded after _legacy.css → wins.
+   ============================================================ */
+
+/* ============================================================
+   LIBRARY  —  modal shell
+   ============================================================ */
+.problem-library-modal{
+  /* re-assert sizing (base.css caps generic .modal-content at 440px) */
+  width:95%;
+  max-width:1280px;
+  max-height:92vh;
+  overflow-y:auto;
+  background:var(--bg-2);
+  color:var(--text-1);
+  border:1px solid var(--border-2);
+  border-radius:var(--r-xl);
+  box-shadow:var(--shadow-lg);
+}
+
+/* header action cluster — keep buttons in a tidy row, divider before close */
+.problem-library-modal .problem-modal-actions,
+.problem-ide-header .problem-modal-actions{
+  gap:8px;
+}
+.problem-modal-actions .close-modal-btn{
+  margin-left:4px;
+}
+
+/* ============================================================
+   LIBRARY TOOLBAR  —  search field + status filter
+   ============================================================ */
+.problem-library-toolbar{
+  padding:14px 0 16px;
+  border-bottom:1px solid var(--border);
+  gap:10px;
+}
+
+/* leading-icon search wrapper (markup adds .input-wrap + .i-lead) */
+.problem-library-toolbar .input-wrap{
+  position:relative;
+  flex:1;
+  min-width:260px;
+}
+.problem-library-toolbar .input-wrap .i-lead{
+  position:absolute;left:11px;top:50%;transform:translateY(-50%);
+  width:15px;height:15px;color:var(--text-3);pointer-events:none;
+}
+#problemSearchInput{
+  width:100%;
+}
+.problem-library-toolbar input{
+  min-height:36px;
+  background:var(--bg-inset);
+  border:1px solid var(--border-2);
+  border-radius:var(--r-sm);
+  color:var(--text-1);
+  font-size:13px;
+  padding:0 11px 0 34px;
+  transition:border-color .12s,box-shadow .12s,background .12s;
+}
+.problem-library-toolbar input::placeholder{color:var(--text-4);}
+.problem-library-toolbar input:hover{border-color:var(--border-strong);}
+.problem-library-toolbar input:focus{
+  outline:none;
+  border-color:var(--accent-border);
+  box-shadow:0 0 0 3px var(--accent-soft);
+  background:var(--bg-1);
+}
+.problem-library-toolbar input:focus+.i-lead,
+.problem-library-toolbar .input-wrap:focus-within .i-lead{color:var(--text-2);}
+
+/* status filter — adopt the shared .select-native look */
+#problemStatusFilter{
+  -webkit-appearance:none;appearance:none;cursor:pointer;
+  min-height:36px;
+  flex:none;
+  padding:0 30px 0 11px;
+  background-color:var(--bg-3);
+  border:1px solid var(--border-2);
+  border-radius:var(--r-sm);
+  color:var(--text-1);
+  font-size:13px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a8f98' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;
+  transition:border-color .12s,box-shadow .12s,background-color .12s;
+}
+#problemStatusFilter:hover{background-color:#26282c;border-color:var(--border-strong);}
+#problemStatusFilter:focus{
+  outline:none;border-color:var(--accent-border);box-shadow:0 0 0 3px var(--accent-soft);
+}
+
+/* ============================================================
+   SHARED BUTTONS  —  primary (accent) / secondary / danger
+   reskinned to the .btn component language
+   ============================================================ */
+.problem-primary-btn,
+.problem-secondary-btn,
+.problem-danger-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border-radius:var(--r-sm);
+  border:1px solid transparent;
+  font-family:var(--font);
+  font-size:13px;
+  font-weight:500;
+  letter-spacing:-.006em;
+  white-space:nowrap;
+  transition:background .12s var(--ease),border-color .12s,color .12s,box-shadow .12s,opacity .12s;
+}
+.problem-primary-btn .ic,
+.problem-secondary-btn .ic,
+.problem-danger-btn .ic{width:14px;height:14px;}
+.problem-primary-btn{
+  background:var(--accent);color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 1px 2px rgba(0,0,0,.3);
+}
+.problem-primary-btn:hover{
+  background:var(--accent-hover);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 2px 8px rgba(94,106,210,.34);
+}
+.problem-secondary-btn{
+  background:var(--bg-3);color:var(--text-1);border-color:var(--border-2);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+}
+.problem-secondary-btn:hover{background:#26282c;border-color:var(--border-strong);color:var(--text-1);}
+.problem-secondary-btn .ic{color:var(--text-3);}
+.problem-secondary-btn:hover .ic{color:var(--text-1);}
+.problem-danger-btn{
+  background:var(--red-soft);color:var(--red-text);border-color:rgba(235,87,87,.26);
+}
+.problem-danger-btn:hover{background:rgba(235,87,87,.2);color:var(--red-text);}
+.problem-primary-btn:disabled,
+.problem-secondary-btn:disabled,
+.problem-danger-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
+
+/* ============================================================
+   LIBRARY LIST  —  rows + meta + status badges
+   ============================================================ */
+.problem-list{padding-top:16px;gap:8px;}
+.problem-row{
+  border:1px solid var(--border);
+  border-radius:var(--r-md);
+  background:var(--bg-1);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+  transition:border-color .12s,background .12s;
+}
+.problem-row:hover{background:var(--bg-2);border-color:var(--border-2);}
+.problem-row h3{
+  margin:0 0 5px;
+  color:var(--text-1);
+  font-size:15px;font-weight:600;letter-spacing:-.012em;
+}
+.problem-row-meta,
+.problem-builder-status{
+  color:var(--text-3);
+  font-size:12.5px;
+}
+.problem-row-meta span{font-variant-numeric:tabular-nums;}
+
+/* status / tag chips inside rows */
+.problem-badge{
+  display:inline-flex;align-items:center;
+  min-height:21px;
+  padding:0 8px;
+  border-radius:var(--r-full);
+  background:var(--bg-3);
+  color:var(--text-2);
+  border:1px solid var(--border-2);
+  font-size:11.5px;font-weight:500;
+}
+.problem-badge.published{
+  background:var(--green-soft);color:var(--green-text);border-color:rgba(76,183,130,.3);
+}
+.problem-badge.draft{
+  background:var(--yellow-soft);color:var(--yellow-text);border-color:rgba(242,201,76,.3);
+}
+
+.problem-empty{
+  color:var(--text-3);
+  font-size:13.5px;
+}
+
+/* ============================================================
+   BUILDER IDE  —  modal shell (near-fullscreen dark)
+   ============================================================ */
+.problem-builder-modal.problem-ide-modal{
+  /* near-fullscreen IDE (base.css caps generic .modal-content at 440px) */
+  width:min(1500px,96vw);
+  max-width:none;
+  height:92vh;
+  max-height:none;
+  background:var(--bg-1);
+  color:var(--text-2);
+  border:1px solid var(--border-2);
+  border-radius:var(--r-lg);
+  box-shadow:var(--shadow-lg);
+  overflow:hidden;
+}
+
+/* header: big borderless title input + Draft badge + actions */
+.problem-ide-header{
+  padding:14px 16px;
+  background:var(--bg-2);
+  border-bottom:1px solid var(--border);
+}
+.problem-title-input{
+  border:0;
+  border-bottom:1px solid transparent;
+  background:transparent;
+  color:var(--text-1);
+  font-size:20px;font-weight:650;letter-spacing:-.02em;
+  outline:none;
+  transition:border-color .12s;
+}
+.problem-title-input::placeholder{color:var(--text-4);}
+.problem-title-input:focus{border-bottom-color:var(--accent-border);}
+.problem-title-meta{
+  margin-top:6px;
+  color:var(--text-3);
+  font-size:12px;
+}
+.problem-builder-status{
+  display:inline-flex;align-items:center;
+  height:20px;padding:0 8px;
+  border-radius:var(--r-full);
+  background:var(--yellow-soft);
+  color:var(--yellow-text);
+  border:1px solid rgba(242,201,76,.3);
+  font-size:11px;font-weight:500;text-transform:none;
+}
+
+/* ============================================================
+   SETUP BAR  —  prompt textarea + setup field grid
+   ============================================================ */
+.problem-setup-bar{
+  padding:12px 16px;
+  background:var(--bg-2);
+  border-bottom:1px solid var(--border);
+}
+#problemPromptInput{
+  background:var(--bg-inset);
+  border:1px solid var(--border-2);
+  border-radius:var(--r-sm);
+  color:var(--text-1);
+  font-family:inherit;
+  line-height:1.45;
+  transition:border-color .12s,box-shadow .12s,background .12s;
+}
+#problemPromptInput::placeholder{color:var(--text-4);}
+#problemPromptInput:hover{border-color:var(--border-strong);}
+#problemPromptInput:focus{
+  outline:none;border-color:var(--accent-border);
+  box-shadow:0 0 0 3px var(--accent-soft);background:var(--bg-1);
+}
+.problem-setup-fields{gap:10px 12px;}
+.problem-setup-fields label{gap:5px;}
+.problem-setup-fields span{
+  color:var(--text-3);
+  font-size:10.5px;font-weight:600;letter-spacing:.05em;
+  text-transform:uppercase;
+}
+.problem-setup-fields input,
+.problem-setup-fields select,
+.problem-active-file-bar input,
+.problem-active-file-bar select{
+  background:var(--bg-inset);
+  border:1px solid var(--border-2);
+  border-radius:var(--r-sm);
+  color:var(--text-1);
+  font-family:inherit;font-size:12.5px;
+  transition:border-color .12s,box-shadow .12s,background .12s;
+}
+.problem-setup-fields input::placeholder,
+.problem-active-file-bar input::placeholder{color:var(--text-4);}
+.problem-setup-fields input:hover,
+.problem-setup-fields select:hover,
+.problem-active-file-bar input:hover,
+.problem-active-file-bar select:hover{border-color:var(--border-strong);}
+.problem-setup-fields input:focus,
+.problem-setup-fields select:focus,
+.problem-active-file-bar input:focus,
+.problem-active-file-bar select:focus{
+  outline:none;border-color:var(--accent-border);
+  box-shadow:0 0 0 3px var(--accent-soft);background:var(--bg-1);
+}
+.problem-setup-fields select,
+.problem-active-file-bar select{
+  -webkit-appearance:none;appearance:none;cursor:pointer;
+  padding-right:26px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a8f98' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 8px center;
+}
+
+/* ============================================================
+   IDE BODY  —  3-col grid (layout preserved by _legacy.css)
+   ============================================================ */
+.problem-ide-body{
+  background:var(--bg-1);
+}
+.problem-ide-files,
+.problem-ide-run{
+  background:var(--bg-1);
+}
+.problem-ide-files{border-right:1px solid var(--border);}
+.problem-ide-run{border-left:1px solid var(--border);}
+
+/* panel headers (Files / Run) */
+.problem-ide-panel-header{
+  background:var(--bg-2);
+  border-bottom:1px solid var(--border);
+  color:var(--text-3);
+  font-size:11px;font-weight:600;letter-spacing:.05em;
+  text-transform:uppercase;
+}
+
+/* ============================================================
+   FILE TOOLBAR  —  icon mini-buttons (square + labelled)
+   ============================================================ */
+.problem-file-toolbar{gap:3px;}
+.problem-file-toolbar button{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  height:26px;
+  border:1px solid transparent;
+  border-radius:var(--r-xs);
+  background:transparent;
+  color:var(--text-3);
+  font-size:11.5px;font-weight:500;letter-spacing:-.004em;
+  transition:background .12s,border-color .12s,color .12s;
+}
+/* icon-only square buttons (new file / new folder / delete) */
+.problem-file-toolbar button.icon-only{
+  width:26px;padding:0;
+}
+/* labelled upload buttons */
+.problem-file-toolbar button:not(.icon-only){
+  padding:0 8px;
+}
+.problem-file-toolbar button .ic{
+  width:14px;height:14px;color:currentColor;
+}
+.problem-file-toolbar button:hover{
+  background:var(--bg-3);border-color:var(--border-2);color:var(--text-1);
+}
+.problem-file-toolbar button.danger{color:var(--text-3);}
+.problem-file-toolbar button.danger:hover{
+  background:var(--red-soft);border-color:rgba(235,87,87,.3);color:var(--red-text);
+}
+
+/* ============================================================
+   FILE LIST  —  rows + visibility badges
+   ============================================================ */
+.problem-file-row{
+  border:1px solid transparent;
+  border-radius:var(--r-sm);
+  background:transparent;
+  color:var(--text-2);
+  transition:background .12s,border-color .12s;
+}
+.problem-file-row:hover{background:var(--bg-3);}
+.problem-file-row.active{
+  background:var(--bg-3);
+  border-color:var(--accent-border);
+}
+.problem-file-row strong{
+  font-size:12.5px;font-weight:500;color:var(--text-1);
+}
+.problem-file-row span{
+  color:var(--text-4);
+  font-size:10.5px;font-weight:500;letter-spacing:.03em;
+  text-transform:uppercase;
+}
+.problem-file-row.hidden span{color:var(--red-text);}
+.problem-file-row.readonly span{color:var(--blue-text);}
+.problem-file-row.editable span{color:var(--green-text);}
+
+/* ============================================================
+   EDITOR PANE  —  active-file bar + code surface
+   ============================================================ */
+.problem-ide-editor{
+  background:var(--bg-inset);
+}
+.problem-active-file-bar{
+  background:var(--bg-2);
+  border-bottom:1px solid var(--border);
+}
+.problem-active-file-bar span{
+  color:var(--text-3);
+  font-size:12px;
+  font-family:var(--mono);
+}
+#problemFileEditor{
+  background:var(--bg-inset);
+}
+
+/* ============================================================
+   RUN PANE  —  status + actions + mono console output
+   ============================================================ */
+#problemRuntimeStatus{
+  color:var(--text-3);
+  font-size:11px;font-weight:500;text-transform:none;letter-spacing:0;
+  font-variant-numeric:tabular-nums;
+}
+.problem-ide-run .runtime-actions{
+  border-bottom:1px solid var(--border);
+}
+.problem-ide-run .problem-primary-btn,
+.problem-ide-run .problem-secondary-btn,
+.problem-ide-run .problem-danger-btn{
+  flex:1;
+  min-width:0;
+  border-radius:var(--r-sm);
+}
+
+/* mono console — inset code surface */
+#problemRuntimeOutput{
+  background:var(--bg-inset);
+  color:var(--text-2);
+  font-family:var(--mono);
+  font-size:12px;
+  line-height:1.6;
+}

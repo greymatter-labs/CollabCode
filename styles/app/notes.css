@@ -1,0 +1,487 @@
+/* styles/app/notes.css — token-driven surface partial (overrides _legacy.css). */
+
+/* ============================================================
+   APP · NOTES  —  Interviewer notes panel + Slack + behavior toast
+   Restyles the right-side #notes-panel into a Linear dark surface.
+   Every selector here is a real legacy JS hook from app.html — only
+   the visual skin changes; layout (width/position/flex/overflow)
+   from app/_legacy.css is preserved. Loaded after _legacy.css and
+   base.css, so later source order wins; a few JS-injected styles
+   (behavior toast, alert badge) are out-anchored with id selectors
+   or !important.
+   ============================================================ */
+
+/* ---- panel shell ----------------------------------------- */
+/* PRESERVE: position/right/top/bottom/width/display:flex/flex-direction/z-index */
+#notes-panel{
+  background:var(--bg-1);
+  border-left:1px solid var(--border);
+  box-shadow:var(--shadow-lg);
+}
+
+/* ---- header ---------------------------------------------- */
+/* PRESERVE: display:flex/align-items/justify-content layout */
+#notes-header{
+  gap:8px;
+  padding:0 12px 0 16px;
+  height:48px;
+  background:var(--bg-2);
+  border-bottom:1px solid var(--border);
+  color:var(--text-1);
+  font-size:13.5px;
+  font-weight:600;
+  letter-spacing:-.01em;
+}
+/* title cluster: edit icon + label sit flush-left */
+#notes-header .notes-title{
+  display:inline-flex;align-items:center;gap:8px;
+  color:var(--text-1);
+}
+#notes-header .notes-title .ic{color:var(--text-3);}
+
+#notes-save-status{
+  color:var(--green-text) !important;
+  font-style:normal !important;
+  font-size:12px !important;
+  font-weight:450;
+  margin-left:0 !important;
+}
+/* push the close button (and the badge that precedes it) to the right edge */
+#notes-header #close-notes{margin-left:auto;}
+#notes-header #behavior-alert-badge{margin-left:auto;}
+#notes-header #behavior-alert-badge ~ #close-notes{margin-left:6px;}
+
+/* small red count chip (JS-injected .alert-badge is out-anchored
+   here via the id; map severities to semantic tokens) */
+#behavior-alert-badge,
+#behavior-alert-badge.alert-badge{
+  position:static;
+  top:auto;right:auto;
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:18px;height:18px;padding:0 6px;
+  background:var(--red);color:#fff;
+  border-radius:var(--r-full);
+  font-size:11px;font-weight:600;line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+#behavior-alert-badge.high{background:var(--red);color:var(--text-1);}
+#behavior-alert-badge.medium{background:var(--orange);color:var(--bg-app);}
+#behavior-alert-badge.low{background:var(--green);color:var(--bg-app);}
+
+#close-notes{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:28px;height:28px;padding:0;
+  background:transparent;
+  border:1px solid transparent;
+  border-radius:var(--r-sm);
+  color:var(--text-3);
+  line-height:1;
+  transition:background .12s var(--ease),color .12s,border-color .12s;
+}
+#close-notes .ic{width:16px;height:16px;}
+#close-notes:hover{
+  background:var(--bg-3);
+  color:var(--text-1);
+  border-color:var(--border-2);
+  transform:none;
+}
+
+/* ---- activity-monitoring dashboard ----------------------- */
+/* container carries an inline style attribute -> override with !important */
+#activity-dashboard{
+  background:var(--bg-2) !important;
+  border:1px solid var(--border) !important;
+  border-radius:var(--r-md) !important;
+  padding:14px !important;
+  margin:12px 16px !important;
+}
+#activity-dashboard h4{
+  font-size:12px;font-weight:600;
+  letter-spacing:.04em;text-transform:uppercase;
+  color:var(--text-3);
+  margin-bottom:12px;
+}
+#activity-dashboard .activity-metrics{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:8px;
+}
+#activity-dashboard .activity-metrics .metric{
+  display:flex;flex-direction:column;gap:3px;
+  padding:9px 11px;
+  background:var(--bg-1);
+  border:1px solid var(--border);
+  border-radius:var(--r-sm);
+}
+#activity-dashboard .metric .label{
+  font-size:11px;color:var(--text-3);
+}
+#activity-dashboard .metric .value{
+  font-size:16px;font-weight:600;color:var(--text-1);
+  font-variant-numeric:tabular-nums;
+}
+#activity-dashboard .metric .value.warning{color:var(--yellow-text);}
+#activity-dashboard .warning-message{
+  margin-top:10px;padding:8px 11px;
+  background:var(--yellow-soft);
+  border:1px solid var(--yellow-soft);
+  border-radius:var(--r-sm);
+  color:var(--yellow-text);
+  font-size:12px;line-height:1.45;
+}
+
+/* ---- content scroll area --------------------------------- */
+/* PRESERVE: flex:1 / overflow-y:auto */
+#notes-content{
+  padding:14px;
+  background:transparent;
+}
+
+/* ---- section cards (rating / tags / text / recommendation) - */
+.notes-rating-section,
+.notes-tags-section,
+.notes-text-section,
+.notes-recommendation-section{
+  margin-bottom:10px;
+  padding:13px 14px;
+  background:var(--bg-2);
+  border:1px solid var(--border);
+  border-radius:var(--r-md);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+}
+.notes-recommendation-section{margin-bottom:0;}
+
+.notes-rating-section label,
+.notes-tags-section label,
+.notes-text-section label,
+.notes-recommendation-section label{
+  display:block;
+  margin-bottom:10px;
+  color:var(--text-3);
+  font-size:11px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.07em;
+}
+
+/* ---- rating stars ---------------------------------------- */
+/* PRESERVE: display:flex layout. Override legacy justify:center ->
+   left-align to share the label's edge for calm vertical rhythm.
+   The hover preview is JS-driven (interview-notes.js toggles .filled
+   and swaps ☆/★ on mouseenter), so we DON'T color a lone :hover span
+   here — that would fight the run-up fill. We only nudge scale. */
+.rating-stars{
+  justify-content:flex-start;
+  gap:5px;
+  font-size:23px;
+  line-height:1;
+  padding:1px 0 2px;
+}
+.rating-stars span{
+  color:var(--text-4);
+  transition:color .12s var(--ease),transform .1s var(--ease);
+  text-shadow:none;
+}
+.rating-stars span:hover{transform:scale(1.12);}
+.rating-stars span.active,
+.rating-stars span.filled{
+  color:var(--yellow);
+  text-shadow:0 0 12px rgba(242,201,76,.35);
+}
+
+/* ---- quick tags (chip toggles) --------------------------- */
+/* PRESERVE: display:flex / flex-wrap layout */
+.quick-tags{gap:6px;}
+
+.tag-btn{
+  display:inline-flex;align-items:center;
+  height:27px;padding:0 11px;
+  background:var(--bg-3);
+  border:1px solid var(--border-2);
+  color:var(--text-2);
+  border-radius:var(--r-full);
+  font-size:12px;font-weight:500;line-height:1;
+  box-shadow:none;
+  transition:background .12s var(--ease),border-color .12s,color .12s,transform .05s;
+}
+.tag-btn:hover{
+  background:var(--bg-4);
+  border-color:var(--border-strong);
+  color:var(--text-1);
+  transform:none;
+  box-shadow:none;
+}
+.tag-btn.selected,
+.tag-btn.active{
+  background:var(--accent-soft);
+  border-color:var(--accent-border);
+  color:var(--accent-text);
+  box-shadow:none;
+}
+.tag-btn.selected:hover,
+.tag-btn.active:hover{
+  background:rgba(94,106,210,.2);
+  color:var(--accent-text);
+}
+
+/* ---- notes textarea -------------------------------------- */
+/* PRESERVE: min-height / resize:vertical */
+#interview-notes-text{
+  width:100%;
+  min-height:132px;
+  background:var(--bg-inset);
+  border:1px solid var(--border-2);
+  color:var(--text-1);
+  padding:10px 12px;
+  border-radius:var(--r-sm);
+  font-family:inherit;
+  font-size:13px;
+  line-height:1.55;
+  box-shadow:none;
+  transition:border-color .12s,box-shadow .12s,background .12s;
+}
+#interview-notes-text::placeholder{color:var(--text-4);}
+#interview-notes-text:hover{border-color:var(--border-strong);}
+#interview-notes-text:focus{
+  outline:none;
+  border-color:var(--accent-border);
+  box-shadow:0 0 0 3px var(--accent-soft);
+  background:var(--bg-1);
+}
+
+/* ---- recommendation select ------------------------------- */
+#notes-recommendation{
+  width:100%;
+  -webkit-appearance:none;appearance:none;cursor:pointer;
+  padding:0 32px 0 12px;height:36px;
+  background-color:var(--bg-3);
+  border:1px solid var(--border-2);
+  color:var(--text-1);
+  border-radius:var(--r-sm);
+  font-size:13px;font-weight:500;
+  box-shadow:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a8f98' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;
+  transition:border-color .12s,box-shadow .12s,background-color .12s;
+}
+#notes-recommendation:hover{background-color:var(--bg-4);border-color:var(--border-strong);}
+#notes-recommendation:focus{
+  outline:none;
+  border-color:var(--accent-border);
+  box-shadow:0 0 0 3px var(--accent-soft);
+}
+/* Color code recommendations -> semantic token surfaces */
+#notes-recommendation option{background:var(--bg-3);color:var(--text-1);}
+#notes-recommendation option[value='STRONG_HIRE']{background:var(--bg-3);color:var(--green-text);}
+#notes-recommendation option[value='HIRE']{background:var(--bg-3);color:var(--green-text);}
+#notes-recommendation option[value='PROCEED_TO_NEXT_ROUND']{background:var(--bg-3);color:var(--blue-text);}
+#notes-recommendation option[value='MAYBE']{background:var(--bg-3);color:var(--yellow-text);}
+#notes-recommendation option[value='NO_HIRE']{background:var(--bg-3);color:var(--red-text);}
+
+/* ---- save button (accent primary) ------------------------ */
+.notes-actions{margin-top:14px;}
+.save-notes-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  width:100%;
+  padding:0;height:38px;
+  background:var(--accent);
+  color:#fff;
+  border:1px solid transparent;
+  border-radius:var(--r-md);
+  font-size:13.5px;font-weight:510;line-height:1;
+  letter-spacing:normal;
+  text-transform:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 1px 2px rgba(0,0,0,.3);
+  transition:background .12s var(--ease),box-shadow .12s,transform .05s,opacity .12s;
+}
+.save-notes-btn .ic{width:15px;height:15px;}
+.save-notes-btn:hover{
+  background:var(--accent-hover);
+  transform:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 2px 10px rgba(94,106,210,.34);
+}
+.save-notes-btn:active{transform:translateY(.5px);}
+.save-notes-btn:disabled{
+  background:var(--bg-3);
+  color:var(--text-4);
+  opacity:.6;
+  cursor:not-allowed;
+  box-shadow:none;
+}
+
+/* legacy secondary note button, kept consistent with .btn--secondary */
+.notes-button{
+  padding:7px 13px;
+  background:var(--bg-3);
+  color:var(--text-1);
+  border:1px solid var(--border-2);
+  border-radius:var(--r-sm);
+  font-size:13px;
+  transition:background .12s var(--ease),border-color .12s,color .12s;
+}
+.notes-button:hover{background:var(--bg-4);border-color:var(--border-strong);}
+.notes-button.active{
+  background:var(--accent-soft);
+  border-color:var(--accent-border);
+  color:var(--accent-text);
+}
+
+/* generic save-status indicator (shared #save-status hook) */
+#save-status{color:var(--green-text);font-style:normal;}
+
+/* ============================================================
+   SLACK INTEGRATION  (search _legacy 'Slack Integration Styles')
+   ============================================================ */
+.slack-share-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:7px 12px;
+  background:var(--bg-3);
+  border:1px solid var(--border-2);
+  color:var(--text-1);
+  border-radius:var(--r-sm);
+  font-size:13px;font-weight:500;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+  transition:background .12s var(--ease),border-color .12s,transform .05s;
+}
+.slack-share-btn:hover{
+  background:var(--bg-4);
+  border-color:var(--border-strong);
+  transform:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+}
+.slack-share-btn svg{width:18px;height:18px;}
+
+.slack-config-content{padding:0;}
+
+.slack-preview-section h3{
+  display:block;
+  margin-bottom:8px;
+  color:var(--text-2);
+  font-size:13px;font-weight:600;
+}
+
+/* the preview card carries inline styles in app.html -> override */
+#slackMessagePreview{
+  max-height:300px;overflow-y:auto;
+  background:var(--bg-inset) !important;
+  border:1px solid var(--border) !important;
+  border-left:3px solid var(--accent) !important;
+  border-radius:var(--r-md) !important;
+}
+#slackPreviewContent{color:var(--text-2) !important;}
+#slackPreviewContent div{margin:8px 0;line-height:1.5;}
+
+/* inline-styled blocks inside the Slack modal */
+.slack-info-section{
+  background:var(--bg-3) !important;
+  border:1px solid var(--border) !important;
+  border-radius:var(--r-sm) !important;
+  color:var(--text-2);
+}
+.slack-info-section strong{color:var(--text-1);}
+
+/* Slack modal action buttons (inline-styled in markup) */
+#cancelSlackShare{
+  background:var(--bg-3) !important;
+  color:var(--text-1) !important;
+  border:1px solid var(--border-2) !important;
+  border-radius:var(--r-sm) !important;
+  padding:8px 14px !important;
+  font-weight:500;
+}
+#cancelSlackShare:hover{background:var(--bg-4) !important;border-color:var(--border-strong) !important;}
+#sendToSlack{
+  background:var(--accent) !important;
+  color:#fff !important;
+  border:1px solid transparent !important;
+  border-radius:var(--r-sm) !important;
+  padding:8px 14px !important;
+  font-weight:510;
+}
+#sendToSlack:hover{background:var(--accent-hover) !important;}
+
+/* ============================================================
+   BEHAVIOR TOAST + ALERT  (styles injected by behavior-tracking.js
+   into <head> at runtime -> they come after this file in the DOM,
+   so override with !important to win on equal specificity)
+   ============================================================ */
+.behavior-toast{
+  top:auto !important;bottom:22px !important;right:22px !important;
+}
+.behavior-toast .toast-content{
+  background:var(--bg-4) !important;
+  border:1px solid var(--border-2) !important;
+  border-left:3px solid var(--border-strong) !important;
+  border-radius:var(--r-md) !important;
+  padding:13px 14px !important;
+  box-shadow:var(--shadow-lg) !important;
+}
+.behavior-toast .toast-content.high{border-left-color:var(--red) !important;}
+.behavior-toast .toast-content.medium{border-left-color:var(--orange) !important;}
+.behavior-toast .toast-content.low{border-left-color:var(--green) !important;}
+.behavior-toast .toast-message{
+  color:var(--text-1) !important;
+  font-size:13px !important;
+}
+.behavior-toast .toast-action{
+  background:var(--bg-3) !important;
+  border:1px solid var(--border-2) !important;
+  color:var(--text-2) !important;
+  padding:4px 9px !important;
+  border-radius:var(--r-xs) !important;
+  font-size:12px !important;font-weight:500;
+}
+.behavior-toast .toast-action:hover{
+  background:var(--bg-4) !important;
+  color:var(--text-1) !important;
+}
+
+/* behavior summary metrics (injected dashboard markup) */
+.behavior-summary h4{
+  font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--text-3);
+}
+.behavior-metrics .metric{
+  background:var(--bg-1) !important;
+  border:1px solid var(--border) !important;
+  border-radius:var(--r-sm) !important;
+}
+.behavior-metrics .metric.warning{
+  background:var(--yellow-soft) !important;
+  border-color:var(--yellow-soft) !important;
+}
+.behavior-metrics .metric-label{color:var(--text-3) !important;}
+.risk-low .metric-value{color:var(--green-text) !important;}
+.risk-medium .metric-value{color:var(--yellow-text) !important;}
+.risk-high .metric-value{color:var(--red-text) !important;}
+
+/* ============================================================
+   EDITOR ADJUSTMENT WHEN NOTES PANEL IS OPEN
+   PRESERVE the .with-notes margin offsets — they reserve the
+   panel's width. (#editor-shell.with-notes left to the floor:
+   it belongs to the editor surface, owned by editor.css.)
+   ============================================================ */
+#firepad-container.with-notes{margin-right:0;}
+
+/* ============================================================
+   RECOMMENDATION DETAIL  (#detail-recommendation, color-coded by
+   app.js via 'detail-recommendation <tier>') -> semantic surfaces
+   ============================================================ */
+.detail-recommendation{
+  font-size:13px;font-weight:600;
+  padding:8px 14px;
+  border-radius:var(--r-md);
+  border:1px solid transparent;
+  box-shadow:none;
+}
+.detail-recommendation.strong-hire,
+.detail-recommendation.hire{
+  background:var(--green-soft);color:var(--green-text);border-color:var(--green-soft);
+}
+.detail-recommendation.proceed{
+  background:var(--blue-soft);color:var(--blue-text);border-color:var(--blue-soft);
+}
+.detail-recommendation.maybe{
+  background:var(--yellow-soft);color:var(--yellow-text);border-color:var(--yellow-soft);
+}
+.detail-recommendation.no-hire{
+  background:var(--red-soft);color:var(--red-text);border-color:var(--red-soft);
+}
