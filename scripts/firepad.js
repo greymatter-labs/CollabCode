@@ -584,8 +584,9 @@
       }
       const label = getUserListLabel(user);
       const roleLabel = user.isAdmin === true || user.role === 'interviewer' ? 'Interviewer' : 'Candidate';
-      badge.title = `${label} · ${roleLabel}`;
-      badge.setAttribute('aria-label', badge.title);
+      const tooltip = `${label} · ${roleLabel}`;
+      badge.dataset.tooltip = tooltip;
+      badge.setAttribute('aria-label', tooltip);
       badge.style.setProperty('--avatar-ring', user.color || '#4cb782');
 
       const name = document.createElement('span');
@@ -606,8 +607,12 @@
     if (entries.length > visibleEntries.length) {
       const overflow = document.createElement('div');
       overflow.className = 'user-badge user-badge-overflow';
-      overflow.textContent = `+${entries.length - visibleEntries.length}`;
-      overflow.title = `${entries.length - visibleEntries.length} more participant${entries.length - visibleEntries.length === 1 ? '' : 's'}`;
+      const hiddenEntries = entries.slice(visibleEntries.length);
+      const hiddenLabels = hiddenEntries.map(({ user }) => getUserListLabel(user)).join(', ');
+      const hiddenCount = hiddenEntries.length;
+      overflow.textContent = `+${hiddenCount}`;
+      overflow.dataset.tooltip = hiddenLabels || `${hiddenCount} more participant${hiddenCount === 1 ? '' : 's'}`;
+      overflow.setAttribute('aria-label', overflow.dataset.tooltip);
       usersList.appendChild(overflow);
     }
   }
