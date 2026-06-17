@@ -199,6 +199,17 @@
     };
   }
 
+  function setButtonBusy(button, busy, label) {
+    if (!button) return () => {};
+    const previous = button.innerHTML;
+    button.disabled = busy;
+    if (label) button.textContent = label;
+    return () => {
+      button.disabled = false;
+      button.innerHTML = previous;
+    };
+  }
+
   function summarizeResult(data) {
     const result = data?.result || data || {};
     const pieces = [
@@ -305,6 +316,7 @@
           </div>
           <div class="problem-row-actions">
             <button class="problem-secondary-btn" data-action="edit" type="button">Edit</button>
+            <button class="problem-danger-btn" data-action="delete" type="button"><svg class="ic"><use href="#i-trash"/></svg>Delete</button>
             <button class="problem-primary-btn" data-action="use" type="button" ${problem.latestVersionId ? '' : 'disabled'}>Use</button>
           </div>
         </div>
@@ -516,6 +528,47 @@
       renderBuilder();
     } catch (error) {
       alert(error.message || 'Failed to open problem.');
+    }
+  }
+
+  async function confirmDeleteProblem(problem) {
+    const title = problem?.title || 'this problem';
+    const message = `Delete "${title}" from the problem library? Published versions and prepared runtimes for this problem will be removed. Existing interview sessions keep their copied workspace.`;
+    if (typeof window.confirmAsync === 'function') {
+      return window.confirmAsync(message, 'Delete Problem', 'danger');
+    }
+    return confirm(message);
+  }
+
+  async function deleteProblem(problem, button) {
+    if (!problem?.id) return;
+    const confirmed = await confirmDeleteProblem(problem);
+    if (!confirmed) return;
+
+    const release = setButtonBusy(button, true, 'Deleting...');
+    try {
+      await api('/api/problems/delete', {
+        method: 'POST',
+        body: { problemId: problem.id }
+      });
+
+      if (state.selectedProblem?.id === problem.id) {
+        clearSelectedProblem();
+      }
+      if (state.builder?.id === problem.id) {
+        state.builder = null;
+        state.activeFileId = null;
+        state.selectedFolderPath = null;
+        setModalVisible('problemBuilderModal', false);
+      }
+
+      state.problems = state.problems.filter(candidate => candidate.id !== problem.id);
+      renderProblemList();
+      await loadProblems();
+    } catch (error) {
+      alert(error.message || 'Failed to delete problem.');
+    } finally {
+      release();
     }
   }
 
@@ -829,6 +882,7 @@
       if (!problem) return;
       if (button.dataset.action === 'use') selectProblem(problem);
       if (button.dataset.action === 'edit') openBuilder(problem.id);
+      if (button.dataset.action === 'delete') deleteProblem(problem, button);
     });
 
     byId('problemFileList')?.addEventListener('click', function(event) {
