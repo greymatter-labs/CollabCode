@@ -74,11 +74,14 @@ function buildProblemRunProject(body, sessionData, problemVersion) {
     });
 
   const command = problemVersion?.testCommand || problemVersion?.starterCommand || '';
-  if (command) {
+  const setup = Array.isArray(problemVersion?.setupCommands)
+    ? problemVersion.setupCommands.map(String).filter(Boolean)
+    : [];
+  if (command || setup.length) {
     filesByPath.set('.collabcode/run.json', {
       id: 'collabcode_run_config',
       path: '.collabcode/run.json',
-      content: JSON.stringify({ command }, null, 2),
+      content: JSON.stringify({ command, setup }, null, 2),
       language: 'json',
       role: 'config',
       readonly: true

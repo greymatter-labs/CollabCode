@@ -5,8 +5,9 @@
 
 const getFirebaseAdmin = require('../../lib/firebase-admin');
 const { requireAdmin, sendApiError, setCorsHeaders } = require('../../lib/api-auth');
-const { getProblemVersion, buildSessionTemplateFromVersion } = require('../../lib/problems');
+const { buildSessionTemplateFromVersion, buildValidationProject, getProblemVersion, versionNeedsPrewarm } = require('../../lib/problems');
 const { normalizeProblemTemplate } = require('../../lib/session-template');
+const { runProject } = require('../../lib/blaxel-runner');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -88,6 +89,25 @@ module.exports = async (req, res) => {
           versionId: selectedVersion.versionId,
           copiedAt: timestamp
         };
+
+        if (versionNeedsPrewarm(selectedVersion)) {
+          const prewarmProject = buildValidationProject(selectedProblem, selectedVersion, 'command', {
+            command: 'true',
+            includeHidden: true
+          });
+          const prewarm = await runProject({
+            ...prewarmProject,
+            sessionId,
+            timeoutSec: Number(process.env.BL_SETUP_TIMEOUT_SEC || 180)
+          });
+          if (!prewarm.success) {
+            return res.status(400).json({
+              error: prewarm.error || prewarm.output || 'Problem setup failed while preparing the session sandbox'
+            });
+          }
+          sessionPayload.problem.setupPrewarmedAt = Date.now();
+          sessionPayload.problem.setupSandboxName = prewarm.sandboxName;
+        }
       }
     }
 

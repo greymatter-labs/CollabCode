@@ -7,6 +7,8 @@
     builder: null,
     activeFileId: null,
     selectedFolderPath: null,
+    pendingCreate: null,
+    pendingCommandFiles: [],
     editor: null,
     loadingEditor: false
   };
@@ -93,6 +95,22 @@
     return 'editable';
   }
 
+  function parseSetupCommands(value) {
+    return (Array.isArray(value) ? value : String(value || '').split('\n'))
+      .map(command => String(command || '').trim())
+      .filter(Boolean);
+  }
+
+  function formatSetupCommands(commands) {
+    return parseSetupCommands(commands).join('\n');
+  }
+
+  function inferGeneratedVisibility(path, role) {
+    if (/test|spec|hidden/i.test(String(role || ''))) return 'hidden';
+    if (/(^|\/)(test|tests|spec|specs)(\/|$)|\.(test|spec)\./i.test(path)) return 'hidden';
+    return 'readonly';
+  }
+
   function defaultFileContent(path, language, role) {
     if (role === 'test') {
       if (language === 'python') {
@@ -135,6 +153,7 @@
         entryPath: 'main.js',
         starterCommand: '',
         testCommand: '',
+        setupCommands: [],
         folders: [],
         files: [
           {
@@ -243,6 +262,7 @@
         entryFileId: draft.entryFileId || problem.entryFileId || '',
         starterCommand: draft.starterCommand || problem.starterCommand || '',
         testCommand: draft.testCommand || problem.testCommand || '',
+        setupCommands: parseSetupCommands(draft.setupCommands || problem.setupCommands),
         folders: Array.isArray(draft.folders) ? draft.folders.slice() : [],
         files: Array.isArray(draft.files) ? draft.files.map(file => ({ ...file })) : []
       }
@@ -257,19 +277,19 @@
     if (!title || !version) return;
     if (!state.selectedProblem) {
       title.textContent = 'Blank workspace';
-      version.textContent = 'No frozen problem selected';
+      version.textContent = 'No problem snapshot selected';
       if (clear) clear.disabled = true;
       return;
     }
 
     title.textContent = state.selectedProblem.title || 'Selected problem';
-    version.textContent = `${state.selectedProblem.versionId} frozen copy`;
+    version.textContent = `Snapshot ${state.selectedProblem.versionId}`;
     if (clear) clear.disabled = false;
   }
 
   function selectProblem(summary) {
     if (!summary?.latestVersionId) {
-      alert('Publish this problem before creating sessions from it.');
+      alert('Publish a snapshot before creating sessions from this problem.');
       return;
     }
     state.selectedProblem = {
@@ -308,7 +328,7 @@
             <h3>${escapeHtml(problem.title)}</h3>
             <div class="problem-row-meta">
               <span class="problem-badge ${escapeHtml(problem.status || 'draft')}">${escapeHtml(problem.status || 'draft')}</span>
-              ${problem.latestVersionId ? `<span>${escapeHtml(problem.latestVersionId)}</span>` : '<span>No published version</span>'}
+              ${problem.latestVersionId ? `<span>snapshot ${escapeHtml(problem.latestVersionId)}</span>` : '<span>No snapshot yet</span>'}
               ${problem.difficulty ? `<span>${escapeHtml(problem.difficulty)}</span>` : ''}
               ${runtime ? `<span>runtime ${escapeHtml(runtime)}</span>` : ''}
               ${tags}
@@ -397,14 +417,22 @@
     const list = byId('problemFileList');
     if (!draft || !list) return;
 
-    const folders = (draft.folders || []).map(folder => `
+    const query = String(byId('problemFileSearchInput')?.value || '').trim().toLowerCase();
+    const matchesQuery = path => !query || String(path || '').toLowerCase().includes(query);
+    const pending = state.pendingCreate ? `
+      <div class="problem-file-row active problem-file-inline-row">
+        <input class="problem-inline-name" type="text" value="${escapeHtml(state.pendingCreate.value)}" aria-label="New ${escapeHtml(state.pendingCreate.type)} name">
+      </div>
+    ` : '';
+
+    const folders = (draft.folders || []).filter(folder => matchesQuery(folder.path)).map(folder => `
       <button class="problem-file-row ${state.selectedFolderPath === folder.path ? 'active' : ''}" data-folder-path="${escapeHtml(folder.path)}" type="button">
         <strong>${escapeHtml(folder.path)}/</strong>
         <span>folder</span>
       </button>
     `).join('');
 
-    const files = (draft.files || []).map(file => {
+    const files = (draft.files || []).filter(file => matchesQuery(file.path)).map(file => {
       const badges = [
         visibilityLabel(file.visibility),
         file.path === draft.entryPath ? 'entry' : '',
@@ -418,7 +446,14 @@
       `;
     }).join('');
 
-    list.innerHTML = folders + files;
+    list.innerHTML = pending + folders + files;
+    const inlineInput = list.querySelector('.problem-inline-name');
+    if (inlineInput) {
+      setTimeout(() => {
+        inlineInput.focus();
+        inlineInput.select();
+      }, 0);
+    }
   }
 
   function renderActiveFile() {
@@ -454,8 +489,8 @@
 
     byId('problemBuilderTitle').textContent = state.builder.id ? draft.title || 'Problem Builder' : 'New Problem';
     byId('problemBuilderStatus').textContent = state.builder.latestVersionId
-      ? `Published ${state.builder.latestVersionId} · draft editable`
-      : 'Draft only';
+      ? `Snapshot ${state.builder.latestVersionId} · draft editable`
+      : 'Draft · no snapshot';
     byId('problemTitleInput').value = draft.title || '';
     byId('problemDifficultyInput').value = draft.difficulty || '';
     byId('problemLanguageInput').value = draft.defaultLanguage || 'javascript';
@@ -464,14 +499,15 @@
     byId('problemEntryPathInput').value = draft.entryPath || '';
     byId('problemStarterCommandInput').value = draft.starterCommand || '';
     byId('problemTestCommandInput').value = draft.testCommand || '';
+    byId('problemSetupCommandsInput').value = formatSetupCommands(draft.setupCommands || []);
 
     const runtimeStatus = state.builder.latestVersionId
-      ? state.builder.runtime?.[state.builder.latestVersionId]?.status || 'Not prepared'
-      : 'Publish before preparing';
+      ? `Snapshot ${state.builder.latestVersionId}`
+      : 'Draft sandbox';
     byId('problemRuntimeStatus').textContent = runtimeStatus;
     byId('createFromProblemBtn').disabled = !state.builder.latestVersionId;
-    byId('prepareRuntimeBtn').disabled = !state.builder.latestVersionId;
-    byId('resetRuntimeBtn').disabled = !state.builder.latestVersionId;
+    if (byId('prepareRuntimeBtn')) byId('prepareRuntimeBtn').disabled = !state.builder.latestVersionId;
+    if (byId('resetRuntimeBtn')) byId('resetRuntimeBtn').disabled = !state.builder.latestVersionId;
     byId('runTestsBtn').disabled = !draft.testCommand;
 
     if (!state.activeFileId && draft.files?.length) state.activeFileId = draft.files[0].id;
@@ -496,6 +532,7 @@
     draft.entryPath = normalizePath(byId('problemEntryPathInput')?.value || draft.files?.[0]?.path);
     draft.starterCommand = byId('problemStarterCommandInput')?.value.trim() || '';
     draft.testCommand = byId('problemTestCommandInput')?.value.trim() || '';
+    draft.setupCommands = parseSetupCommands(byId('problemSetupCommandsInput')?.value || '');
 
     return {
       id: state.builder.id,
@@ -508,6 +545,7 @@
       entryPath: draft.entryPath,
       starterCommand: draft.starterCommand,
       testCommand: draft.testCommand,
+      setupCommands: draft.setupCommands,
       folders: draft.folders || [],
       files: draft.files || []
     };
@@ -523,6 +561,8 @@
       }
       state.activeFileId = state.builder.draft.files?.[0]?.id || null;
       state.selectedFolderPath = null;
+      state.pendingCreate = null;
+      setPendingCommandFiles([]);
       setRuntimeOutput('', '');
       setModalVisible('problemBuilderModal', true);
       renderBuilder();
@@ -533,7 +573,7 @@
 
   async function confirmDeleteProblem(problem) {
     const title = problem?.title || 'this problem';
-    const message = `Delete "${title}" from the problem library? Published versions and prepared runtimes for this problem will be removed. Existing interview sessions keep their copied workspace.`;
+    const message = `Delete "${title}" from the problem library? Published snapshots and setup sandboxes for this problem will be removed. Existing interview sessions keep their copied workspace.`;
     if (typeof window.confirmAsync === 'function') {
       return window.confirmAsync(message, 'Delete Problem', 'danger');
     }
@@ -607,7 +647,7 @@
       updateSelectedProblemCard();
       renderBuilder();
       await loadProblems();
-      setRuntimeOutput(`Published ${data.summary.latestVersionId}.`, 'success');
+      setRuntimeOutput(`Snapshot ${data.summary.latestVersionId} published. New sessions start from this version.`, 'success');
     } catch (error) {
       alert(error.message || 'Failed to publish problem.');
     } finally {
@@ -619,6 +659,7 @@
     const release = setBusy(buttonId, true, 'Running...');
     try {
       const saved = await saveDraft(true);
+      setPendingCommandFiles([]);
       setRuntimeOutput(`Running ${mode}...`, 'info');
       const data = await api('/api/problems/validate', {
         method: 'POST',
@@ -638,9 +679,122 @@
     }
   }
 
+  function setPendingCommandFiles(files) {
+    state.pendingCommandFiles = (files || [])
+      .map(file => ({
+        ...file,
+        path: normalizePath(file.path)
+      }))
+      .filter(file => file.path && typeof file.content === 'string');
+
+    const wrapper = byId('problemCommandChanges');
+    const summary = byId('problemCommandChangesSummary');
+    if (!wrapper || !summary) return;
+
+    if (!state.pendingCommandFiles.length) {
+      wrapper.hidden = true;
+      summary.textContent = '';
+      return;
+    }
+
+    const changed = state.pendingCommandFiles.length;
+    summary.textContent = `${changed} changed/generated file${changed === 1 ? '' : 's'} available`;
+    wrapper.hidden = false;
+  }
+
+  function appendSetupCommand(command) {
+    const input = byId('problemSetupCommandsInput');
+    if (!input) return;
+    const commands = parseSetupCommands(input.value);
+    if (!commands.includes(command)) commands.push(command);
+    input.value = formatSetupCommands(commands);
+  }
+
+  async function runConsoleCommand() {
+    const commandInput = byId('problemConsoleCommandInput');
+    const command = commandInput?.value.trim() || '';
+    if (!command) {
+      alert('Enter a command to run.');
+      return;
+    }
+
+    const shouldSaveCommand = byId('problemConsoleSaveCommandInput')?.checked;
+    const release = setBusy('runConsoleCommandBtn', true, 'Running...');
+    try {
+      const saved = await saveDraft(true);
+      setPendingCommandFiles([]);
+      setRuntimeOutput(`$ ${command}\n\nRunning...`, 'info');
+      const data = await api('/api/problems/validate', {
+        method: 'POST',
+        body: {
+          problemId: saved.id,
+          versionId: 'draft',
+          useDraft: true,
+          mode: 'command',
+          command,
+          includeHidden: true,
+          collectChangedFiles: true,
+          timeoutSec: 180
+        }
+      });
+      if (shouldSaveCommand && data.success) {
+        appendSetupCommand(command);
+        await saveDraft(true);
+      }
+      const result = data?.result || {};
+      const returnedFiles = [
+        ...(Array.isArray(result.changedFiles) ? result.changedFiles : []),
+        ...(Array.isArray(result.runtimeFiles) ? result.runtimeFiles : [])
+      ];
+      setPendingCommandFiles(returnedFiles);
+      setRuntimeOutput(summarizeResult(data), data.success ? 'success' : 'error');
+    } catch (error) {
+      setRuntimeOutput(error.message || 'Command failed.', 'error');
+    } finally {
+      release();
+    }
+  }
+
+  function applyCommandChanges() {
+    const draft = getDraft();
+    if (!draft || !state.pendingCommandFiles.length) return;
+    syncActiveFileFromEditor();
+
+    let applied = 0;
+    state.pendingCommandFiles.forEach((incoming) => {
+      const path = normalizePath(incoming.path);
+      if (!path) return;
+
+      const existing = draft.files.find(file => file.path === path);
+      if (existing) {
+        existing.content = incoming.content;
+        existing.language = inferLanguage(path, existing.language);
+      } else {
+        const visibility = inferGeneratedVisibility(path, incoming.role);
+        draft.files.push({
+          id: fileIdFromPath(path),
+          path,
+          content: incoming.content,
+          language: inferLanguage(path, draft.defaultLanguage),
+          visibility,
+          role: inferRole(path, visibility)
+        });
+      }
+      ensureParentFolders(path);
+      applied += 1;
+    });
+
+    const last = state.pendingCommandFiles[state.pendingCommandFiles.length - 1];
+    const active = draft.files.find(file => file.path === normalizePath(last?.path));
+    state.activeFileId = active?.id || state.activeFileId;
+    setPendingCommandFiles([]);
+    renderBuilder();
+    setRuntimeOutput(`Applied ${applied} file change${applied === 1 ? '' : 's'} to the draft. Save or publish a snapshot when ready.`, 'success');
+  }
+
   async function updateRuntime(action) {
     if (!state.builder?.id || !state.builder?.latestVersionId) {
-      alert('Publish a frozen version before managing runtime.');
+      alert('Publish a snapshot before managing runtime.');
       return;
     }
 
@@ -673,11 +827,36 @@
   function addFile() {
     const draft = getDraft();
     if (!draft) return;
-    const requested = prompt('File path', 'src/helper.js');
-    const path = normalizePath(requested);
+    state.pendingCreate = {
+      type: 'file',
+      value: state.selectedFolderPath ? `${state.selectedFolderPath}/new-file.js` : 'new-file.js'
+    };
+    renderFileList();
+  }
+
+  function commitPendingCreate(rawValue) {
+    const draft = getDraft();
+    if (!draft || !state.pendingCreate) return;
+    const pending = state.pendingCreate;
+    state.pendingCreate = null;
+    const path = normalizePath(rawValue);
     if (!path) return;
+
+    if (pending.type === 'folder') {
+      if ((draft.folders || []).some(folder => folder.path === path)) {
+        alert('That folder already exists.');
+        renderFileList();
+        return;
+      }
+      draft.folders = draft.folders || [];
+      draft.folders.push({ id: fileIdFromPath(path), path });
+      selectFolder(path);
+      return;
+    }
+
     if (draft.files.some(file => file.path === path)) {
       alert('A file already exists at that path.');
+      renderFileList();
       return;
     }
     const language = inferLanguage(path, draft.defaultLanguage);
@@ -689,8 +868,15 @@
       role: inferRole(path, 'editable'),
       content: defaultFileContent(path, language, 'starter')
     };
+    ensureParentFolders(path);
     draft.files.push(file);
     selectFile(file.id);
+  }
+
+  function cancelPendingCreate() {
+    if (!state.pendingCreate) return;
+    state.pendingCreate = null;
+    renderFileList();
   }
 
   function ensureParentFolders(path) {
@@ -765,16 +951,11 @@
   function addFolder() {
     const draft = getDraft();
     if (!draft) return;
-    const requested = prompt('Folder path', 'src/utils');
-    const path = normalizePath(requested);
-    if (!path) return;
-    if ((draft.folders || []).some(folder => folder.path === path)) {
-      alert('That folder already exists.');
-      return;
-    }
-    draft.folders = draft.folders || [];
-    draft.folders.push({ id: fileIdFromPath(path), path });
-    selectFolder(path);
+    state.pendingCreate = {
+      type: 'folder',
+      value: state.selectedFolderPath ? `${state.selectedFolderPath}/new-folder` : 'new-folder'
+    };
+    renderFileList();
   }
 
   function deleteSelectedItem() {
@@ -816,7 +997,7 @@
 
   function createSessionFromSelectedProblem() {
     if (!state.builder?.latestVersionId) {
-      alert('Publish this problem before creating a session from it.');
+      alert('Publish a snapshot before creating a session from this problem.');
       return;
     }
 
@@ -841,6 +1022,7 @@
     byId('refreshProblemsBtn')?.addEventListener('click', () => loadProblems().catch(error => alert(error.message)));
     byId('problemSearchInput')?.addEventListener('input', renderProblemList);
     byId('problemStatusFilter')?.addEventListener('change', renderProblemList);
+    byId('problemFileSearchInput')?.addEventListener('input', renderFileList);
     byId('problemTestCommandInput')?.addEventListener('input', function() {
       const runTestsBtn = byId('runTestsBtn');
       if (runTestsBtn) runTestsBtn.disabled = !this.value.trim();
@@ -870,6 +1052,14 @@
     byId('problemFileVisibilityInput')?.addEventListener('change', updateActiveFileControls);
     byId('runStarterBtn')?.addEventListener('click', () => validateMode('starter', 'runStarterBtn'));
     byId('runTestsBtn')?.addEventListener('click', () => validateMode('tests', 'runTestsBtn'));
+    byId('runConsoleCommandBtn')?.addEventListener('click', runConsoleCommand);
+    byId('applyCommandChangesBtn')?.addEventListener('click', applyCommandChanges);
+    byId('problemConsoleCommandInput')?.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        runConsoleCommand();
+      }
+    });
     byId('prepareRuntimeBtn')?.addEventListener('click', () => updateRuntime('prepare'));
     byId('resetRuntimeBtn')?.addEventListener('click', () => updateRuntime('reset'));
 
@@ -890,6 +1080,29 @@
       const folderRow = event.target.closest('[data-folder-path]');
       if (fileRow) selectFile(fileRow.getAttribute('data-file-id'));
       if (folderRow) selectFolder(folderRow.getAttribute('data-folder-path'));
+    });
+
+    byId('problemFileList')?.addEventListener('keydown', function(event) {
+      const input = event.target.closest('.problem-inline-name');
+      if (!input) return;
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        commitPendingCreate(input.value);
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        cancelPendingCreate();
+      }
+    });
+
+    byId('problemFileList')?.addEventListener('focusout', function(event) {
+      const input = event.target.closest('.problem-inline-name');
+      if (!input) return;
+      setTimeout(() => {
+        if (document.activeElement !== input && state.pendingCreate) {
+          commitPendingCreate(input.value);
+        }
+      }, 0);
     });
   }
 

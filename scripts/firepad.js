@@ -947,7 +947,7 @@
       return;
     }
 
-    if (!confirm('Reset this session back to the frozen problem workspace? Candidate edits and generated runtime files will be cleared.')) return;
+    if (!confirm('Reset this session back to the problem snapshot? Candidate edits and generated runtime files will be cleared.')) return;
 
     const resetBtn = document.getElementById('reset-session-btn');
     const originalText = resetBtn ? resetBtn.textContent : '';
@@ -973,7 +973,7 @@
         throw new Error(result.error || 'Failed to reset session');
       }
 
-      alert('Workspace reset to the frozen problem version. The page will reload.');
+      alert('Workspace reset to the problem snapshot. The page will reload.');
       window.location.reload();
     } catch (error) {
       console.error('Error resetting session:', error);

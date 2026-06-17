@@ -41,11 +41,16 @@ module.exports = async (req, res) => {
     }
 
     const selected = selectSource(record, req.body || {}, decoded.email);
-    const project = buildValidationProject(selected.record, selected.source, req.body?.mode || 'starter');
+    const command = req.body?.command || req.body?.customCommand || '';
+    const project = buildValidationProject(selected.record, selected.source, req.body?.mode || 'starter', {
+      command,
+      includeHidden: req.body?.includeHidden === true
+    });
     const result = await runProject({
       ...project,
       stdin: req.body?.stdin || '',
-      timeoutSec: Number(req.body?.timeoutSec || 60)
+      timeoutSec: Number(req.body?.timeoutSec || 60),
+      collectChangedFiles: req.body?.collectChangedFiles === true
     });
 
     if (selected.record?.id) {

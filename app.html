@@ -303,7 +303,7 @@
                   <div>
                     <span class="selected-problem-label">Problem</span>
                     <strong id="selectedProblemTitle">Blank workspace</strong>
-                    <small id="selectedProblemVersion">No frozen problem selected</small>
+                    <small id="selectedProblemVersion">No problem snapshot selected</small>
                   </div>
                   <div class="selected-problem-actions">
                     <button id="chooseProblemBtn" type="button">Choose</button>
@@ -403,49 +403,55 @@
           </div>
           <div class="problem-modal-actions">
             <button id="saveProblemDraftBtn" class="problem-secondary-btn" type="button"><svg class="ic"><use href="#i-check"/></svg>Save</button>
-            <button id="publishProblemBtn" class="problem-primary-btn" type="button"><svg class="ic"><use href="#i-bolt"/></svg>Publish frozen version</button>
+            <button id="publishProblemBtn" class="problem-primary-btn" type="button"><svg class="ic"><use href="#i-layers"/></svg>Publish snapshot</button>
             <button id="createFromProblemBtn" class="problem-secondary-btn" type="button"><svg class="ic"><use href="#i-send"/></svg>Create session</button>
             <button id="closeProblemBuilderBtn" class="close-modal-btn" type="button">×</button>
           </div>
         </div>
 
         <div class="problem-setup-bar">
-          <textarea id="problemPromptInput" placeholder="Prompt shown to the candidate"></textarea>
-          <div class="problem-setup-fields">
-            <label>
-              <span>Language</span>
-              <select id="problemLanguageInput">
-                <option value="javascript">JavaScript</option>
-                <option value="typescript">TypeScript</option>
-                <option value="python">Python</option>
-              </select>
-            </label>
-            <label>
-              <span>Difficulty</span>
-              <select id="problemDifficultyInput">
-                <option value="">Unset</option>
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-              </select>
-            </label>
-            <label>
-              <span>Entry</span>
-              <input id="problemEntryPathInput" type="text" placeholder="main.js">
-            </label>
-            <label>
-              <span>Run</span>
-              <input id="problemStarterCommandInput" type="text" placeholder="node main.js">
-            </label>
-            <label>
-              <span>Tests</span>
-              <input id="problemTestCommandInput" type="text" placeholder="npm test">
-            </label>
-            <label class="problem-tags-field">
-              <span>Tags</span>
-              <input id="problemTagsInput" type="text" placeholder="arrays, backend">
-            </label>
-          </div>
+          <section class="problem-prompt-card" aria-label="Candidate prompt">
+            <div class="problem-section-label">Candidate prompt</div>
+            <textarea id="problemPromptInput" placeholder="What the candidate should see"></textarea>
+          </section>
+          <section class="problem-settings-card" aria-label="Problem settings">
+            <div class="problem-section-label">Settings</div>
+            <div class="problem-setup-fields">
+              <label>
+                <span>Language</span>
+                <select id="problemLanguageInput">
+                  <option value="javascript">JavaScript</option>
+                  <option value="typescript">TypeScript</option>
+                  <option value="python">Python</option>
+                </select>
+              </label>
+              <label>
+                <span>Difficulty</span>
+                <select id="problemDifficultyInput">
+                  <option value="">Unset</option>
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </label>
+              <label>
+                <span>Entry file</span>
+                <input id="problemEntryPathInput" type="text" placeholder="main.js">
+              </label>
+              <label class="problem-command-field">
+                <span>Candidate run command</span>
+                <input id="problemStarterCommandInput" type="text" placeholder="node main.js">
+              </label>
+              <label class="problem-command-field">
+                <span>Test command</span>
+                <input id="problemTestCommandInput" type="text" placeholder="npm test">
+              </label>
+              <label class="problem-tags-field">
+                <span>Tags</span>
+                <input id="problemTagsInput" type="text" placeholder="arrays, backend">
+              </label>
+            </div>
+          </section>
         </div>
 
         <div class="problem-ide-body">
@@ -455,15 +461,19 @@
               <div class="problem-file-toolbar">
                 <button id="addProblemFileBtn" class="icon-only" type="button" title="New file" aria-label="New file"><svg class="ic"><use href="#i-plus"/></svg></button>
                 <button id="addProblemFolderBtn" class="icon-only" type="button" title="New folder" aria-label="New folder"><svg class="ic"><use href="#i-folder-plus"/></svg></button>
-                <button id="uploadProblemFilesBtn" type="button"><svg class="ic"><use href="#i-upload"/></svg>Upload</button>
-                <button id="uploadProblemFolderBtn" type="button"><svg class="ic"><use href="#i-folder"/></svg>Folder</button>
-                <button id="uploadHiddenTestsBtn" type="button"><svg class="ic"><use href="#i-flask"/></svg>Tests</button>
+                <button id="uploadProblemFilesBtn" class="icon-only" type="button" title="Upload files" aria-label="Upload files"><svg class="ic"><use href="#i-upload"/></svg></button>
+                <button id="uploadProblemFolderBtn" class="icon-only" type="button" title="Upload folder" aria-label="Upload folder"><svg class="ic"><use href="#i-folder"/></svg></button>
+                <button id="uploadHiddenTestsBtn" class="icon-only" type="button" title="Upload hidden tests" aria-label="Upload hidden tests"><svg class="ic"><use href="#i-flask"/></svg></button>
                 <button id="deleteProblemFileBtn" class="danger icon-only" type="button" title="Delete selected" aria-label="Delete selected"><svg class="ic"><use href="#i-trash"/></svg></button>
               </div>
             </div>
             <input id="problemFilesUploadInput" type="file" multiple style="display: none;">
             <input id="problemFolderUploadInput" type="file" multiple webkitdirectory directory style="display: none;">
             <input id="problemHiddenTestsUploadInput" type="file" multiple style="display: none;">
+            <div class="problem-file-search">
+              <svg class="ic"><use href="#i-search"/></svg>
+              <input id="problemFileSearchInput" type="text" placeholder="Search files">
+            </div>
             <div id="problemFileList" class="problem-file-list"></div>
           </aside>
 
@@ -480,16 +490,33 @@
             <div id="problemFileEditor"></div>
           </main>
 
-          <aside class="problem-ide-run" aria-label="Problem runtime">
+          <aside class="problem-ide-run" aria-label="Problem command console">
             <div class="problem-ide-panel-header">
-              <span>Run</span>
-              <span id="problemRuntimeStatus">Not prepared</span>
+              <span>Console</span>
+              <span id="problemRuntimeStatus">Draft sandbox</span>
             </div>
             <div class="runtime-actions">
-              <button id="runStarterBtn" class="problem-secondary-btn" type="button"><svg class="ic"><use href="#i-play"/></svg>Run</button>
-              <button id="runTestsBtn" class="problem-secondary-btn" type="button"><svg class="ic"><use href="#i-flask"/></svg>Test</button>
-              <button id="prepareRuntimeBtn" class="problem-primary-btn" type="button"><svg class="ic"><use href="#i-bolt"/></svg>Prepare</button>
-              <button id="resetRuntimeBtn" class="problem-danger-btn" type="button"><svg class="ic"><use href="#i-refresh"/></svg>Reset</button>
+              <button id="runStarterBtn" class="problem-secondary-btn" type="button"><svg class="ic"><use href="#i-play"/></svg>Candidate run</button>
+              <button id="runTestsBtn" class="problem-secondary-btn" type="button"><svg class="ic"><use href="#i-flask"/></svg>Tests</button>
+            </div>
+            <div class="problem-setup-commands">
+              <label for="problemSetupCommandsInput">Setup commands</label>
+              <textarea id="problemSetupCommandsInput" placeholder="npm install lodash"></textarea>
+            </div>
+            <div class="problem-console-command">
+              <label for="problemConsoleCommandInput">Command</label>
+              <div class="problem-console-command-row">
+                <input id="problemConsoleCommandInput" type="text" placeholder="npm install lodash">
+                <button id="runConsoleCommandBtn" class="problem-primary-btn" type="button"><svg class="ic"><use href="#i-terminal"/></svg>Run</button>
+              </div>
+              <label class="problem-console-save">
+                <input id="problemConsoleSaveCommandInput" type="checkbox" checked>
+                <span>Save command in setup</span>
+              </label>
+            </div>
+            <div id="problemCommandChanges" class="problem-command-changes" hidden>
+              <span id="problemCommandChangesSummary"></span>
+              <button id="applyCommandChangesBtn" class="problem-secondary-btn" type="button"><svg class="ic"><use href="#i-check"/></svg>Apply files</button>
             </div>
             <pre id="problemRuntimeOutput"></pre>
           </aside>
@@ -904,7 +931,7 @@
     <script src="scripts/posthog-tracking.js?v=2"></script>
     <script src="scripts/session-tracking.js?v=1"></script>
     <script src="scripts/activity-monitor.js?v=2"></script>
-    <script src="scripts/problem-library.js?v=3"></script>
+    <script src="scripts/problem-library.js?v=4"></script>
     <script src="scripts/app.js?v=15"></script>
   </body>
 </html>
