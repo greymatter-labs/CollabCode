@@ -22,7 +22,7 @@
 
     <!-- styling -->
     <!-- Custom style -->
-    <link rel="stylesheet" href="styles/main.css?v=11">
+    <link rel="stylesheet" href="styles/main.css?v=12">
     <!-- Linear-style design system: tokens.css -> components.css -> app/*.css (see styles/main.css) -->
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -739,16 +739,22 @@
         <div class="center-info">
           <img src="/images/favicon/apple-touch-icon-57x57.png" alt="Atom Tickets" width="24" height="24" style="margin-right: 8px; vertical-align: middle;">
           <span id="session-info"></span>
-          <button id="end-session-btn" class="end-session-button" style="margin-left: 15px;">End Interview</button>
-          <button id="reset-session-btn" class="reset-session-button" style="margin-left: 4px;">Reset Workspace</button>
           <span id="user-count" class="user-count"></span>
+          <div id="users-list"></div>
         </div>
 
         <div class="right-controls">
-          <div id="users-list"></div>
+          <button id="end-session-btn" class="end-session-button" type="button" title="End interview">
+            <svg class="ic ic-14"><use href="#i-x"/></svg>
+            <span>End</span>
+          </button>
+          <button id="reset-session-btn" class="reset-session-button" type="button" title="Reset workspace">
+            <svg class="ic ic-14"><use href="#i-refresh"/></svg>
+            <span>Reset</span>
+          </button>
           <button id="notes-toggle-btn" class="notes-button" style="display: none;"><svg class="ic ic-14"><use href="#i-edit"/></svg>Notes</button>
           <button id="run-btn" class="run-button"><svg class="ic ic-14"><use href="#i-play"/></svg>Run</button>
-          <button id="share-btn">Share</button>
+          <button id="share-btn"><svg class="ic ic-14"><use href="#i-send"/></svg>Share</button>
         </div>
       </div>
 
@@ -892,7 +898,7 @@
     <script src="scripts/simple-templates.js?v=2"></script>
     <script src="scripts/custom-dialogs.js?v=3"></script>
     <script src="scripts/workspace.bundle.js?v=4"></script>
-    <script src="scripts/firepad.js?v=14"></script>
+    <script src="scripts/firepad.js?v=15"></script>
     <script src="scripts/interview-notes.js?v=3"></script>
     <script src="scripts/slack-integration.js?v=4"></script>
     <script src="scripts/posthog-tracking.js?v=2"></script>

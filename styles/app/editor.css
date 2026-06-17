@@ -19,25 +19,50 @@
    Legacy keeps the flex row + space-between; we tune rhythm + alignment.
    ============================================================ */
 #top-bar{
+  display:grid;
+  grid-template-columns:minmax(300px,max-content) minmax(260px,1fr) max-content;
+  align-items:center;
   background:var(--bg-1);
   border-bottom:1px solid var(--border);
-  min-height:48px;
-  padding:0 var(--sp-3);
-  gap:var(--sp-4);
+  height:50px;
+  min-height:50px;
+  padding:0 10px;
+  gap:12px;
+  overflow:hidden;
 }
 
-/* left + right groups — tight, consistent gaps */
-.left-controls,.right-controls{
-  gap:var(--sp-2);
+/* top-bar lanes: tools · session/presence · commands */
+.left-controls,
+.center-info,
+.right-controls{
+  min-width:0;
+  display:flex;
+  align-items:center;
 }
 
-/* center — session identity + participants, sits flush-center */
+.left-controls{
+  justify-content:flex-start;
+  gap:8px;
+  overflow:hidden;
+}
+
+.right-controls{
+  justify-content:flex-end;
+  gap:8px;
+  overflow:hidden;
+}
+
+/* center — session identity + participants */
 .center-info{
+  justify-self:stretch;
+  justify-content:center;
   color:var(--text-2);
   font-size:13px;
   font-weight:500;
-  gap:var(--sp-2);
+  gap:8px;
   min-width:0;
+  padding:0 6px;
+  overflow:hidden;
 }
 /* the Atom favicon — quiet, rounded, aligned */
 .center-info > img{
@@ -48,6 +73,11 @@
 }
 
 #session-info{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  max-width:min(34vw,340px);
   color:var(--text-2);
   font-weight:500;
   letter-spacing:-.01em;
@@ -55,32 +85,37 @@
   overflow:hidden;
   text-overflow:ellipsis;
 }
-
-/* thin hairline divider between session id and the End/Reset controls */
-.center-info #end-session-btn{
-  margin-left:var(--sp-3) !important;
-  position:relative;
+#session-info strong{
+  color:var(--text-1);
+  font-family:var(--mono);
+  font-size:12px;
+  letter-spacing:.04em;
 }
-.center-info #end-session-btn::before{
-  content:"";
-  position:absolute;
-  left:calc(-1 * var(--sp-2));
-  top:50%;transform:translateY(-50%);
-  width:1px;height:18px;
-  background:var(--border-2);
+#session-info .session-label{
+  color:var(--text-3);
 }
-.center-info #reset-session-btn{
-  margin-left:var(--sp-1) !important;
+#session-info .session-role-pill{
+  display:inline-flex;
+  align-items:center;
+  height:18px;
+  padding:0 6px;
+  border-radius:var(--r-full);
+  background:var(--accent-soft);
+  border:1px solid var(--accent-border);
+  color:var(--accent-text);
+  font-size:10px;
+  font-weight:600;
+  text-transform:uppercase;
 }
 
 /* user count pill — neutral chip with green count */
 .user-count{
+  flex:0 0 auto;
   display:inline-flex;align-items:center;
   height:24px;
   background:var(--bg-3);
   border:1px solid var(--border-2);
   padding:0 10px;
-  margin-left:var(--sp-1);
   border-radius:var(--r-full);
   font-size:12px;
   font-weight:500;
@@ -137,15 +172,19 @@
    TOP-BAR BUTTONS  —  reuse the .btn visual language
    ============================================================ */
 /* icons inside top-bar action buttons inherit currentColor */
-#run-btn .ic,#share-btn .ic,.notes-button .ic{
+#run-btn .ic,
+#share-btn .ic,
+.notes-button .ic,
+#end-session-btn .ic,
+#reset-session-btn .ic{
   width:14px;height:14px;flex:none;
 }
 
 /* Run — primary intent (accent) */
 #run-btn,.run-button{
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  height:30px;
-  padding:0 13px;
+  height:32px;
+  padding:0 12px;
   background:var(--accent);
   color:#fff;
   border:1px solid transparent;
@@ -171,8 +210,8 @@
 /* Share — neutral secondary */
 #share-btn{
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  height:30px;
-  padding:0 13px;
+  height:32px;
+  padding:0 12px;
   background:var(--bg-3);
   color:var(--text-1);
   border:1px solid var(--border-2);
@@ -190,9 +229,9 @@
 
 /* End Interview — danger (legacy uses !important, so we must too) */
 .end-session-button,#end-session-btn{
-  display:inline-flex !important;align-items:center;justify-content:center;
-  height:30px;
-  padding:0 13px !important;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  height:32px;
+  padding:0 11px !important;
   background-color:var(--red) !important;
   color:#fff !important;
   border:1px solid transparent !important;
@@ -208,9 +247,9 @@
 
 /* Reset Workspace — neutral (legacy uses !important + orange) */
 .reset-session-button,#reset-session-btn{
-  display:inline-flex !important;align-items:center;justify-content:center;
-  height:30px;
-  padding:0 13px !important;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  height:32px;
+  padding:0 11px !important;
   background-color:var(--bg-3) !important;
   color:var(--text-1) !important;
   border:1px solid var(--border-2) !important;
@@ -229,8 +268,8 @@
    notes.css loads after this and owns the panel internals. */
 .notes-button{
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  height:30px;
-  padding:0 13px;
+  height:32px;
+  padding:0 12px;
   background:var(--bg-3);
   color:var(--text-1);
   border:1px solid var(--border-2);
@@ -253,43 +292,93 @@
 /* ============================================================
    USERS LIST  —  presence chips (.user-badge)
    ============================================================ */
-.user-badge{
-  gap:6px;
-  padding:0 10px;
-  height:24px;
-  background:var(--bg-3);
-  border:1px solid var(--border-2);
-  border-radius:var(--r-full);
-  font-size:12px;
-  font-weight:500;
-  color:var(--text-1);
+#users-list{
+  display:flex;
+  align-items:center;
+  gap:0;
+  min-width:0;
+  max-width:min(16vw,180px);
+  overflow:visible;
+  padding-left:6px;
 }
+.user-badge{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:26px;
+  height:26px;
+  margin-left:-6px;
+  padding:0;
+  background:linear-gradient(180deg,var(--bg-4),var(--bg-3));
+  border:2px solid var(--bg-1);
+  border-radius:50%;
+  box-shadow:0 0 0 1px var(--avatar-ring,var(--border-strong));
+  color:var(--text-1);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.02em;
+  text-transform:uppercase;
+}
+.user-badge:first-child{margin-left:0;}
 .user-badge::before{
-  width:6px;height:6px;
-  background:var(--green);
-  margin-right:0;
+  display:none;
 }
 .user-badge.current-user{
-  background:var(--accent-soft);
-  border-color:var(--accent-border);
-  color:var(--accent-text);
+  background:linear-gradient(180deg,var(--accent-hover),var(--accent));
+  color:#fff;
 }
 .user-badge.current-user::before{
   background:var(--accent);
 }
-.user-badge-name{color:inherit;}
-.user-badge-role{
-  padding:1px 6px;
-  border-radius:var(--r-full);
-  background:rgba(255,255,255,.08);
-  color:var(--text-3);
-  font-size:10px;
-  font-weight:600;
-  text-transform:uppercase;
+.user-badge-name{
+  color:inherit;
+  line-height:1;
 }
-.user-badge.current-user .user-badge-role{
-  background:rgba(174,181,243,.18);
-  color:var(--accent-text);
+.user-badge-role{
+  display:none;
+}
+.user-badge-overflow{
+  background:var(--bg-2);
+  color:var(--text-3);
+  box-shadow:0 0 0 1px var(--border-2);
+  font-size:10.5px;
+}
+
+@media (max-width:1180px){
+  #top-bar{
+    grid-template-columns:minmax(250px,max-content) minmax(190px,1fr) max-content;
+    gap:8px;
+  }
+  #top-bar #language-selector{min-width:136px;max-width:150px;}
+  #top-bar #theme-selector{min-width:104px;max-width:112px;}
+  #top-bar #fontSize-selector{min-width:68px;max-width:72px;}
+  #session-info{max-width:190px;}
+  #users-list{max-width:112px;}
+  .user-badge-role{display:none;}
+  .end-session-button,#end-session-btn,
+  .reset-session-button,#reset-session-btn,
+  .notes-button,
+  #run-btn,.run-button,
+  #share-btn{padding:0 9px !important;}
+}
+
+@media (max-width:880px){
+  #top-bar{
+    height:auto;
+    min-height:50px;
+    grid-template-columns:1fr;
+    grid-auto-rows:minmax(32px,auto);
+    padding:8px;
+  }
+  .left-controls,
+  .center-info,
+  .right-controls{
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+  #session-info{max-width:100%;}
+  #users-list{max-width:100%;}
 }
 
 /* ============================================================

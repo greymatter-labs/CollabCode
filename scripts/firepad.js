@@ -107,10 +107,7 @@
     
     if (isAdmin) {
       console.log('Admin user detected - showing End Interview button');
-      const sessionInfo = document.getElementById('session-info');
-      if (sessionInfo && !sessionInfo.innerHTML.includes('Admin')) {
-        sessionInfo.innerHTML += ' <span style="color: #4caf50">(Admin)</span>';
-      }
+      setupSessionInfo();
       
       // Admin keeps the button visible (it's visible by default now)
       if (endSessionBtn) {
@@ -557,21 +554,43 @@
     return label;
   }
 
+  function getUserInitials(label) {
+    const parts = String(label || '')
+      .replace(/[^a-zA-Z0-9\s]/g, ' ')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+
+    return (parts[0] || '?').slice(0, 2).toUpperCase();
+  }
+
   function updateUsersList(users) {
     const usersList = document.getElementById('users-list');
     if (!usersList) return;
     
     usersList.innerHTML = '';
-    Object.keys(users).forEach(userId => {
-      const user = users[userId];
+    const entries = Object.keys(users).map(userId => ({ userId, user: users[userId] }));
+    const visibleEntries = entries.slice(0, 5);
+
+    visibleEntries.forEach(({ userId, user }) => {
       const badge = document.createElement('div');
       badge.className = 'user-badge';
       if (userId === currentUser.id) {
         badge.className += ' current-user';
       }
+      const label = getUserListLabel(user);
+      const roleLabel = user.isAdmin === true || user.role === 'interviewer' ? 'Interviewer' : 'Candidate';
+      badge.title = `${label} · ${roleLabel}`;
+      badge.setAttribute('aria-label', badge.title);
+      badge.style.setProperty('--avatar-ring', user.color || '#4cb782');
+
       const name = document.createElement('span');
       name.className = 'user-badge-name';
-      name.textContent = getUserListLabel(user);
+      name.textContent = getUserInitials(label);
       badge.appendChild(name);
 
       if (currentUser?.isAdmin && (user.isAdmin === true || user.role === 'interviewer')) {
@@ -581,9 +600,16 @@
         badge.appendChild(role);
       }
 
-      badge.style.borderLeft = `3px solid ${user.color}`;
       usersList.appendChild(badge);
     });
+
+    if (entries.length > visibleEntries.length) {
+      const overflow = document.createElement('div');
+      overflow.className = 'user-badge user-badge-overflow';
+      overflow.textContent = `+${entries.length - visibleEntries.length}`;
+      overflow.title = `${entries.length - visibleEntries.length} more participant${entries.length - visibleEntries.length === 1 ? '' : 's'}`;
+      usersList.appendChild(overflow);
+    }
   }
 
   // Update user count
@@ -608,7 +634,8 @@
   function setupSessionInfo() {
     const sessionInfo = document.getElementById('session-info');
     if (sessionInfo && !sessionInfo.innerHTML.includes(currentSessionCode)) {
-      sessionInfo.innerHTML = `Session Code: <strong>${currentSessionCode}</strong>`;
+      const adminBadge = currentUser?.isAdmin ? '<span class="session-role-pill">Admin</span>' : '';
+      sessionInfo.innerHTML = `<span class="session-label">Session</span><strong>${currentSessionCode}</strong>${adminBadge}`;
     }
   }
 
