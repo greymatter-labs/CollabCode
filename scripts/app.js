@@ -287,6 +287,19 @@
     return !!(window.firebase && window.firebase.database);
   }
 
+  function withTimeout(promise, timeoutMs, timeoutMessage) {
+    let timeoutId = null;
+    const timeout = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error(timeoutMessage));
+      }, timeoutMs);
+    });
+
+    return Promise.race([promise, timeout]).finally(() => {
+      clearTimeout(timeoutId);
+    });
+  }
+
   function hasActiveInterviewer(sessionData = {}) {
     return Object.values(sessionData.users || {}).some(user => {
       if (!user) return false;
@@ -482,49 +495,52 @@
       const name = candidateName.value.trim();
       const sessionCode = normalizeSessionCode(candidateSessionCode.value);
 
-      if (name && isValidSessionCode(sessionCode)) {
-        // Show loading state
-        candidateJoinBtn.disabled = true;
-        candidateJoinBtn.textContent = 'Validating...';
+      if (!name || !isValidSessionCode(sessionCode)) return;
 
-        // Validate session exists before joining (pass true for isCandidate)
+      candidateJoinBtn.disabled = true;
+      candidateJoinBtn.textContent = 'Validating...';
+
+      try {
         const validation = await validateSession(sessionCode, true);
-
         if (!validation.valid) {
-          candidateJoinBtn.disabled = false;
-          candidateJoinBtn.textContent = 'Join Session';
-          alert(validation.error || 'Invalid session code. Please check with your interviewer.');
-          return;
+          throw new Error(validation.error || 'Invalid session code. Please check with your interviewer.');
         }
 
-        // Initialize session tracking for candidates (make it async/non-blocking)
         if (window.SessionTracking) {
-          // Don't await - let tracking happen in background
           window.SessionTracking.initialize(sessionCode, 'candidate', name);
-          // Remove the security check message - just proceed
         }
 
-        // Initialize activity monitoring for candidates (with consent)
         if (window.initActivityMonitor) {
           console.log('Starting activity monitoring for candidate:', name);
           window.initActivityMonitor(sessionCode, name, 'candidate');
 
-          // Log consent status
           if (window.firebase) {
             firebase.database()
               .ref(`sessions/${sessionCode}/privacy_consent/${name}`)
               .set({
+                name,
                 consented: true,
                 timestamp: Date.now(),
                 consentedTo: 'Activity monitoring during interview session'
+              })
+              .catch(error => {
+                console.warn('Could not save privacy consent:', error);
               });
           }
         }
 
-        Auth.joinAsCandidate(name);
-        window.location.hash = sessionCode;
+        const authResult = Auth.joinAsCandidate(name);
+        if (!authResult.success) {
+          throw new Error(authResult.error || 'Could not join as candidate.');
+        }
 
-        startSession(name, sessionCode, false);
+        window.location.hash = sessionCode;
+        await startSession(name, sessionCode, false, { skipValidation: true });
+      } catch (error) {
+        console.error('Candidate join failed:', error);
+        candidateJoinBtn.disabled = false;
+        candidateJoinBtn.textContent = 'Join Session';
+        alert(error.message || 'Could not join this session. Please refresh and try again.');
       }
     });
 
@@ -809,7 +825,11 @@
     }
 
     try {
-      const snapshot = await window.firebase.database().ref('sessions/' + sessionCode).once('value');
+      const snapshot = await withTimeout(
+        window.firebase.database().ref('sessions/' + sessionCode).once('value'),
+        10000,
+        'Session validation timed out. Please refresh and try again.'
+      );
       const sessionData = snapshot.val();
 
       console.log('Validating session:', sessionCode, 'Data:', sessionData);
@@ -840,7 +860,13 @@
       return { valid: true, sessionData };
     } catch (error) {
       console.error('Session validation error:', error);
-      return { valid: false, error: 'Failed to validate session. Please check your internet connection.' };
+      const message = error?.message || '';
+      return {
+        valid: false,
+        error: /timed out/i.test(message)
+          ? message
+          : 'Failed to validate session. Please check your internet connection.'
+      };
     }
   }
 
@@ -2005,7 +2031,7 @@
 
     console.log('START SESSION:', userName, sessionCode, 'isNew:', isNew, 'review:', isReviewMode);
     // Validate session first (for existing sessions)
-    if (!isNew) {
+    if (!isNew && options.skipValidation !== true) {
       const validation = await validateSession(sessionCode, false, { allowEnded: isReviewMode });
       if (!validation.valid) {
         sessionStarting = false;
@@ -2049,12 +2075,17 @@
 	        isAdmin,
 	        isReview: isReviewMode
 	      });
+	    } else {
+	      sessionStarting = false;
+	      throw new Error('Editor failed to load. Please refresh and try again.');
 	    }
 
     // Reset flag after a delay to allow future navigation
     setTimeout(() => {
       sessionStarting = false;
     }, 2000);
+
+    return true;
   }
 
   let initialRouteHandled = false;
