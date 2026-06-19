@@ -240,6 +240,10 @@
     window.history.replaceState(null, '', window.location.pathname + window.location.search);
   }
 
+  function getHashSessionCode() {
+    return normalizeSessionCode(window.location.hash.replace(/^#/, ''));
+  }
+
   function hideEditorSession() {
     const mainContainer = document.getElementById('main-container');
     if (mainContainer) {
@@ -273,6 +277,100 @@
     hideEditorSession();
     alert(message);
     showInitialScreen();
+  }
+
+  async function waitForFirebaseDatabase() {
+    if (window.firebase && window.firebase.database) return true;
+
+    console.log('Waiting for Firebase database...');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return !!(window.firebase && window.firebase.database);
+  }
+
+  function hasActiveInterviewer(sessionData = {}) {
+    return Object.values(sessionData.users || {}).some(user => {
+      if (!user) return false;
+      if (user.isAdmin === true) return true;
+
+      const role = String(user.role || user.userType || '').toLowerCase();
+      return role === 'interviewer' || role === 'admin' || isInterviewerParticipant(user);
+    });
+  }
+
+  function setCandidateDirectJoinMode(enabled) {
+    const candidateSessionCode = document.getElementById('candidateSessionCode');
+    const sessionCodeGroup = candidateSessionCode?.closest('.form-group');
+    const candidateBack = document.getElementById('candidateBack');
+
+    if (sessionCodeGroup) {
+      sessionCodeGroup.style.display = enabled ? 'none' : '';
+    }
+    if (candidateSessionCode) {
+      candidateSessionCode.readOnly = enabled;
+      candidateSessionCode.toggleAttribute('aria-readonly', enabled);
+    }
+    if (candidateBack) {
+      candidateBack.style.display = enabled ? 'none' : '';
+    }
+  }
+
+  function updateCandidateJoinButtonState() {
+    const candidateName = document.getElementById('candidateName');
+    const candidateSessionCode = document.getElementById('candidateSessionCode');
+    const candidateJoinBtn = document.getElementById('candidateJoinBtn');
+    const privacyConsent = document.getElementById('candidatePrivacyConsent');
+    if (!candidateName || !candidateSessionCode || !candidateJoinBtn || !privacyConsent) return;
+
+    candidateJoinBtn.disabled =
+      !candidateName.value.trim() ||
+      !isValidSessionCode(candidateSessionCode.value) ||
+      !privacyConsent.checked;
+  }
+
+  function openCandidateJoinModal(sessionCode = '', options = {}) {
+    init();
+    hideEditorSession();
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.style.display = 'none';
+    });
+
+    const candidateName = document.getElementById('candidateName');
+    const candidateSessionCode = document.getElementById('candidateSessionCode');
+    const candidateModal = document.getElementById('candidateModal');
+    const normalizedCode = normalizeSessionCode(sessionCode);
+    const lockSessionCode = Boolean(options.directLink && isValidSessionCode(normalizedCode));
+
+    if (candidateSessionCode) {
+      candidateSessionCode.value = normalizedCode;
+    }
+    setCandidateDirectJoinMode(lockSessionCode);
+    updateCandidateJoinButtonState();
+
+    if (candidateModal) {
+      candidateModal.style.display = 'flex';
+    }
+    if (candidateName) {
+      candidateName.focus();
+    }
+  }
+
+  async function tryOpenDirectCandidateJoin(sessionCode) {
+    if (Auth.isAdmin() || !isValidSessionCode(sessionCode)) {
+      return false;
+    }
+
+    const validation = await validateSession(sessionCode, true);
+    if (!validation.valid) {
+      return false;
+    }
+
+    if (!hasActiveInterviewer(validation.sessionData)) {
+      console.log('Direct candidate link ignored because no interviewer is currently present:', sessionCode);
+      return false;
+    }
+
+    openCandidateJoinModal(sessionCode, { directLink: true });
+    return true;
   }
 
   // Initialize the application
@@ -323,9 +421,9 @@
     // Candidate button - support both old and new classes
     const candidateBtn = document.querySelector('#candidateCard .role-btn');
     if (candidateBtn) {
-      candidateBtn.addEventListener('click', function() {
-        document.getElementById('landingModal').style.display = 'none';
-        document.getElementById('candidateModal').style.display = 'flex';
+      candidateBtn.addEventListener('click', function(event) {
+        event.preventDefault();
+        openCandidateJoinModal('', { directLink: false });
       });
     }
 
@@ -348,29 +446,21 @@
 
     // Back button
     candidateBack.addEventListener('click', function() {
+      setCandidateDirectJoinMode(false);
       document.getElementById('candidateModal').style.display = 'none';
       document.getElementById('landingModal').style.display = 'flex';
     });
 
-    // Enable/disable join button
-    function updateJoinButton() {
-      const privacyConsent = document.getElementById('candidatePrivacyConsent');
-      candidateJoinBtn.disabled =
-        !candidateName.value.trim() ||
-        !isValidSessionCode(candidateSessionCode.value) ||
-        !privacyConsent.checked;
-    }
-
-    candidateName.addEventListener('input', updateJoinButton);
+    candidateName.addEventListener('input', updateCandidateJoinButtonState);
     candidateSessionCode.addEventListener('input', function() {
       this.value = normalizeSessionCode(this.value);
-      updateJoinButton();
+      updateCandidateJoinButtonState();
     });
 
     // Privacy consent checkbox
     const privacyConsent = document.getElementById('candidatePrivacyConsent');
     if (privacyConsent) {
-      privacyConsent.addEventListener('change', updateJoinButton);
+      privacyConsent.addEventListener('change', updateCandidateJoinButtonState);
     }
 
     // Join session
@@ -700,16 +790,8 @@
       return { valid: false, error: 'Please enter a valid 8-character session code.' };
     }
 
-    // Wait for Firebase if not ready
-    if (!window.firebase || !window.firebase.database) {
-      console.log('Waiting for Firebase to validate session...');
-      // Wait a bit for Firebase to load
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Try again
-      if (!window.firebase || !window.firebase.database) {
-        return { valid: false, error: 'Database connection failed. Please refresh and try again.' };
-      }
+    if (!(await waitForFirebaseDatabase())) {
+      return { valid: false, error: 'Database connection failed. Please refresh and try again.' };
     }
 
     try {
@@ -741,7 +823,7 @@
         return { valid: false, error: 'This interview session has already ended.' };
       }
 
-      return { valid: true };
+      return { valid: true, sessionData };
     } catch (error) {
       console.error('Session validation error:', error);
       return { valid: false, error: 'Failed to validate session. Please check your internet connection.' };
@@ -1933,76 +2015,46 @@
     }, 2000);
   }
 
-  // Track if this is initial page load
-  let isInitialLoad = true;
+  let initialRouteHandled = false;
 
-  // Check for existing session on load - ONLY for page refreshes
-  window.addEventListener('load', function() {
-    console.log('PAGE LOAD EVENT FIRED - isInitialLoad:', isInitialLoad);
+  async function handleInitialRoute() {
+    if (initialRouteHandled) return;
+    initialRouteHandled = true;
 
-    // If this is NOT the initial page load, skip (means we navigated after page was already loaded)
-    if (!isInitialLoad) {
-      console.log('PAGE LOAD: Not initial load, skipping');
-      return;
-    }
-    isInitialLoad = false;
-
-    // Don't run if we're already starting a session
     if (sessionStarting) {
-      console.log('PAGE LOAD: Session already starting, skipping load handler');
+      console.log('INITIAL ROUTE: Session already starting, skipping');
       return;
     }
 
-    // Check if we're already in a session (main container visible means session is active)
     const mainContainer = document.getElementById('main-container');
     if (mainContainer && mainContainer.style.display !== 'none') {
-      console.log('PAGE LOAD: Already in a session, skipping');
+      console.log('INITIAL ROUTE: Already in a session, skipping');
       return;
     }
 
     const session = Auth.getCurrentSession();
-    const urlCode = window.location.hash.replace('#', '');
+    const urlCode = getHashSessionCode();
+    const hasValidUrlCode = isValidSessionCode(urlCode);
 
-    console.log('PAGE LOAD: Session logged in?', session.isLoggedIn, 'URL code:', urlCode);
+    console.log('INITIAL ROUTE: Session logged in?', session.isLoggedIn, 'URL code:', urlCode);
 
-    // Only auto-join if we have a URL code AND we're logged in (for page refresh scenarios)
-    if (session.isLoggedIn && isValidSessionCode(urlCode)) {
-      console.log('PAGE LOAD: This should only run on page refresh! Resuming session with code from URL:', urlCode);
-      console.trace('PAGE LOAD: Stack trace');
-      // Resume existing session - this is ONLY for when someone refreshes the page
+    if (session.isLoggedIn && hasValidUrlCode) {
       startSession(session.userName, urlCode, false);
-    } else {
-      console.log('PAGE LOAD: Showing landing page');
-      // Show landing page
-      if (urlCode) clearSessionHash();
-      showInitialScreen();
+      return;
     }
-  });
 
-  // Initialize on DOM ready (but only if not already handling via load event)
+    if (!session.isAdmin && hasValidUrlCode) {
+      const openedCandidateJoin = await tryOpenDirectCandidateJoin(urlCode);
+      if (openedCandidateJoin) return;
+    }
+
+    if (urlCode) clearSessionHash();
+    showInitialScreen();
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('DOM READY: Checking if should init...');
-      const urlCode = window.location.hash.replace('#', '');
-      const session = Auth.getCurrentSession();
-
-      // Only init if we're not going to handle this in the load event
-      if (!session.isLoggedIn || !isValidSessionCode(urlCode)) {
-        console.log('DOM READY: Calling init()');
-        if (urlCode) clearSessionHash();
-        showInitialScreen();
-      } else {
-        console.log('DOM READY: Skipping init, will handle in load event');
-      }
-    });
+    document.addEventListener('DOMContentLoaded', handleInitialRoute);
   } else {
-    // Document already loaded, check same conditions
-    const urlCode = window.location.hash.replace('#', '');
-    const session = Auth.getCurrentSession();
-    if (!session.isLoggedIn || !isValidSessionCode(urlCode)) {
-      console.log('IMMEDIATE: Calling init()');
-      if (urlCode) clearSessionHash();
-      showInitialScreen();
-    }
+    handleInitialRoute();
   }
 })();
