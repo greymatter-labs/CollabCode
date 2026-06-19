@@ -802,6 +802,7 @@
     const summary = `${run.status || 'run'} by ${runner}${language}${entry}${when ? ` at ${when}` : ''}${runtimeFiles}`;
 
     outputPanel.style.display = 'flex';
+    window.CollabPanelLayout?.selectRightTab?.('output');
     if (lastRunSummary) {
       lastRunSummary.textContent = summary;
       lastRunSummary.className = status;
@@ -922,8 +923,16 @@
     const problemToggleBtn = document.getElementById('problem-toggle-btn');
     if (problemToggleBtn) {
       problemToggleBtn.addEventListener('click', function() {
+        if (window.CollabPanelLayout?.isRightTabAvailable?.('problem') &&
+            !window.CollabPanelLayout?.isRightTabActive?.('problem')) {
+          window.CollabPanelLayout.selectRightTab('problem');
+          return;
+        }
         problemPanelOpen = !problemPanelOpen;
         renderProblemSidebar();
+        if (problemPanelOpen) {
+          window.CollabPanelLayout?.selectRightTab?.('problem');
+        }
       });
     }
 
@@ -1270,6 +1279,7 @@
     const outputText = document.getElementById('output-text');
     
     outputPanel.style.display = 'flex';
+    window.CollabPanelLayout?.selectRightTab?.('output');
     outputText.textContent = text;
     outputText.className = type;
 

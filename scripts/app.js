@@ -31,6 +31,157 @@
     return `<svg class="ic ic-${size}" aria-hidden="true"><use href="#${id}"></use></svg>`;
   }
 
+  function normalizeParticipantName(value) {
+    return String(value || '').trim().replace(/\s+/g, ' ');
+  }
+
+  function participantHistoryKey(name, role) {
+    const base = normalizeParticipantName(name)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 80);
+    return base || `${role || 'participant'}_${Date.now()}`;
+  }
+
+  function isUsefulParticipantName(value) {
+    const name = normalizeParticipantName(value);
+    if (!name) return false;
+    return !['unknown', 'someone', 'null', 'undefined'].includes(name.toLowerCase());
+  }
+
+  function addSessionParticipant(participants, rawId, rawName, details = {}) {
+    const name = normalizeParticipantName(rawName);
+    if (!isUsefulParticipantName(name)) return;
+
+    const id = String(rawId || participantHistoryKey(name, details.role))
+      .trim()
+      .replace(/[.#$\/\[\]]/g, '_')
+      .slice(0, 120) || participantHistoryKey(name, details.role);
+    const existingKey = Object.keys(participants).find(key =>
+      normalizeParticipantName(participants[key]?.name).toLowerCase() === name.toLowerCase()
+    );
+    const key = existingKey || id;
+
+    participants[key] = {
+      ...participants[key],
+      name,
+      role: participants[key]?.role || details.role || null,
+      joinedAt: participants[key]?.joinedAt || details.joinedAt || null,
+      source: participants[key]?.source || details.source || 'unknown'
+    };
+  }
+
+  function getSessionParticipants(session = {}) {
+    if (!(session.terminated && session.terminated.terminated)) {
+      return session.users || {};
+    }
+
+    const participants = {};
+    Object.entries(session.preservedParticipants || {}).forEach(([id, participant]) => {
+      addSessionParticipant(participants, id, participant?.name, {
+        role: participant?.role || participant?.userType || null,
+        joinedAt: participant?.joinedAt || participant?.timestamp,
+        source: 'preservedParticipants'
+      });
+    });
+    Object.entries(session.participantHistory || {}).forEach(([id, participant]) => {
+      addSessionParticipant(participants, id, participant?.name, {
+        role: participant?.role || participant?.userType || null,
+        joinedAt: participant?.joinedAt || participant?.timestamp,
+        source: 'participantHistory'
+      });
+    });
+    Object.entries(session.privacy_consent || {}).forEach(([nameKey, consent]) => {
+      addSessionParticipant(participants, nameKey, consent?.name || nameKey, {
+        role: 'candidate',
+        joinedAt: consent?.timestamp,
+        source: 'privacy_consent'
+      });
+    });
+    Object.values(session.activity_log || {}).forEach(event => {
+      addSessionParticipant(participants, event?.userId || event?.userName, event?.userName || event?.userId, {
+        role: event?.userType || 'candidate',
+        joinedAt: event?.timestamp,
+        source: 'activity_log'
+      });
+    });
+    Object.values(session.tracking || {}).forEach(entry => {
+      addSessionParticipant(participants, entry?.userId || entry?.userName, entry?.userName, {
+        role: entry?.metadata?.userType || entry?.userType || null,
+        joinedAt: entry?.timestamp,
+        source: 'tracking'
+      });
+    });
+    Object.values(session.security_warnings || {}).forEach(warning => {
+      addSessionParticipant(participants, warning?.userId || warning?.userName, warning?.userName, {
+        role: warning?.userType || null,
+        joinedAt: warning?.timestamp,
+        source: 'security_warnings'
+      });
+    });
+    if (session.lastRun) {
+      addSessionParticipant(participants, session.lastRun.runById || session.lastRun.runByName, session.lastRun.runByName, {
+        role: 'candidate',
+        joinedAt: session.lastRun.updatedAt,
+        source: 'lastRun'
+      });
+    }
+    addSessionParticipant(participants, session.lastRunBy, session.lastRunBy, {
+      role: 'candidate',
+      joinedAt: session.lastRunAt,
+      source: 'lastRunBy'
+    });
+
+    return participants;
+  }
+
+  function isCandidateParticipant(user) {
+    const role = String(user?.role || user?.userType || '').toLowerCase();
+    if (role === 'candidate') return true;
+    if (role === 'interviewer' || role === 'admin') return false;
+
+    const nameLower = String(user?.name || '').toLowerCase();
+    return !!nameLower &&
+      !nameLower.includes('interviewer') &&
+      !nameLower.includes('@') &&
+      !nameLower.includes('admin') &&
+      !nameLower.includes('.com') &&
+      !nameLower.includes('.io') &&
+      !nameLower.includes('.net');
+  }
+
+  function isInterviewerParticipant(user) {
+    const role = String(user?.role || user?.userType || '').toLowerCase();
+    if (role === 'interviewer' || role === 'admin') return true;
+    if (role === 'candidate') return false;
+
+    const nameLower = String(user?.name || '').toLowerCase();
+    return nameLower.includes('interviewer') ||
+      nameLower.includes('@') ||
+      nameLower.includes('admin') ||
+      nameLower.includes('.com') ||
+      nameLower.includes('.io') ||
+      nameLower.includes('.net');
+  }
+
+  function recordSessionParticipant(sessionCode, name, role) {
+    if (!window.firebase || !sessionCode || !isUsefulParticipantName(name)) return;
+
+    const participantId = participantHistoryKey(name, role);
+    firebase.database()
+      .ref(`sessions/${sessionCode}/participantHistory/${participantId}`)
+      .update({
+        name: normalizeParticipantName(name),
+        role,
+        joinedAt: firebase.database.ServerValue.TIMESTAMP,
+        lastSeenAt: firebase.database.ServerValue.TIMESTAMP
+      })
+      .catch(error => {
+        console.warn('Could not record durable participant history:', error);
+      });
+  }
+
   async function createSessionViaApi(payload = {}) {
     const response = await fetch('/api/sessions/create', {
       method: 'POST',
@@ -879,10 +1030,7 @@
         const sessionAge = now - (session.created || now);
         const userCount = Object.keys(session.users || {}).length;
 
-        // For ended sessions, use preserved participants if available
-        const participants = (session.terminated && session.terminated.terminated && session.preservedParticipants)
-          ? session.preservedParticipants
-          : session.users || {};
+        const participants = getSessionParticipants(session);
 
         const sessionInfo = {
           code: code,
@@ -958,28 +1106,8 @@
 
         // Separate candidates and interviewers
         const users = Object.values(session.users);
-        const candidates = users.filter(user => {
-          if (!user.name) return false;
-          const nameLower = user.name.toLowerCase();
-          // Exclude if it contains interviewer patterns, email domains, or admin keywords
-          return !nameLower.includes('interviewer') &&
-                 !nameLower.includes('@') &&
-                 !nameLower.includes('admin') &&
-                 !nameLower.includes('.com') &&
-                 !nameLower.includes('.io') &&
-                 !nameLower.includes('.net');
-        });
-        const interviewers = users.filter(user => {
-          if (!user.name) return false;
-          const nameLower = user.name.toLowerCase();
-          // Include if it contains interviewer patterns or email domains
-          return nameLower.includes('interviewer') ||
-                 nameLower.includes('@') ||
-                 nameLower.includes('admin') ||
-                 nameLower.includes('.com') ||
-                 nameLower.includes('.io') ||
-                 nameLower.includes('.net');
-        });
+        const candidates = users.filter(isCandidateParticipant);
+        const interviewers = users.filter(isInterviewerParticipant);
 
         // Get hire signal from notes if available
           let hireSignal = '';
@@ -1631,14 +1759,7 @@
       // Participants - use preserved participants for ended sessions
       const participantsEl = document.getElementById('display-participants');
       if (participantsEl) {
-        let users;
-        if (sessionData.terminated && sessionData.terminated.terminated && sessionData.preservedParticipants) {
-          // For ended sessions, use preserved participants
-          users = Object.values(sessionData.preservedParticipants || {});
-        } else {
-          // For active sessions, use current users
-          users = Object.values(sessionData.users || {});
-        }
+        const users = Object.values(getSessionParticipants(sessionData));
         participantsEl.textContent = users.map(u => u.name).join(', ') || 'None';
       }
 
@@ -1792,17 +1913,19 @@
       return;
     }
 
-    // Initialize the editor session
-    if (typeof initializeSession === 'function') {
-      const authUser = Auth.getCurrentUser();
-      initializeSession({
-        userName: userName,
-        userEmail: authUser.email || null,
-        sessionCode: sessionCode,
-        isNew: isNew,
-        isAdmin: Auth.isAdmin()
-      });
-    }
+	    // Initialize the editor session
+	    if (typeof initializeSession === 'function') {
+	      const authUser = Auth.getCurrentUser();
+	      const isAdmin = Auth.isAdmin();
+	      recordSessionParticipant(sessionCode, userName, isAdmin ? 'interviewer' : 'candidate');
+	      initializeSession({
+	        userName: userName,
+	        userEmail: authUser.email || null,
+	        sessionCode: sessionCode,
+	        isNew: isNew,
+	        isAdmin
+	      });
+	    }
 
     // Reset flag after a delay to allow future navigation
     setTimeout(() => {

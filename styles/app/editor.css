@@ -10,11 +10,14 @@
 
 /* ---- app shell --------------------------------------------- */
 #main-container{
+  display:flex;
+  flex-direction:column;
   background:var(--bg-app);
+  width:100vw;
   height:100vh;
   height:100dvh;
+  min-height:100dvh;
   max-height:100dvh;
-  min-height:0;
   overflow:hidden;
   box-sizing:border-box;
 }
@@ -34,7 +37,7 @@
   border-bottom:1px solid var(--border);
   height:50px;
   min-height:50px;
-  padding:0 10px;
+  padding:0 14px 0 10px;
   gap:12px;
   overflow:visible;
   flex:0 0 auto;
@@ -420,19 +423,54 @@
 @media (max-width:880px){
   #top-bar{
     height:auto;
-    min-height:50px;
+    min-height:0;
     grid-template-columns:1fr;
-    grid-auto-rows:minmax(32px,auto);
-    padding:8px;
+    grid-template-areas:
+      "tools"
+      "actions";
+    grid-auto-rows:minmax(30px,auto);
+    padding:8px 10px;
+    gap:7px;
   }
+
+  .center-info{
+    display:none;
+  }
+
+  .left-controls{
+    grid-area:tools;
+  }
+
+  .right-controls{
+    grid-area:actions;
+  }
+
   .left-controls,
-  .center-info,
   .right-controls{
     justify-content:center;
-    flex-wrap:wrap;
+    flex-wrap:nowrap;
+    gap:6px;
   }
-  #session-info{max-width:100%;}
-  #users-list{max-width:100%;}
+
+  #top-bar select{
+    height:28px;
+    font-size:12.5px;
+  }
+
+  #top-bar #language-selector{min-width:134px;max-width:142px;}
+  #top-bar #theme-selector{min-width:104px;max-width:108px;}
+  #top-bar #fontSize-selector{min-width:68px;max-width:70px;}
+
+  .end-session-button,#end-session-btn,
+  .reset-session-button,#reset-session-btn,
+  .notes-button,
+  #run-btn,.run-button,
+  .problem-button,
+  #share-btn{
+    height:30px;
+    font-size:12.5px;
+    padding:0 9px !important;
+  }
 }
 
 /* Keep bottom chrome inside the viewport on browser/device viewports whose
@@ -442,10 +480,82 @@
   min-height:0;
 }
 
+#editor-wrapper{
+  flex:1 1 0;
+  height:auto;
+}
+
+#split-container{
+  --workspace-panel-width:260px;
+  --right-dock-width:420px;
+  align-items:stretch;
+  overflow:hidden;
+  position:relative;
+  box-sizing:border-box;
+  padding-right:8px;
+  max-height:100%;
+}
+
+#editor-shell{
+  flex:1 1 auto;
+  min-width:180px;
+}
+
+/* ---- resizable panel affordances -------------------------- */
+.panel-resize-handle{
+  position:relative;
+  z-index:20;
+  flex:0 0 6px;
+  width:6px;
+  min-width:6px;
+  align-self:stretch;
+  display:none;
+  cursor:col-resize;
+  touch-action:none;
+  background:transparent;
+}
+.panel-resize-handle.is-visible{
+  display:block;
+}
+.panel-resize-handle::before{
+  content:"";
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:2px;
+  width:2px;
+  background:transparent;
+  transition:background .12s var(--ease),box-shadow .12s var(--ease);
+}
+.panel-resize-handle:hover::before,
+.panel-resize-handle:focus-visible::before,
+.panel-resize-handle.is-active::before{
+  background:var(--accent);
+  box-shadow:0 0 0 2px var(--accent-soft);
+}
+.panel-resize-handle:focus-visible{
+  outline:0;
+}
+body.is-resizing-panel{
+  cursor:col-resize;
+  user-select:none;
+}
+body.is-resizing-panel *{
+  cursor:col-resize !important;
+}
+
+#workspace-resize-handle{
+  border-left:1px solid var(--border);
+}
+
 /* ============================================================
    WORKSPACE PANEL  —  file sidebar
    ============================================================ */
 #workspace-panel{
+  flex:0 1 var(--workspace-panel-width);
+  width:var(--workspace-panel-width);
+  min-width:150px;
+  max-width:420px;
   display:flex;
   flex-direction:column;
   background:var(--bg-1);
@@ -463,6 +573,78 @@
   font-size:11px;
   font-weight:600;
   letter-spacing:.08em;
+}
+
+#workspace-title{
+  display:flex;
+  align-items:center;
+  min-width:0;
+  gap:6px;
+}
+
+.panel-collapse-btn,
+#workspace-rail{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid transparent;
+  background:transparent;
+  color:var(--text-3);
+  cursor:pointer;
+  transition:background .12s var(--ease),border-color .12s,color .12s;
+}
+
+.panel-collapse-btn{
+  width:24px;
+  height:24px;
+  padding:0;
+  border-radius:var(--r-sm);
+}
+.panel-collapse-btn .ic{
+  width:14px;
+  height:14px;
+  transform:rotate(180deg);
+  transition:transform .14s var(--ease);
+}
+.panel-collapse-btn:hover,
+.panel-collapse-btn:focus-visible,
+#workspace-rail:hover,
+#workspace-rail:focus-visible{
+  outline:0;
+  background:var(--bg-3);
+  border-color:var(--border-2);
+  color:var(--text-1);
+}
+
+#workspace-rail{
+  flex:0 0 40px;
+  width:40px;
+  min-width:40px;
+  display:none;
+  flex-direction:column;
+  gap:7px;
+  padding:9px 0;
+  border-width:0 1px 0 0;
+  border-style:solid;
+  border-color:var(--border);
+  border-radius:0;
+  background:var(--bg-1);
+  color:var(--text-3);
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+#workspace-rail span{
+  writing-mode:vertical-rl;
+  transform:rotate(180deg);
+}
+#split-container.workspace-collapsed #workspace-panel,
+#split-container.workspace-collapsed #workspace-resize-handle{
+  display:none !important;
+}
+#split-container.workspace-collapsed #workspace-rail{
+  display:flex;
 }
 
 #workspace-actions{gap:2px;}
@@ -600,19 +782,146 @@
 }
 
 /* ============================================================
-   PROBLEM PANEL  —  session instructions right sidebar
+   RIGHT DOCK  —  tabbed prompt / output / notes sidebar
    ============================================================ */
-#problem-panel{
-  flex:0 0 360px;
-  width:360px;
-  min-width:300px;
-  max-width:38vw;
+#right-dock{
+  flex:0 1 var(--right-dock-width);
+  width:var(--right-dock-width);
+  min-width:280px;
+  max-width:680px;
   min-height:0;
   background:var(--bg-1);
   border-left:1px solid var(--border);
   color:var(--text-2);
   display:flex;
   flex-direction:column;
+}
+
+#right-dock-header{
+  flex:0 0 40px;
+  min-height:40px;
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0 7px 0 8px;
+  background:var(--bg-1);
+  border-bottom:1px solid var(--border);
+}
+
+#right-dock-tabs{
+  flex:1 1 auto;
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:3px;
+  overflow:hidden;
+}
+
+.right-dock-tab{
+  display:none;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  height:28px;
+  gap:6px;
+  padding:0 9px;
+  border:1px solid transparent;
+  border-radius:var(--r-sm);
+  background:transparent;
+  color:var(--text-3);
+  font-size:12.5px;
+  font-weight:500;
+  cursor:pointer;
+  transition:background .12s var(--ease),border-color .12s,color .12s;
+}
+.right-dock-tab.is-available{
+  display:inline-flex;
+}
+.right-dock-tab .ic{
+  width:14px;
+  height:14px;
+  flex:none;
+}
+.right-dock-tab span{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.right-dock-tab:hover,
+.right-dock-tab:focus-visible{
+  outline:0;
+  background:var(--bg-3);
+  border-color:var(--border-2);
+  color:var(--text-1);
+}
+.right-dock-tab.is-active{
+  background:var(--accent-soft);
+  border-color:var(--accent-border);
+  color:var(--accent-text);
+}
+
+#right-dock-close{
+  flex:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:28px;
+  height:28px;
+  padding:0;
+  background:transparent;
+  border:1px solid transparent;
+  border-radius:var(--r-sm);
+  color:var(--text-3);
+  cursor:pointer;
+  transition:background .12s var(--ease),border-color .12s,color .12s;
+}
+#right-dock-close .ic{
+  width:14px;
+  height:14px;
+}
+#right-dock-close:hover,
+#right-dock-close:focus-visible{
+  outline:0;
+  background:var(--bg-3);
+  border-color:var(--border-2);
+  color:var(--text-1);
+}
+
+#right-dock-content{
+  flex:1 1 auto;
+  min-height:0;
+  min-width:0;
+  display:flex;
+  overflow:hidden;
+  background:var(--bg-inset);
+}
+
+.right-dock-panel{
+  flex:1 1 auto;
+  width:100%;
+  min-width:0;
+  min-height:0;
+  max-width:none;
+  display:none !important;
+}
+.right-dock-panel.is-active-tab{
+  display:flex !important;
+}
+
+#problem-panel{
+  flex:1 1 auto;
+  width:100%;
+  min-width:0;
+  max-width:none;
+  min-height:0;
+  background:var(--bg-1);
+  color:var(--text-2);
+  flex-direction:column;
+}
+
+#right-dock #problem-header{
+  display:none;
 }
 
 #problem-header{
@@ -763,8 +1072,70 @@
    OUTPUT PANEL  —  run output (mono, inset surface)
    ============================================================ */
 #output-panel{
+  flex:1 1 auto;
+  width:100%;
+  min-width:0;
+  max-width:none;
+  min-height:0;
+  flex-direction:column;
   background:var(--bg-1);
-  border-left:1px solid var(--border);
+}
+
+#right-dock #output-header{
+  justify-content:flex-end;
+}
+#right-dock #output-header > span,
+#right-dock #close-output{
+  display:none;
+}
+
+@media (max-width:900px){
+  #split-container{
+    padding-right:0;
+  }
+
+  #workspace-header{
+    padding-left:8px;
+    padding-right:6px;
+  }
+
+  #workspace-title{
+    gap:2px;
+  }
+
+  #workspace-title > span{
+    display:none;
+  }
+
+  #workspace-actions{
+    margin-left:auto;
+    gap:1px;
+  }
+
+  #workspace-actions button{
+    width:23px;
+    height:24px;
+  }
+
+  #editor-shell{
+    min-width:0;
+  }
+
+  #right-dock-resize-handle{
+    display:none !important;
+  }
+
+  #right-dock{
+    position:absolute;
+    top:0;
+    right:0;
+    bottom:0;
+    z-index:35;
+    width:min(var(--right-dock-width),calc(100% - 44px));
+    min-width:0;
+    max-width:calc(100% - 44px);
+    box-shadow:-18px 0 36px rgba(0,0,0,.28);
+  }
 }
 
 #output-header{
@@ -814,6 +1185,9 @@
 #last-run-summary.info{color:var(--blue-text);}
 
 #output-content{
+  flex:1 1 auto;
+  min-height:0;
+  overflow:auto;
   background:var(--bg-inset);
 }
 
@@ -865,7 +1239,7 @@
   background:var(--bg-1);
   border-top:1px solid var(--border);
   color:var(--text-3);
-  padding:0 var(--sp-3);
+  padding:0 16px 0 var(--sp-3);
   line-height:1;
   font-size:11.5px;
   font-family:var(--mono);

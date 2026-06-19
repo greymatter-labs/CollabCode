@@ -70,6 +70,116 @@ function normalizeFinalFiles(input) {
   return files;
 }
 
+function normalizeParticipantName(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ');
+}
+
+function participantKey(value, fallbackPrefix = 'participant') {
+  const base = normalizeParticipantName(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 80);
+  return base || `${fallbackPrefix}_${Date.now()}`;
+}
+
+function isUsefulParticipantName(value) {
+  const name = normalizeParticipantName(value);
+  if (!name) return false;
+  return !['unknown', 'someone', 'null', 'undefined'].includes(name.toLowerCase());
+}
+
+function addParticipant(participants, rawId, rawName, details = {}) {
+  const name = normalizeParticipantName(rawName);
+  if (!isUsefulParticipantName(name)) return;
+
+  const id = String(rawId || participantKey(name, details.role || 'participant'))
+    .trim()
+    .replace(/[.#$\/\[\]]/g, '_')
+    .slice(0, 120) || participantKey(name, details.role || 'participant');
+  const existingKey = Object.keys(participants).find(key =>
+    normalizeParticipantName(participants[key]?.name).toLowerCase() === name.toLowerCase()
+  );
+  const key = existingKey || id;
+  const previous = participants[key] || {};
+
+  participants[key] = {
+    ...previous,
+    name,
+    role: previous.role || details.role || null,
+    joinedAt: previous.joinedAt || details.joinedAt || Date.now(),
+    source: previous.source || details.source || 'unknown'
+  };
+}
+
+function buildPreservedParticipants(sessionData) {
+  const preservedParticipants = {};
+
+  Object.entries(sessionData.users || {}).forEach(([userId, user]) => {
+    addParticipant(preservedParticipants, userId, user?.name, {
+      role: user?.role || null,
+      joinedAt: user?.timestamp,
+      source: 'users'
+    });
+  });
+
+  Object.entries(sessionData.participantHistory || {}).forEach(([participantId, participant]) => {
+    addParticipant(preservedParticipants, participantId, participant?.name, {
+      role: participant?.role || participant?.userType || null,
+      joinedAt: participant?.joinedAt || participant?.timestamp,
+      source: 'participantHistory'
+    });
+  });
+
+  Object.entries(sessionData.privacy_consent || {}).forEach(([nameKey, consent]) => {
+    addParticipant(preservedParticipants, nameKey, consent?.name || nameKey, {
+      role: 'candidate',
+      joinedAt: consent?.timestamp,
+      source: 'privacy_consent'
+    });
+  });
+
+  Object.values(sessionData.activity_log || {}).forEach(event => {
+    addParticipant(preservedParticipants, event?.userId || event?.userName, event?.userName || event?.userId, {
+      role: event?.userType || 'candidate',
+      joinedAt: event?.timestamp,
+      source: 'activity_log'
+    });
+  });
+
+  Object.values(sessionData.tracking || {}).forEach(entry => {
+    addParticipant(preservedParticipants, entry?.userId || entry?.userName, entry?.userName, {
+      role: entry?.metadata?.userType || entry?.userType || null,
+      joinedAt: entry?.timestamp,
+      source: 'tracking'
+    });
+  });
+
+  Object.values(sessionData.security_warnings || {}).forEach(warning => {
+    addParticipant(preservedParticipants, warning?.userId || warning?.userName, warning?.userName, {
+      role: warning?.userType || null,
+      joinedAt: warning?.timestamp,
+      source: 'security_warnings'
+    });
+  });
+
+  if (sessionData.lastRun) {
+    addParticipant(preservedParticipants, sessionData.lastRun.runById || sessionData.lastRun.runByName, sessionData.lastRun.runByName, {
+      role: 'candidate',
+      joinedAt: sessionData.lastRun.updatedAt,
+      source: 'lastRun'
+    });
+  }
+
+  addParticipant(preservedParticipants, sessionData.lastRunBy, sessionData.lastRunBy, {
+    role: 'candidate',
+    joinedAt: sessionData.lastRunAt,
+    source: 'lastRunBy'
+  });
+
+  return preservedParticipants;
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -109,14 +219,7 @@ module.exports = async (req, res) => {
       return res.status(404).json({ error: 'Session not found' });
     }
 
-    const users = sessionData.users || {};
-    const preservedParticipants = {};
-    Object.entries(users).forEach(([userId, user]) => {
-      preservedParticipants[userId] = {
-        name: user?.name || 'Unknown',
-        joinedAt: user?.timestamp || Date.now()
-      };
-    });
+    const preservedParticipants = buildPreservedParticipants(sessionData);
 
     const finalFiles = normalizeFinalFiles(req.body?.finalFiles);
     const requestedEntryFileId = String(req.body?.entryFileId || '');

@@ -11,7 +11,7 @@
 
     <!-- styling -->
     <!-- Custom style -->
-    <link rel="stylesheet" href="styles/main.css?v=24">
+    <link rel="stylesheet" href="styles/main.css?v=31">
     <!-- Linear-style design system: tokens.css -> components.css -> app/*.css (see styles/main.css) -->
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -766,7 +766,12 @@
         <div id="split-container">
           <aside id="workspace-panel" aria-label="Session files">
             <div id="workspace-header">
-              <span>Files</span>
+              <div id="workspace-title">
+                <button id="workspace-collapse-btn" class="panel-collapse-btn" type="button" title="Collapse files" aria-label="Collapse files" aria-expanded="true">
+                  <svg class="ic ic-14"><use href="#i-chev-right"/></svg>
+                </button>
+                <span>Files</span>
+              </div>
               <div id="workspace-actions">
                 <button id="workspace-new-file" type="button" title="New file" aria-label="New file"><svg class="ic ic-14"><use href="#i-plus"/></svg></button>
                 <button id="workspace-new-folder" type="button" title="New folder" aria-label="New folder"><svg class="ic ic-14"><use href="#i-folder-plus"/></svg></button>
@@ -780,6 +785,12 @@
               <span id="entry-file-path"></span>
             </div>
           </aside>
+          <button id="workspace-rail" type="button" title="Show files" aria-label="Show files">
+            <svg class="ic ic-14"><use href="#i-folder"/></svg>
+            <span>Files</span>
+            <svg class="ic ic-12"><use href="#i-chev-right"/></svg>
+          </button>
+          <div id="workspace-resize-handle" class="panel-resize-handle panel-resize-handle--workspace" role="separator" tabindex="0" aria-orientation="vertical" aria-label="Resize files panel" aria-controls="workspace-panel" data-panel-resize="workspace"></div>
 
           <div id="editor-shell">
             <div id="active-file-bar">
@@ -789,90 +800,103 @@
             <div id="firepad-container"></div>
           </div>
 
-          <aside id="problem-panel" aria-label="Problem" style="display: none;">
-            <div id="problem-header">
-              <span class="problem-title"><svg class="ic ic-14"><use href="#i-book"/></svg>Problem</span>
-              <button id="close-problem" type="button" aria-label="Hide problem"><svg class="ic"><use href="#i-x"/></svg></button>
+          <div id="right-dock-resize-handle" class="panel-resize-handle panel-resize-handle--right" role="separator" tabindex="0" aria-orientation="vertical" aria-label="Resize side panel" aria-controls="right-dock" data-panel-resize="rightDock"></div>
+          <aside id="right-dock" aria-label="Interview side panel" style="display: none;">
+            <div id="right-dock-header">
+              <div id="right-dock-tabs" role="tablist" aria-label="Side panel tabs">
+                <button id="right-dock-tab-problem" class="right-dock-tab" type="button" role="tab" aria-controls="problem-panel" data-right-dock-tab="problem"><svg class="ic ic-14"><use href="#i-book"/></svg><span>Problem</span></button>
+                <button id="right-dock-tab-output" class="right-dock-tab" type="button" role="tab" aria-controls="output-panel" data-right-dock-tab="output"><svg class="ic ic-14"><use href="#i-terminal"/></svg><span>Output</span></button>
+                <button id="right-dock-tab-notes" class="right-dock-tab" type="button" role="tab" aria-controls="notes-panel" data-right-dock-tab="notes"><svg class="ic ic-14"><use href="#i-edit"/></svg><span>Notes</span></button>
+              </div>
+              <button id="right-dock-close" type="button" aria-label="Close side panel"><svg class="ic"><use href="#i-x"/></svg></button>
             </div>
-            <div id="problem-content">
-              <h2 id="problem-panel-title">Problem</h2>
-              <pre id="problem-prompt-text"></pre>
+            <div id="right-dock-content">
+              <aside id="problem-panel" class="right-dock-panel" aria-label="Problem" role="tabpanel" aria-labelledby="right-dock-tab-problem" style="display: none;">
+                <div id="problem-header">
+                  <span class="problem-title"><svg class="ic ic-14"><use href="#i-book"/></svg>Problem</span>
+                  <button id="close-problem" type="button" aria-label="Hide problem"><svg class="ic"><use href="#i-x"/></svg></button>
+                </div>
+                <div id="problem-content">
+                  <h2 id="problem-panel-title">Problem</h2>
+                  <pre id="problem-prompt-text"></pre>
+                </div>
+              </aside>
+
+              <div id="output-panel" class="right-dock-panel" role="tabpanel" aria-labelledby="right-dock-tab-output" style="display: none;">
+                <div id="output-header">
+                  <span>Output</span>
+                  <button id="clear-output"><svg class="ic"><use href="#i-refresh"/></svg>Clear</button>
+                  <button id="close-output"><svg class="ic"><use href="#i-x"/></svg></button>
+                </div>
+                <div id="last-run-summary"></div>
+                <div id="output-content">
+                  <pre id="output-text"></pre>
+                </div>
+                <div id="input-section" style="display: none;">
+                  <label>Input (stdin):</label>
+                  <textarea id="stdin-input" placeholder="Enter input for your program..."></textarea>
+                </div>
+              </div>
+
+              <!-- Interviewer Notes Panel -->
+              <div id="notes-panel" class="right-dock-panel" role="tabpanel" aria-labelledby="right-dock-tab-notes" style="display: none;">
+                <div id="notes-header">
+                  <span class="notes-title"><svg class="ic ic-14"><use href="#i-edit"/></svg>Interview Notes</span>
+                  <span id="notes-save-status" style="font-size: 12px; color: var(--text-4); margin-left: 10px;"></span>
+                  <span id="behavior-alert-badge" class="alert-badge" style="display: none;">0</span>
+                  <button id="close-notes" aria-label="Close notes"><svg class="ic"><use href="#i-x"/></svg></button>
+                </div>
+                <!-- Activity Monitoring Dashboard -->
+                <div id="activity-dashboard" style="display: none; background: var(--bg-3); border: 1px solid var(--border-2); border-radius: var(--r-md); padding: 12px; margin: 10px;">
+                  <!-- Activity metrics will be inserted here -->
+                </div>
+                <div id="notes-content">
+                  <div class="notes-rating-section">
+                    <label>Quick Rating:</label>
+                    <div class="rating-stars" id="rating-stars">
+                      <span data-rating="1">☆</span>
+                      <span data-rating="2">☆</span>
+                      <span data-rating="3">☆</span>
+                      <span data-rating="4">☆</span>
+                      <span data-rating="5">☆</span>
+                    </div>
+                  </div>
+
+                  <div class="notes-tags-section">
+                    <label>Quick Tags:</label>
+                    <div class="quick-tags">
+                      <button class="tag-btn" data-tag="strong-fundamentals">Strong Fundamentals</button>
+                      <button class="tag-btn" data-tag="good-communication">Good Communication</button>
+                      <button class="tag-btn" data-tag="needs-practice">Needs Practice</button>
+                      <button class="tag-btn" data-tag="problem-solver">Problem Solver</button>
+                      <button class="tag-btn" data-tag="asks-good-questions">Asks Good Questions</button>
+                    </div>
+                  </div>
+
+                  <div class="notes-text-section">
+                    <label>Notes:</label>
+                    <textarea id="interview-notes-text" placeholder="Add your observations about the candidate..."></textarea>
+                  </div>
+
+                  <div class="notes-recommendation-section">
+                    <label>Recommendation:</label>
+                    <select id="notes-recommendation">
+                      <option value="">Select...</option>
+                      <option value="STRONG_HIRE">Strong Hire</option>
+                      <option value="HIRE">Hire</option>
+                      <option value="PROCEED_TO_NEXT_ROUND">Proceed to Next Round</option>
+                      <option value="MAYBE">Maybe</option>
+                      <option value="NO_HIRE">No Hire</option>
+                    </select>
+                  </div>
+
+                  <div class="notes-actions">
+                    <button id="save-notes-btn" class="save-notes-btn"><svg class="ic"><use href="#i-check"/></svg>Save Notes</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </aside>
-
-          <!-- Interviewer Notes Panel -->
-          <div id="notes-panel" style="display: none;">
-            <div id="notes-header">
-              <span class="notes-title"><svg class="ic ic-14"><use href="#i-edit"/></svg>Interview Notes</span>
-              <span id="notes-save-status" style="font-size: 12px; color: var(--text-4); margin-left: 10px;"></span>
-              <span id="behavior-alert-badge" class="alert-badge" style="display: none;">0</span>
-              <button id="close-notes" aria-label="Close notes"><svg class="ic"><use href="#i-x"/></svg></button>
-            </div>
-            <!-- Activity Monitoring Dashboard -->
-            <div id="activity-dashboard" style="display: none; background: var(--bg-3); border: 1px solid var(--border-2); border-radius: var(--r-md); padding: 12px; margin: 10px;">
-              <!-- Activity metrics will be inserted here -->
-            </div>
-            <div id="notes-content">
-              <div class="notes-rating-section">
-                <label>Quick Rating:</label>
-                <div class="rating-stars" id="rating-stars">
-                  <span data-rating="1">☆</span>
-                  <span data-rating="2">☆</span>
-                  <span data-rating="3">☆</span>
-                  <span data-rating="4">☆</span>
-                  <span data-rating="5">☆</span>
-                </div>
-              </div>
-
-              <div class="notes-tags-section">
-                <label>Quick Tags:</label>
-                <div class="quick-tags">
-                  <button class="tag-btn" data-tag="strong-fundamentals">Strong Fundamentals</button>
-                  <button class="tag-btn" data-tag="good-communication">Good Communication</button>
-                  <button class="tag-btn" data-tag="needs-practice">Needs Practice</button>
-                  <button class="tag-btn" data-tag="problem-solver">Problem Solver</button>
-                  <button class="tag-btn" data-tag="asks-good-questions">Asks Good Questions</button>
-                </div>
-              </div>
-
-              <div class="notes-text-section">
-                <label>Notes:</label>
-                <textarea id="interview-notes-text" placeholder="Add your observations about the candidate..."></textarea>
-              </div>
-
-              <div class="notes-recommendation-section">
-                <label>Recommendation:</label>
-                <select id="notes-recommendation">
-                  <option value="">Select...</option>
-                  <option value="STRONG_HIRE">Strong Hire</option>
-                  <option value="HIRE">Hire</option>
-                  <option value="PROCEED_TO_NEXT_ROUND">Proceed to Next Round</option>
-                  <option value="MAYBE">Maybe</option>
-                  <option value="NO_HIRE">No Hire</option>
-                </select>
-              </div>
-
-              <div class="notes-actions">
-                <button id="save-notes-btn" class="save-notes-btn"><svg class="ic"><use href="#i-check"/></svg>Save Notes</button>
-              </div>
-            </div>
-          </div>
-
-          <div id="output-panel" style="display: none;">
-            <div id="output-header">
-              <span>Output</span>
-              <button id="clear-output"><svg class="ic"><use href="#i-refresh"/></svg>Clear</button>
-              <button id="close-output"><svg class="ic"><use href="#i-x"/></svg></button>
-            </div>
-            <div id="last-run-summary"></div>
-            <div id="output-content">
-              <pre id="output-text"></pre>
-            </div>
-            <div id="input-section" style="display: none;">
-              <label>Input (stdin):</label>
-              <textarea id="stdin-input" placeholder="Enter input for your program..."></textarea>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -912,12 +936,13 @@
     <script src="scripts/simple-templates.js?v=2"></script>
     <script src="scripts/custom-dialogs.js?v=3"></script>
     <script src="scripts/workspace.bundle.js?v=7"></script>
-    <script src="scripts/firepad.js?v=18"></script>
-    <script src="scripts/interview-notes.js?v=4"></script>
+    <script src="scripts/firepad.js?v=19"></script>
+    <script src="scripts/interview-notes.js?v=5"></script>
+    <script src="scripts/panel-layout.js?v=2"></script>
     <script src="scripts/posthog-tracking.js?v=2"></script>
     <script src="scripts/session-tracking.js?v=1"></script>
     <script src="scripts/activity-monitor.js?v=2"></script>
     <script src="scripts/problem-library.js?v=6"></script>
-    <script src="scripts/app.js?v=17"></script>
+    <script src="scripts/app.js?v=18"></script>
   </body>
 </html>

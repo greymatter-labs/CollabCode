@@ -32,6 +32,10 @@
       notesToggleBtn.addEventListener('click', function() {
         const isVisible = notesPanel.style.display !== 'none';
         if (isVisible) {
+          if (!window.CollabPanelLayout?.isRightTabActive?.('notes')) {
+            window.CollabPanelLayout?.selectRightTab?.('notes');
+            return;
+          }
           notesPanel.style.display = 'none';
           editorResizeTarget.classList.remove('with-notes');
           notesToggleBtn.classList.remove('active');
@@ -39,6 +43,7 @@
           notesPanel.style.display = 'flex';
           editorResizeTarget.classList.add('with-notes');
           notesToggleBtn.classList.add('active');
+          window.CollabPanelLayout?.selectRightTab?.('notes');
         }
       });
     }
