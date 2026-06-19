@@ -1,4 +1,6 @@
 import { FileTree } from '@pierre/trees';
+import './collab-editor.js';
+import { FirebaseYjsProvider } from './firebase-yjs-provider.js';
 
 (function() {
   const WORKSPACE_VERSION = 1;
@@ -79,6 +81,7 @@ import { FileTree } from '@pierre/trees';
     sessionRef: null,
     workspaceRef: null,
     snapshotsRef: null,
+    provider: null,
     options: {},
     workspace: null,
     snapshots: {},
@@ -366,6 +369,29 @@ import { FileTree } from '@pierre/trees';
     return state.snapshots?.[fileId] || null;
   }
 
+  function hasLiveCollab() {
+    return !isReadOnlyMode() && state.provider?.isReady?.();
+  }
+
+  function shouldUseCollabText(file) {
+    return hasLiveCollab()
+      && !!file
+      && file.hidden !== true
+      && file.role !== 'runtime';
+  }
+
+  function getEditorContext(file) {
+    const ytext = shouldUseCollabText(file) ? state.provider.getTextForFile(file.id) : null;
+    return {
+      readOnly: isReadOnlyMode()
+        || file?.readonly === true
+        || file?.role === 'runtime'
+        || file?.hidden === true,
+      ytext,
+      awareness: ytext ? state.provider.awareness : null
+    };
+  }
+
   function focusEditorSoon() {
     const focus = () => {
       if (typeof state.options.focusEditor === 'function') {
@@ -381,6 +407,10 @@ import { FileTree } from '@pierre/trees';
   }
 
   function getFileContent(file) {
+    if (shouldUseCollabText(file)) {
+      return state.provider.getFileContent(file.id);
+    }
+
     const snapshot = getSnapshot(file.id);
     if (typeof snapshot?.content === 'string') return snapshot.content;
     if (file.role === 'runtime') return '';
@@ -393,9 +423,11 @@ import { FileTree } from '@pierre/trees';
     const viewingHiddenFile = !!getActiveHiddenFile();
 
     const files = getFileList().map(file => {
-      const content = !viewingHiddenFile && activeFile && activeFile.id === file.id && typeof activeContent === 'string'
-        ? activeContent
-        : getFileContent(file);
+      const content = shouldUseCollabText(file)
+        ? state.provider.getFileContent(file.id)
+        : !viewingHiddenFile && activeFile && activeFile.id === file.id && typeof activeContent === 'string'
+          ? activeContent
+          : getFileContent(file);
       return {
         id: file.id,
         path: file.path,
@@ -644,8 +676,10 @@ import { FileTree } from '@pierre/trees';
     const id = createFileId();
     const language = getLanguageForPath(requestedPath, active?.language || getInitialLanguage());
     const createdAt = serverTimestamp();
+    const initialContent = defaultContentForNewFile(requestedPath, language);
 
     await state.options.beforeActiveFileChange?.();
+    state.provider?.insertFileContent?.(id, initialContent);
     await state.sessionRef.update({
       [`workspace/files/${id}`]: {
         id,
@@ -663,7 +697,7 @@ import { FileTree } from '@pierre/trees';
         path: requestedPath,
         language,
         role: 'solution',
-        content: defaultContentForNewFile(requestedPath, language),
+        content: initialContent,
         updatedAt: createdAt
       },
       [`workspace/activeFileId`]: id
@@ -918,7 +952,7 @@ import { FileTree } from '@pierre/trees';
       state.workspace.activeFileId = fileId;
       state.activeHiddenFileId = null;
       state.selectedPath = file.path;
-      state.options.onActiveFileChange?.(file, getSnapshot(file.id));
+      state.options.onActiveFileChange?.(file, getSnapshot(file.id), getEditorContext(file));
       renderTree();
       focusEditorSoon();
       return;
@@ -929,7 +963,7 @@ import { FileTree } from '@pierre/trees';
       await state.options.beforeActiveFileChange?.();
       state.activeHiddenFileId = null;
       if (fileId === state.workspace.activeFileId) {
-        state.options.onActiveFileChange?.(file, getSnapshot(file.id));
+        state.options.onActiveFileChange?.(file, getSnapshot(file.id), getEditorContext(file));
         renderTree();
       } else {
         await state.sessionRef.child('workspace/activeFileId').set(fileId);
@@ -951,7 +985,7 @@ import { FileTree } from '@pierre/trees';
       language: file.language,
       role: file.role,
       content: file.content || ''
-    });
+    }, getEditorContext(file));
     renderTree();
   }
 
@@ -970,25 +1004,39 @@ import { FileTree } from '@pierre/trees';
     });
   }
 
-  async function saveActiveSnapshot(content) {
+  async function persistProjectSnapshot(activeContent) {
     if (isReadOnlyMode()) return;
-    if (getActiveHiddenFile()) return;
-    const active = getActiveFile();
-    if (!active || active.readonly || active.role === 'runtime') return;
 
     const updatedAt = serverTimestamp();
-    await state.sessionRef.update({
-      [`fileSnapshots/${active.id}`]: {
-        path: active.path,
-        language: active.language,
-        role: active.role,
+    const active = getActiveFile();
+    const updates = {};
+
+    getFileList().forEach(file => {
+      const content = shouldUseCollabText(file)
+        ? state.provider.getFileContent(file.id)
+        : active && active.id === file.id && typeof activeContent === 'string'
+          ? activeContent
+          : getFileContent(file);
+
+      updates[`fileSnapshots/${file.id}`] = {
+        path: file.path,
+        language: file.language,
+        role: file.role,
         content: String(content || ''),
         updatedAt,
         updatedBy: state.options.currentUser?.name || null
-      },
-      [`workspace/files/${active.id}/updatedAt`]: updatedAt,
-      [`workspace/files/${active.id}/updatedBy`]: state.options.currentUser?.name || null
+      };
+      updates[`workspace/files/${file.id}/updatedAt`] = updatedAt;
+      updates[`workspace/files/${file.id}/updatedBy`] = state.options.currentUser?.name || null;
     });
+
+    if (Object.keys(updates).length) {
+      await state.sessionRef.update(updates);
+    }
+  }
+
+  async function saveActiveSnapshot(content) {
+    await persistProjectSnapshot(content);
   }
 
   async function saveRuntimeFiles(runtimeFiles) {
@@ -1466,7 +1514,7 @@ import { FileTree } from '@pierre/trees';
 
     const active = getActiveFile();
     if (!getActiveHiddenFile() && active && (active.id !== previousActiveFileId || !state.initialized)) {
-      state.options.onActiveFileChange?.(active, getSnapshot(active.id));
+      state.options.onActiveFileChange?.(active, getSnapshot(active.id), getEditorContext(active));
     }
     state.initialized = true;
   }
@@ -1477,8 +1525,8 @@ import { FileTree } from '@pierre/trees';
     const activeSnapshot = active ? getSnapshot(active.id) : null;
     const updatedByCurrentUser = activeSnapshot?.updatedBy
       && activeSnapshot.updatedBy === state.options.currentUser?.name;
-    if (!getActiveHiddenFile() && active && activeSnapshot && !updatedByCurrentUser) {
-      state.options.onActiveFileChange?.(active, activeSnapshot);
+    if (!hasLiveCollab() && !getActiveHiddenFile() && active && activeSnapshot && !updatedByCurrentUser) {
+      state.options.onActiveFileChange?.(active, activeSnapshot, getEditorContext(active));
     }
     updateWorkspaceChrome();
   }
@@ -1494,9 +1542,25 @@ import { FileTree } from '@pierre/trees';
     bindToolbar();
     await ensureWorkspace(options.isNew);
 
-    const snapshots = await state.snapshotsRef.once('value');
-    state.snapshots = snapshots.val() || {};
+    const [workspaceSnapshot, snapshotsSnapshot] = await Promise.all([
+      state.workspaceRef.once('value'),
+      state.snapshotsRef.once('value')
+    ]);
+    state.workspace = normalizeWorkspace(workspaceSnapshot.val() || {});
+    state.snapshots = snapshotsSnapshot.val() || {};
 
+    state.provider = new FirebaseYjsProvider({
+      sessionRef: state.sessionRef,
+      currentUser: options.currentUser,
+      readOnly: isReadOnlyMode(),
+      initialWorkspace: state.workspace,
+      initialSnapshots: state.snapshots,
+      getDefaultContent: getDefaultMainContent
+    });
+    await state.provider.init();
+
+    handleWorkspaceSnapshot(workspaceSnapshot);
+    handleSnapshotsSnapshot(snapshotsSnapshot);
     state.workspaceRef.on('value', handleWorkspaceSnapshot);
     state.snapshotsRef.on('value', handleSnapshotsSnapshot);
   }
@@ -1504,11 +1568,13 @@ import { FileTree } from '@pierre/trees';
   function destroy() {
     if (state.workspaceRef) state.workspaceRef.off();
     if (state.snapshotsRef) state.snapshotsRef.off();
+    state.provider?.destroy?.();
     state.tree?.cleanUp?.();
     state.initialized = false;
     state.sessionRef = null;
     state.workspaceRef = null;
     state.snapshotsRef = null;
+    state.provider = null;
     state.options = {};
     state.workspace = null;
     state.snapshots = {};
@@ -1541,6 +1607,7 @@ import { FileTree } from '@pierre/trees';
       return buildProjectSnapshot(activeContent);
     },
     saveActiveSnapshot,
+    persistProjectSnapshot,
     saveRuntimeFiles,
     updateActiveFileLanguage,
     getLanguageForPath,

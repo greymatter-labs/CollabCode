@@ -7,6 +7,7 @@ const getFirebaseAdmin = require('../../lib/firebase-admin');
 const { requireAdmin, sendApiError, setCorsHeaders } = require('../../lib/api-auth');
 const { buildSessionTemplateFromVersion, getProblemVersion } = require('../../lib/problems');
 const { normalizeProblemTemplate } = require('../../lib/session-template');
+const { buildCollabState } = require('../../lib/yjs-session-state');
 const { deleteSessionSandbox } = require('../../lib/blaxel-runner');
 
 module.exports = async (req, res) => {
@@ -44,6 +45,7 @@ module.exports = async (req, res) => {
     await sessionRef.update({
       workspace: problemCopy.workspace,
       fileSnapshots: problemCopy.fileSnapshots,
+      collab: buildCollabState(problemCopy.workspace, problemCopy.fileSnapshots, timestamp),
       filePads: null,
       lastResetAt: timestamp,
       lastResetBy: decoded.email || null,

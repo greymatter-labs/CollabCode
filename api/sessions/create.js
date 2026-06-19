@@ -7,6 +7,7 @@ const getFirebaseAdmin = require('../../lib/firebase-admin');
 const { requireAdmin, sendApiError, setCorsHeaders } = require('../../lib/api-auth');
 const { buildSessionTemplateFromVersion, buildValidationProject, getProblemVersion, versionNeedsPrewarm } = require('../../lib/problems');
 const { normalizeProblemTemplate } = require('../../lib/session-template');
+const { buildCollabState } = require('../../lib/yjs-session-state');
 const { runProject } = require('../../lib/blaxel-runner');
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -82,6 +83,7 @@ module.exports = async (req, res) => {
     if (problemCopy) {
       sessionPayload.workspace = problemCopy.workspace;
       sessionPayload.fileSnapshots = problemCopy.fileSnapshots;
+      sessionPayload.collab = buildCollabState(problemCopy.workspace, problemCopy.fileSnapshots, timestamp);
       if (selectedProblem && selectedVersion) {
         sessionPayload.problem = {
           problemId: selectedProblem.id,

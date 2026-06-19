@@ -1,7 +1,6 @@
 (function() {
   // Variables
   let editor = null;
-  let session = null;
   let currentUser = null;
   let usersRef = null;
   let sessionRef = null;
@@ -10,7 +9,6 @@
   let problemMeta = {};
   let problemPanelOpen = null;
   let problemPromptHydrateKey = '';
-  let languageModes = {};
   let currentSessionCode = null;
   let previousUsers = {};
   let isInitialized = false;
@@ -19,39 +17,7 @@
   let isReviewMode = false;
   let activeFileId = null;
   let activeFileMeta = null;
-  let snapshotSaveTimer = null;
-  let suppressSnapshotSave = false;
   let joinedNotificationShown = false;
-  
-  // Language mode configurations
-  const languageConfig = {
-    javascript: { mode: 'ace/mode/javascript', ext: 'js' },
-    python: { mode: 'ace/mode/python', ext: 'py' },
-    java: { mode: 'ace/mode/java', ext: 'java' },
-    c_cpp: { mode: 'ace/mode/c_cpp', ext: 'cpp' },
-    csharp: { mode: 'ace/mode/csharp', ext: 'cs' },
-    php: { mode: 'ace/mode/php', ext: 'php' },
-    ruby: { mode: 'ace/mode/ruby', ext: 'rb' },
-    go: { mode: 'ace/mode/golang', ext: 'go' },
-    rust: { mode: 'ace/mode/rust', ext: 'rs' },
-    typescript: { mode: 'ace/mode/typescript', ext: 'ts' },
-    swift: { mode: 'ace/mode/swift', ext: 'swift' },
-    kotlin: { mode: 'ace/mode/kotlin', ext: 'kt' },
-    scala: { mode: 'ace/mode/scala', ext: 'scala' },
-    r: { mode: 'ace/mode/r', ext: 'r' },
-    perl: { mode: 'ace/mode/perl', ext: 'pl' },
-    lua: { mode: 'ace/mode/lua', ext: 'lua' },
-    haskell: { mode: 'ace/mode/haskell', ext: 'hs' },
-    elixir: { mode: 'ace/mode/elixir', ext: 'ex' },
-    dart: { mode: 'ace/mode/dart', ext: 'dart' },
-    html: { mode: 'ace/mode/html', ext: 'html' },
-    css: { mode: 'ace/mode/css', ext: 'css' },
-    sql: { mode: 'ace/mode/sql', ext: 'sql' },
-    json: { mode: 'ace/mode/json', ext: 'json' },
-    yaml: { mode: 'ace/mode/yaml', ext: 'yaml' },
-    xml: { mode: 'ace/mode/xml', ext: 'xml' },
-    markdown: { mode: 'ace/mode/markdown', ext: 'md' }
-  };
 
   // Get default code for each language
   const getDefaultCode = (language) => {
@@ -158,7 +124,7 @@
     }
   }
 
-  // Initialize ACE Editor
+  // Initialize Monaco editor
   function initializeEditor() {
     // Prevent duplicate editor creation
     if (editor) {
@@ -166,48 +132,26 @@
       return;
     }
     
-    console.log('Creating ACE editor...');
-    editor = ace.edit("firepad-container");
-    editor.setTheme("ace/theme/monokai");
-    
-    session = editor.getSession();
-    session.setUseWrapMode(true);
-    session.setUseWorker(false);
-    session.setMode("ace/mode/javascript");
-    
-    // Enable autocomplete and ensure editor is interactive
-    editor.setOptions({
-      enableBasicAutocompletion: true,
-      enableSnippets: true,
-      enableLiveAutocompletion: false, // Disable to prevent issues
-      fontSize: "14px",
-      showPrintMargin: false,
-      readOnly: false,
-      highlightActiveLine: true,
-      animatedScroll: true,
-      behavioursEnabled: true
+    console.log('Creating Monaco editor...');
+    const container = document.getElementById('firepad-container');
+    if (!container || !window.CollabEditor?.create) {
+      throw new Error('Collaborative editor module did not load');
+    }
+
+    editor = window.CollabEditor.create({
+      container,
+      readOnly: isReviewMode,
+      theme: document.getElementById('theme-selector')?.value || 'monokai',
+      fontSize: document.getElementById('fontSize-selector')?.value || '14',
+      currentUser,
+      onSelectionChange: updateCursorPosition
     });
 
     // Access is finalized once the active workspace file loads.
     editor.setReadOnly(isReviewMode);
-    editor.renderer.setShowGutter(true);
     editor.focus();
-
-    // Update cursor position
-    editor.on('changeSelection', updateCursorPosition);
-    editor.on('change', scheduleActiveSnapshotSave);
-    editor.container.addEventListener('pointerdown', function() {
-      if (activeFileMeta && isWritableWorkspaceFile(activeFileMeta)) {
-        applyEditorAccessForFile(activeFileMeta);
-      }
-    });
-    editor.container.addEventListener('focusin', function() {
-      if (activeFileMeta && isWritableWorkspaceFile(activeFileMeta)) {
-        applyEditorAccessForFile(activeFileMeta);
-      }
-    });
     
-    console.log('Editor initialized - ReadOnly:', editor.getReadOnly());
+    console.log('Editor initialized - ReadOnly:', editor.getReadOnly?.());
   }
 
   // Initialize Firebase-backed workspace
@@ -450,23 +394,12 @@
     const writable = isWritableWorkspaceFile(file);
     editor.setReadOnly(!writable);
 
-    const textInput = editor.textInput?.getElement?.();
-    if (textInput) {
-      textInput.disabled = false;
-      textInput.readOnly = !writable;
-      textInput.tabIndex = 0;
-    }
-
     if (writable && shouldFocus) {
       editor.focus();
-      const textInput = editor.textInput?.getElement?.();
-      if (textInput && document.activeElement !== textInput) {
-        textInput.focus({ preventScroll: true });
-      }
     }
   }
 
-  async function openWorkspaceFile(file, snapshot) {
+  async function openWorkspaceFile(file, snapshot, collabContext) {
     if (!file || !editor) return;
     if (activeFileId === file.id && (file.readonly || file.role === 'runtime')) return;
 
@@ -479,13 +412,8 @@
     }
     changeLanguage(file.language);
 
-    const defaultText = typeof snapshot?.content === 'string'
-      ? snapshot.content
-      : getDefaultCode(file.language);
-    suppressSnapshotSave = true;
-    editor.setValue(defaultText, -1);
+    editor.openFile(file, snapshot, collabContext || {});
     applyEditorAccessForFile(file);
-    suppressSnapshotSave = false;
 
     applyEditorAccessForFile(file, true);
     updateCursorPosition();
@@ -497,22 +425,9 @@
     }
   }
 
-  function scheduleActiveSnapshotSave() {
-    if (isReviewMode) return;
-    if (suppressSnapshotSave || !editor || !activeFileId || !window.CollabWorkspace?.isEnabled?.()) return;
-    if (activeFileMeta?.readonly || activeFileMeta?.role === 'runtime') return;
-
-    clearTimeout(snapshotSaveTimer);
-    snapshotSaveTimer = setTimeout(() => {
-      saveActiveSnapshotNow();
-    }, 900);
-  }
-
   async function saveActiveSnapshotNow() {
     if (isReviewMode) return;
-    clearTimeout(snapshotSaveTimer);
-    if (suppressSnapshotSave || !editor || !activeFileId || !window.CollabWorkspace?.isEnabled?.()) return;
-    if (activeFileMeta?.readonly || activeFileMeta?.role === 'runtime') return;
+    if (!editor || !activeFileId || !window.CollabWorkspace?.isEnabled?.()) return;
 
     try {
       await window.CollabWorkspace.saveActiveSnapshot(editor.getValue());
@@ -891,15 +806,6 @@
           settingsRef.child('language').set(language);
         }
         changeLanguage(language);
-        
-        // Only load template if editor is empty or has default content
-        const currentContent = editor.getValue().trim();
-        if (!currentContent || currentContent === '// Welcome to Collaborative Code Editor!\n// Start coding here...') {
-          const template = getDefaultCode(language);
-          if (template && editor) {
-            editor.setValue(template, -1);
-          }
-        }
       });
     }
 
@@ -915,7 +821,7 @@
         if (!isReviewMode) {
           settingsRef.child('theme').set(theme);
         }
-        editor.setTheme(`ace/theme/${theme}`);
+        editor.setTheme(theme);
       });
     }
 
@@ -934,7 +840,7 @@
           const selector = document.getElementById('theme-selector');
           if (selector && selector.value !== settings.theme) {
             selector.value = settings.theme;
-            editor.setTheme(`ace/theme/${settings.theme}`);
+            editor.setTheme(settings.theme);
           }
         }
       }
@@ -943,10 +849,7 @@
 
   // Change language
   function changeLanguage(language) {
-    const config = languageConfig[language];
-    if (config) {
-      session.setMode(config.mode);
-    }
+    editor?.setLanguage?.(language);
   }
 
   // Setup event listeners ONCE
@@ -1044,16 +947,11 @@
       });
     }
 
-    // Cursor position
-    if (editor) {
-      editor.on('changeSelection', updateCursorPosition);
-    }
-
     // Font size selector
     const fontSizeSelector = document.getElementById('fontSize-selector');
     if (fontSizeSelector) {
       fontSizeSelector.addEventListener('change', function() {
-        editor.setFontSize(this.value + 'px');
+        editor.setFontSize(this.value);
       });
     }
   }

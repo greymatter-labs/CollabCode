@@ -9,7 +9,7 @@
     "serve": "node serve.js",
     "preview": "node serve.js",
     "build": "npm run build:client",
-    "build:client": "esbuild src/workspace.js --bundle --format=iife --target=es2020 --minify --outfile=scripts/workspace.bundle.js",
+    "build:client": "esbuild src/workspace.js src/monaco/editor.worker.js src/monaco/json.worker.js src/monaco/css.worker.js src/monaco/html.worker.js src/monaco/ts.worker.js --bundle --format=iife --target=es2020 --minify --outdir=scripts --entry-names=[name].bundle --loader:.ttf=file",
     "deploy": "npm run build && npm start"
   },
   "dependencies": {
@@ -29,10 +29,14 @@
     "helmet": "^7.0.0",
     "jsdom": "^22.0.0",
     "jsonwebtoken": "^9.0.0",
+    "monaco-editor": "^0.55.1",
     "morgan": "^1.10.0",
     "request-ip": "^3.3.0",
     "ua-parser-js": "^1.0.37",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "y-monaco": "^0.1.6",
+    "y-protocols": "^1.0.7",
+    "yjs": "^13.6.31"
   },
   "devDependencies": {
     "esbuild": "^0.28.1",

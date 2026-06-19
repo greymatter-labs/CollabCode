@@ -1299,28 +1299,30 @@ body.is-resizing-panel *{
 #connection-status.disconnected::before{background:var(--red);}
 
 /* ============================================================
-   ACE EDITOR CHROME  —  light reskin (gutter / active line / cursor)
-   Keep ACE's own syntax theme; only blend its frame into the surface.
+   MONACO EDITOR CHROME
    ============================================================ */
-.ace_editor{
+#firepad-container .monaco-editor,
+#firepad-container .monaco-editor-background,
+#firepad-container .monaco-editor .inputarea.ime-input{
   background:var(--bg-inset);
 }
-.ace_gutter{
-  background:var(--bg-1) !important;
-  color:var(--text-4) !important;
+#firepad-container .monaco-editor .margin{
+  background:var(--bg-1);
   border-right:1px solid var(--border);
 }
-.ace_gutter-active-line{
-  background:var(--bg-3) !important;
-  color:var(--text-2) !important;
+#firepad-container .monaco-editor,
+#firepad-container .monaco-editor .view-line{
+  font-variant-numeric:tabular-nums;
 }
-.ace_gutter-cell.ace_gutter-active-line{color:var(--text-2) !important;}
-.ace_active-line,.ace_marker-layer .ace_active-line{
-  background:rgba(255,255,255,.035) !important;
+#firepad-container .yRemoteSelection{
+  border-radius:2px;
 }
-.ace_cursor{color:var(--accent) !important;}
-.ace_print-margin{background:var(--border) !important;}
-.ace_scroller{font-variant-numeric:tabular-nums;}
+#firepad-container .yRemoteSelectionHead{
+  position:absolute;
+  height:100%;
+  z-index:8;
+  pointer-events:none;
+}
 
 /* ============================================================
    USER JOIN / LEAVE TOAST  —  Linear toast surface
