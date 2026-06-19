@@ -112,10 +112,14 @@
     // Update UI based on role
     const endSessionBtn = document.getElementById('end-session-btn');
     const resetSessionBtn = document.getElementById('reset-session-btn');
+    const reviewHomeBtn = document.getElementById('review-home-btn');
     
     if (isReviewMode) {
       console.log('Review mode detected - disabling live interview controls');
       setupSessionInfo();
+      if (reviewHomeBtn) {
+        reviewHomeBtn.style.display = 'inline-flex';
+      }
       [endSessionBtn, resetSessionBtn, document.getElementById('run-btn'), document.getElementById('share-btn')].forEach(button => {
         if (button) {
           button.style.display = 'none';
@@ -128,6 +132,9 @@
     } else if (isAdmin) {
       console.log('Admin user detected - showing End Interview button');
       setupSessionInfo();
+      if (reviewHomeBtn) {
+        reviewHomeBtn.style.display = 'none';
+      }
       
       // Admin keeps the button visible (it's visible by default now)
       if (endSessionBtn) {
@@ -138,6 +145,9 @@
       }
     } else {
       console.log('Non-admin user - hiding End Interview button');
+      if (reviewHomeBtn) {
+        reviewHomeBtn.style.display = 'none';
+      }
       // Hide button for non-admin users
       if (endSessionBtn) {
         endSessionBtn.style.display = 'none';
@@ -1026,6 +1036,14 @@
       });
     }
 
+    const reviewHomeBtn = document.getElementById('review-home-btn');
+    if (reviewHomeBtn) {
+      reviewHomeBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        returnToHomeFromReview();
+      });
+    }
+
     // Cursor position
     if (editor) {
       editor.on('changeSelection', updateCursorPosition);
@@ -1117,6 +1135,11 @@
       console.error('Error terminating session:', error);
       alert('Failed to end the interview: ' + error.message);
     }
+  }
+
+  function returnToHomeFromReview() {
+    const target = window.location.pathname + window.location.search;
+    window.location.assign(target || '/app.html');
   }
 
   async function resetSessionWorkspace() {

@@ -273,6 +273,27 @@
   background-color:#f06363 !important;
 }
 
+.review-home-button,#review-home-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  height:32px;
+  padding:0 11px !important;
+  background-color:var(--bg-3) !important;
+  color:var(--text-1) !important;
+  border:1px solid var(--border-2) !important;
+  border-radius:var(--r-sm) !important;
+  font-size:13px;
+  font-weight:500;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+  transition:background-color .12s var(--ease),border-color .12s;
+}
+.review-home-button:hover,#review-home-btn:hover{
+  background-color:#26282c !important;
+  border-color:var(--border-strong) !important;
+}
+
 /* Reset Workspace — neutral (legacy uses !important + orange) */
 .reset-session-button,#reset-session-btn{
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
