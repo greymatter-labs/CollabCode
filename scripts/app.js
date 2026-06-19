@@ -1583,128 +1583,136 @@
 
           if (!activityData) {
             container.innerHTML = `
-              <div style="padding: 20px; text-align: center; color: #666;">
+              <div class="activity-empty-state">
+                ${iconMarkup('i-activity', 18)}
                 <p>No activity data available for this session.</p>
-                <p style="font-size: 12px; margin-top: 10px;">Activity tracking may not have been enabled for this session.</p>
+                <span>Activity tracking may not have been enabled for this session.</span>
               </div>
             `;
             return;
           }
 
-          // Display activity data
-          const scoreColor = activityData.activityScore > 80 ? '#4caf50' :
-                           activityData.activityScore > 60 ? '#ff9800' : '#ff4444';
+          const metricNumber = value => {
+            const number = Number(value);
+            return Number.isFinite(number) ? number : 0;
+          };
 
-          // Calculate engagement level
-          let engagementLevel = 'High';
-          let engagementColor = '#4caf50';
-          if (activityData.activityScore < 60) {
-            engagementLevel = 'Low';
-            engagementColor = '#ff4444';
-          } else if (activityData.activityScore < 80) {
-            engagementLevel = 'Medium';
-            engagementColor = '#ff9800';
-          }
+          const activityScore = Math.max(0, Math.min(100, Math.round(metricNumber(activityData.activityScore))));
+          const sessionDurationMinutes = Math.round(metricNumber(activityData.sessionDurationMinutes));
+          const tabSwitches = Math.round(metricNumber(activityData.tabSwitches));
+          const idlePeriods = Math.round(metricNumber(activityData.idlePeriods));
+          const totalIdleSeconds = metricNumber(activityData.totalIdleSeconds);
+          const totalIdleMinutes = Math.round(totalIdleSeconds / 60);
+          const idlePercent = sessionDurationMinutes > 0
+            ? Math.round((totalIdleSeconds / (sessionDurationMinutes * 60)) * 100)
+            : 0;
+
+          const engagementLevel = activityScore >= 80 ? 'High' : activityScore >= 60 ? 'Medium' : 'Low';
+          const scoreTone = activityScore >= 80 ? 'high' : activityScore >= 60 ? 'medium' : 'low';
+          const tabSwitchTone = tabSwitches > 10 ? 'warning' : tabSwitches > 5 ? 'medium' : 'normal';
+          const idleTone = idlePeriods > 5 ? 'warning' : 'normal';
+          const tabSwitchSummary = tabSwitches > 10
+            ? 'High - may indicate looking up answers'
+            : tabSwitches > 5
+              ? 'Moderate'
+              : 'Normal';
+          const suspiciousPatterns = Array.isArray(activityData.suspiciousPatterns)
+            ? activityData.suspiciousPatterns
+            : [];
+          const suspiciousPatternHtml = suspiciousPatterns.length > 0 ? `
+            <section class="activity-patterns">
+              <h5>${iconMarkup('i-alert', 14)} Notable Behaviors</h5>
+              <ul>
+                ${suspiciousPatterns.map(pattern => {
+                  let description = '';
+                  if (pattern.type === 'quick_tab_switch') {
+                    description = 'Quick tab switch - returned in less than 5 seconds';
+                  } else if (pattern.type === 'switch_and_paste') {
+                    description = `Pasted content after switching tabs${pattern.size ? ` (${metricNumber(pattern.size)} characters)` : ''}`;
+                  } else {
+                    description = String(pattern.type || 'Notable behavior')
+                      .replace(/_/g, ' ')
+                      .replace(/\b\w/g, letter => letter.toUpperCase());
+                  }
+                  return `<li>${escapeHtml(description)}</li>`;
+                }).join('')}
+              </ul>
+            </section>
+          ` : '';
 
           container.innerHTML = `
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px; color: white; margin-bottom: 20px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <h3 style="margin: 0; font-size: 20px; opacity: 0.9;">Engagement Level</h3>
-                  <div style="font-size: 36px; font-weight: bold; color: ${engagementColor}; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-                    ${engagementLevel}
-                  </div>
-                  <div style="font-size: 14px; opacity: 0.7; margin-top: 5px;">
-                    Based on activity patterns
-                  </div>
+            <div class="activity-dashboard">
+              <section class="activity-score-panel activity-score-panel--${scoreTone}">
+                <div class="activity-score-panel__main">
+                  <span class="activity-eyebrow">Engagement Level</span>
+                  <strong>${engagementLevel}</strong>
+                  <span>Based on activity patterns</span>
                 </div>
-                <div style="text-align: right;">
-                  <div style="font-size: 14px; opacity: 0.9;">Session Duration</div>
-                  <div style="font-size: 20px; font-weight: bold;">${activityData.sessionDurationMinutes || 0} min</div>
-                  <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
-                    Score: ${activityData.activityScore || 0}/100
-                  </div>
+                <div class="activity-score-panel__meta">
+                  <span class="activity-eyebrow">Session Duration</span>
+                  <strong>${sessionDurationMinutes} min</strong>
+                  <span>Score: ${activityScore}/100</span>
                 </div>
-              </div>
-            </div>
+              </section>
 
-            <h4 style="margin-bottom: 15px; color: #666;">📊 Behavior Metrics</h4>
+              <section class="activity-section">
+                <div class="activity-section-heading">
+                  ${iconMarkup('i-activity', 14)}
+                  <span>Behavior Metrics</span>
+                </div>
+                <div class="activity-metrics-grid">
+                  <article class="activity-metric-card activity-metric-card--${tabSwitchTone}">
+                    <span class="activity-metric-card__label">Tab Switches</span>
+                    <strong>${tabSwitches}</strong>
+                    <span>${tabSwitchSummary}</span>
+                  </article>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-              <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid ${activityData.tabSwitches > 10 ? '#ff9800' : '#42a5f5'};">
-                <div style="color: #666; font-size: 12px; margin-bottom: 5px;">🔄 TAB SWITCHES</div>
-                <div style="font-size: 24px; font-weight: bold; color: ${activityData.tabSwitches > 10 ? '#ff9800' : '#333'};">
-                  ${activityData.tabSwitches || 0}
-                </div>
-                <div style="font-size: 11px; color: #999; margin-top: 5px;">
-                  ${activityData.tabSwitches > 10 ? 'High (may indicate looking up answers)' :
-                    activityData.tabSwitches > 5 ? 'Moderate' : 'Normal'}
-                </div>
-              </div>
+                  <article class="activity-metric-card activity-metric-card--${idleTone}">
+                    <span class="activity-metric-card__label">Idle Periods</span>
+                    <strong>${idlePeriods}</strong>
+                    <span>Times inactive for more than 1 minute</span>
+                  </article>
 
-              <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid ${activityData.idlePeriods > 5 ? '#ff9800' : '#66bb6a'};">
-                <div style="color: #666; font-size: 12px; margin-bottom: 5px;">⏸️ IDLE PERIODS</div>
-                <div style="font-size: 24px; font-weight: bold; color: #333;">
-                  ${activityData.idlePeriods || 0}
+                  <article class="activity-metric-card activity-metric-card--time">
+                    <span class="activity-metric-card__label">Total Idle Time</span>
+                    <strong>${totalIdleMinutes} min</strong>
+                    <span>${idlePercent}% of session</span>
+                  </article>
                 </div>
-                <div style="font-size: 11px; color: #999; margin-top: 5px;">
-                  Times inactive for >1 minute
-                </div>
-              </div>
+              </section>
 
-              <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #ffa726;">
-                <div style="color: #666; font-size: 12px; margin-bottom: 5px;">⏱️ TOTAL IDLE TIME</div>
-                <div style="font-size: 24px; font-weight: bold; color: #333;">
-                  ${Math.round((activityData.totalIdleSeconds || 0) / 60)} min
-                </div>
-                <div style="font-size: 11px; color: #999; margin-top: 5px;">
-                  ${Math.round(((activityData.totalIdleSeconds || 0) / ((activityData.sessionDurationMinutes || 1) * 60)) * 100)}% of session
-                </div>
-              </div>
-            </div>
+              ${suspiciousPatternHtml}
 
-            ${activityData.suspiciousPatterns && activityData.suspiciousPatterns.length > 0 ? `
-              <div style="background: rgba(255,152,0,0.1); border: 1px solid rgba(255,152,0,0.3); border-radius: 8px; padding: 15px; margin-top: 20px;">
-                <h4 style="color: #ff9800; margin-top: 0;">⚠️ Notable Behaviors</h4>
-                <ul style="margin: 10px 0;">
-                  ${activityData.suspiciousPatterns.map(p => {
-                    let description = '';
-                    if (p.type === 'quick_tab_switch') {
-                      description = '• Quick tab switch (returned in < 5 seconds)';
-                    } else if (p.type === 'switch_and_paste') {
-                      description = `• Pasted content after switching tabs ${p.size ? `(${p.size} characters)` : ''}`;
-                    } else {
-                      description = `• ${p.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`;
-                    }
-                    return `<li style="color: #666; margin: 5px 0; list-style: none;">${description}</li>`;
-                  }).join('')}
+              <section class="activity-help-panel">
+                <h5>${iconMarkup('i-info', 14)} Understanding the Metrics</h5>
+                <ul>
+                  <li><strong>Engagement Level:</strong> Overall assessment based on activity patterns.</li>
+                  <li><strong>Tab Switches:</strong> Number of times candidate switched away from the interview tab.</li>
+                  <li><strong>Idle Periods:</strong> Number of times candidate was inactive for more than 1 minute.</li>
+                  <li><strong>Score:</strong> 0-100 score calculated from behavior patterns.</li>
                 </ul>
-              </div>
-            ` : ''}
-
-            <div style="background: #e3f2fd; border-radius: 8px; padding: 15px; margin-top: 20px;">
-              <h5 style="margin-top: 0; color: #1976d2;">ℹ️ Understanding the Metrics</h5>
-              <ul style="font-size: 12px; color: #666; margin: 10px 0; padding-left: 20px;">
-                <li><strong>Engagement Level:</strong> Overall assessment based on activity patterns (High/Medium/Low)</li>
-                <li><strong>Tab Switches:</strong> Number of times candidate switched away from the interview tab</li>
-                <li><strong>Idle Periods:</strong> Number of times candidate was inactive for more than 1 minute</li>
-                <li><strong>Score:</strong> 0-100 score calculated from behavior patterns (100 = perfect engagement)</li>
-              </ul>
-              <small style="color: #999;">Note: These metrics are indicators only and should be considered alongside interview performance.</small>
+                <p>These metrics are indicators only and should be considered alongside interview performance.</p>
+              </section>
             </div>
           `;
         })
         .catch(error => {
           console.error('Error loading activity data:', error);
           container.innerHTML = `
-            <div style="padding: 20px; text-align: center; color: #f44336;">
+            <div class="activity-empty-state activity-empty-state--error">
+              ${iconMarkup('i-alert', 18)}
               <p>Error loading activity data.</p>
-              <p style="font-size: 12px; margin-top: 10px;">${error.message}</p>
+              <span>${escapeHtml(error.message)}</span>
             </div>
           `;
         });
     } else {
-      container.innerHTML = '<p>Firebase not initialized</p>';
+      container.innerHTML = `
+        <div class="activity-empty-state activity-empty-state--error">
+          ${iconMarkup('i-alert', 18)}
+          <p>Firebase not initialized</p>
+        </div>
+      `;
     }
   }
 

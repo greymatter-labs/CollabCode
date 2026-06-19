@@ -856,13 +856,256 @@
 .activity-info-display > div:first-of-type .ic{color:var(--yellow-text);flex:none;}
 .activity-info-display small{color:var(--yellow-text)!important;line-height:1.5;}
 #activity-tracking-data{
+  padding:0;
+  background:transparent;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+}
+#activity-tracking-data .loading-message{
+  margin:0;
   padding:var(--sp-5);
+  color:var(--text-3);
   background:var(--bg-1);
   border:1px solid var(--border);
   border-radius:var(--r-lg);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
 }
-#activity-tracking-data .loading-message{color:var(--text-3);margin:0;}
+
+.activity-dashboard{
+  display:flex;
+  flex-direction:column;
+  gap:var(--sp-4);
+}
+
+.activity-score-panel{
+  position:relative;
+  display:flex;
+  align-items:stretch;
+  justify-content:space-between;
+  gap:var(--sp-5);
+  padding:var(--sp-5);
+  overflow:hidden;
+  background:var(--bg-1);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+}
+.activity-score-panel::before{
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:3px;
+  background:var(--accent);
+}
+.activity-score-panel--high::before{background:var(--green);}
+.activity-score-panel--medium::before{background:var(--yellow);}
+.activity-score-panel--low::before{background:var(--red);}
+.activity-score-panel__main,
+.activity-score-panel__meta{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+.activity-score-panel__main{gap:3px;}
+.activity-score-panel__meta{
+  align-items:flex-end;
+  justify-content:center;
+  gap:3px;
+  padding-left:var(--sp-5);
+  border-left:1px solid var(--border);
+  text-align:right;
+}
+.activity-eyebrow{
+  color:var(--text-3);
+  font-size:12px;
+  font-weight:500;
+}
+.activity-score-panel strong{
+  color:var(--text-1);
+  font-size:13px;
+  font-weight:600;
+  font-variant-numeric:tabular-nums;
+}
+.activity-score-panel__main strong{
+  font-size:30px;
+  line-height:1.05;
+  letter-spacing:0;
+}
+.activity-score-panel--high .activity-score-panel__main strong{color:var(--green-text);}
+.activity-score-panel--medium .activity-score-panel__main strong{color:var(--yellow-text);}
+.activity-score-panel--low .activity-score-panel__main strong{color:var(--red-text);}
+.activity-score-panel__main > span:last-child,
+.activity-score-panel__meta > span:last-child{
+  color:var(--text-3);
+  font-size:12.5px;
+}
+.activity-score-panel__meta strong{
+  font-size:20px;
+  line-height:1.15;
+}
+
+.activity-section{
+  display:flex;
+  flex-direction:column;
+  gap:var(--sp-3);
+}
+.activity-section-heading{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:var(--text-2);
+  font-size:12px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.activity-section-heading .ic{color:var(--text-4);}
+
+.activity-metrics-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:var(--sp-3);
+}
+.activity-metric-card{
+  position:relative;
+  min-width:0;
+  padding:var(--sp-4);
+  background:var(--bg-1);
+  border:1px solid var(--border);
+  border-radius:var(--r-md);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+}
+.activity-metric-card::before{
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:3px;
+  border-radius:var(--r-md) 0 0 var(--r-md);
+  background:var(--blue);
+  opacity:.9;
+}
+.activity-metric-card--normal::before{background:var(--green);}
+.activity-metric-card--medium::before,
+.activity-metric-card--warning::before,
+.activity-metric-card--time::before{background:var(--yellow);}
+.activity-metric-card--warning strong{color:var(--yellow-text);}
+.activity-metric-card__label{
+  display:block;
+  margin-bottom:5px;
+  color:var(--text-3);
+  font-size:11px;
+  font-weight:600;
+  line-height:1.3;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.activity-metric-card strong{
+  display:block;
+  color:var(--text-1);
+  font-size:23px;
+  line-height:1.1;
+  font-weight:600;
+  font-variant-numeric:tabular-nums;
+}
+.activity-metric-card > span:last-child{
+  display:block;
+  margin-top:6px;
+  color:var(--text-4);
+  font-size:12px;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+}
+
+.activity-patterns,
+.activity-help-panel{
+  padding:var(--sp-4);
+  background:var(--bg-1);
+  border:1px solid var(--border);
+  border-radius:var(--r-md);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+}
+.activity-patterns{
+  border-color:rgba(242,201,76,.25);
+  background:var(--yellow-soft);
+}
+.activity-patterns h5,
+.activity-help-panel h5{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:0 0 var(--sp-3);
+  color:var(--text-1);
+  font-size:13px;
+  font-weight:600;
+}
+.activity-patterns h5 .ic{color:var(--yellow-text);}
+.activity-help-panel h5 .ic{color:var(--text-3);}
+.activity-patterns ul,
+.activity-help-panel ul{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  margin:0;
+  padding-left:18px;
+  color:var(--text-2);
+  font-size:12.5px;
+  line-height:1.5;
+}
+.activity-help-panel strong{color:var(--text-1);font-weight:600;}
+.activity-help-panel p{
+  margin:var(--sp-3) 0 0;
+  color:var(--text-4);
+  font-size:12px;
+  line-height:1.5;
+}
+
+.activity-empty-state{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:142px;
+  padding:var(--sp-6);
+  color:var(--text-3);
+  text-align:center;
+  background:var(--bg-1);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+}
+.activity-empty-state .ic{color:var(--text-4);}
+.activity-empty-state p{
+  margin:0;
+  color:var(--text-2);
+  font-weight:500;
+}
+.activity-empty-state span{
+  max-width:360px;
+  color:var(--text-4);
+  font-size:12.5px;
+  line-height:1.5;
+}
+.activity-empty-state--error .ic,
+.activity-empty-state--error p{color:var(--red-text);}
+
+@media (max-width:760px){
+  .activity-score-panel{
+    flex-direction:column;
+    gap:var(--sp-4);
+  }
+  .activity-score-panel__meta{
+    align-items:flex-start;
+    padding-left:0;
+    padding-top:var(--sp-4);
+    border-left:0;
+    border-top:1px solid var(--border);
+    text-align:left;
+  }
+  .activity-metrics-grid{grid-template-columns:1fr;}
+}
 
 /* ============================================================
    SLACK CONFIG  —  #slackConfigModal
