@@ -298,9 +298,23 @@
   }
 
   function setCandidateDirectJoinMode(enabled) {
+    const candidateModal = document.getElementById('candidateModal');
     const candidateSessionCode = document.getElementById('candidateSessionCode');
     const sessionCodeGroup = candidateSessionCode?.closest('.form-group');
     const candidateBack = document.getElementById('candidateBack');
+    const modalSubtitle = candidateModal?.querySelector('.modal-subtitle');
+
+    if (candidateModal) {
+      candidateModal.toggleAttribute('data-direct-join', enabled);
+    }
+    if (modalSubtitle) {
+      if (!modalSubtitle.dataset.defaultText) {
+        modalSubtitle.dataset.defaultText = modalSubtitle.textContent;
+      }
+      modalSubtitle.textContent = enabled
+        ? 'Enter your name to join the interview'
+        : modalSubtitle.dataset.defaultText;
+    }
 
     if (sessionCodeGroup) {
       sessionCodeGroup.style.display = enabled ? 'none' : '';
@@ -784,7 +798,7 @@
   }
 
   // Validate session before joining
-  async function validateSession(sessionCode, isCandidate = false) {
+  async function validateSession(sessionCode, isCandidate = false, options = {}) {
     sessionCode = normalizeSessionCode(sessionCode);
     if (!isValidSessionCode(sessionCode)) {
       return { valid: false, error: 'Please enter a valid 8-character session code.' };
@@ -819,7 +833,7 @@
       }
 
       // Check if session is terminated
-      if (sessionData && sessionData.terminated && sessionData.terminated.terminated) {
+      if (sessionData && sessionData.terminated && sessionData.terminated.terminated && !options.allowEnded) {
         return { valid: false, error: 'This interview session has already ended.' };
       }
 
@@ -1300,7 +1314,11 @@
 
 
                 ${isArchivedView ?
-                  `<button class="action-btn delete-forever-btn" data-code="${escapeHtml(session.code)}" title="Permanently delete" aria-label="Permanently delete session">
+                  `<button class="action-btn review-btn" data-code="${escapeHtml(session.code)}" title="Review workspace" aria-label="Review ended session workspace">
+                    ${iconMarkup('i-arrow-right')}
+                    <span>Review</span>
+                  </button>
+                  <button class="action-btn delete-forever-btn" data-code="${escapeHtml(session.code)}" title="Permanently delete" aria-label="Permanently delete session">
                     ${iconMarkup('i-trash')}
                     <span>Delete</span>
                   </button>` :
@@ -1346,6 +1364,17 @@
             const fullSessionData = sessions[code];
             console.log('View details clicked for session:', code, fullSessionData);
             viewSessionDetails(code, fullSessionData);
+          });
+        }
+
+        // Add review button handler for ended sessions
+        const reviewBtn = row.querySelector('.review-btn');
+        if (reviewBtn) {
+          reviewBtn.addEventListener('click', function() {
+            const code = this.getAttribute('data-code');
+            document.getElementById('sessionsModal').style.display = 'none';
+            window.location.hash = code;
+            startSession(getAdminDisplayName(), code, false, { reviewEnded: true });
           });
         }
 
@@ -1949,8 +1978,9 @@
   let sessionStarting = false;
 
   // Start coding session
-  async function startSession(userName, sessionCode, isNew) {
+  async function startSession(userName, sessionCode, isNew, options = {}) {
     sessionCode = normalizeSessionCode(sessionCode);
+    const isReviewMode = options.reviewEnded === true;
 
     // Prevent duplicate session starts
     if (sessionStarting) {
@@ -1965,10 +1995,10 @@
       return;
     }
 
-    console.log('START SESSION:', userName, sessionCode, 'isNew:', isNew);
+    console.log('START SESSION:', userName, sessionCode, 'isNew:', isNew, 'review:', isReviewMode);
     // Validate session first (for existing sessions)
     if (!isNew) {
-      const validation = await validateSession(sessionCode);
+      const validation = await validateSession(sessionCode, false, { allowEnded: isReviewMode });
       if (!validation.valid) {
         sessionStarting = false;
         handleInvalidSession(validation.error || 'Invalid session');
@@ -1987,6 +2017,7 @@
       mainContainer.style.display = 'flex';
       mainContainer.style.visibility = 'visible';
       mainContainer.style.opacity = '1';
+      mainContainer.classList.toggle('session-review-mode', isReviewMode);
       console.log('Main container shown, display:', mainContainer.style.display);
     } else {
       console.error('CRITICAL: main-container element not found in DOM!');
@@ -1999,13 +2030,16 @@
 	    if (typeof initializeSession === 'function') {
 	      const authUser = Auth.getCurrentUser();
 	      const isAdmin = Auth.isAdmin();
-	      recordSessionParticipant(sessionCode, userName, isAdmin ? 'interviewer' : 'candidate');
+	      if (!isReviewMode) {
+	        recordSessionParticipant(sessionCode, userName, isAdmin ? 'interviewer' : 'candidate');
+	      }
 	      initializeSession({
 	        userName: userName,
 	        userEmail: authUser.email || null,
 	        sessionCode: sessionCode,
 	        isNew: isNew,
-	        isAdmin
+	        isAdmin,
+	        isReview: isReviewMode
 	      });
 	    }
 
@@ -2037,6 +2071,14 @@
     const hasValidUrlCode = isValidSessionCode(urlCode);
 
     console.log('INITIAL ROUTE: Session logged in?', session.isLoggedIn, 'URL code:', urlCode);
+
+    if (session.isLoggedIn && session.isAdmin && hasValidUrlCode) {
+      const validation = await validateSession(urlCode, false, { allowEnded: true });
+      startSession(session.userName, urlCode, false, {
+        reviewEnded: validation.valid && validation.sessionData?.terminated?.terminated === true
+      });
+      return;
+    }
 
     if (session.isLoggedIn && hasValidUrlCode) {
       startSession(session.userName, urlCode, false);

@@ -122,6 +122,11 @@
   font-weight:600;
   text-transform:uppercase;
 }
+#session-info .session-role-pill--review{
+  background:var(--yellow-soft);
+  border-color:rgba(242,201,76,.3);
+  color:var(--yellow-text);
+}
 
 /* user count pill — neutral chip with green count */
 .user-count{
@@ -667,6 +672,15 @@ body.is-resizing-panel *{
 /* set-entry reads as the "promote" action — quiet green on hover */
 #workspace-set-entry:hover{color:var(--green-text);}
 #workspace-delete-file:hover{color:var(--red-text);}
+
+.session-review-mode #workspace-actions,
+.session-review-mode #workspace-resize-handle,
+.session-review-mode #right-dock-resize-handle{
+  display:none !important;
+}
+.session-review-mode #firepad-container{
+  cursor:default;
+}
 
 #workspace-tree{
   flex:1 1 auto;

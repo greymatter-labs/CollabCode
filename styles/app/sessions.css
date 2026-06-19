@@ -546,6 +546,18 @@
   box-shadow:none;
 }
 
+/* Review = inspect ended workspace */
+.action-btn.review-btn{
+  background:var(--blue-soft)!important;
+  color:var(--blue-text)!important;
+  border-color:rgba(78,167,252,.3);
+}
+.action-btn.review-btn:hover:not(:disabled){
+  background:rgba(78,167,252,.2)!important;
+  border-color:rgba(78,167,252,.45);
+  box-shadow:none;
+}
+
 /* End = caution (yellow) */
 .action-btn.end-btn{
   background:var(--yellow-soft)!important;

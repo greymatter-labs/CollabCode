@@ -98,6 +98,10 @@ import { FileTree } from '@pierre/trees';
     return window.firebase?.database?.ServerValue?.TIMESTAMP || Date.now();
   }
 
+  function isReadOnlyMode() {
+    return state.options.readOnly === true;
+  }
+
   function basename(path) {
     const parts = String(path || '').split('/').filter(Boolean);
     return parts[parts.length - 1] || '';
@@ -416,11 +420,13 @@ import { FileTree } from '@pierre/trees';
     const snapshot = await state.sessionRef.once('value');
     const sessionData = snapshot.val() || {};
     if (sessionData.workspace?.files && Object.keys(sessionData.workspace.files).length) {
-      if (!sessionData.workspace.source) {
+      if (!sessionData.workspace.source && !isReadOnlyMode()) {
         await state.sessionRef.child('workspace/source').set({ type: 'adhoc' });
       }
       return;
     }
+
+    if (isReadOnlyMode()) return;
 
     const language = getInitialLanguage();
     const path = getDefaultPath(language);
@@ -469,6 +475,7 @@ import { FileTree } from '@pierre/trees';
     newButton?.addEventListener('click', () => createFileInline());
     newFolderButton?.addEventListener('click', () => createFolderInline());
     renameButton?.addEventListener('click', () => {
+      if (isReadOnlyMode()) return;
       const selection = getSelectedTreeTarget();
       if (isReadOnlyTreeTarget(selection)) {
         alert('Hidden problem files are read-only in sessions. Edit them in the Problem Library.');
@@ -617,6 +624,7 @@ import { FileTree } from '@pierre/trees';
   }
 
   async function createFileInline(target = getSelectedTreeTarget()) {
+    if (isReadOnlyMode()) return;
     if (!state.sessionRef || getFileList().length >= MAX_FILES) {
       alert(`This session can have up to ${MAX_FILES} files.`);
       return;
@@ -666,6 +674,7 @@ import { FileTree } from '@pierre/trees';
   }
 
   async function createFolderInline(target = getSelectedTreeTarget()) {
+    if (isReadOnlyMode()) return;
     if (!state.sessionRef) return;
 
     const baseDirectory = getBaseDirectoryForTarget(target);
@@ -695,6 +704,7 @@ import { FileTree } from '@pierre/trees';
   }
 
   async function renamePath(sourcePath, destinationPath) {
+    if (isReadOnlyMode()) return;
     const file = getFileByPath(sourcePath);
     const nextPath = normalizePath(destinationPath);
     if (!file || !nextPath || nextPath === file.path) return;
@@ -731,6 +741,7 @@ import { FileTree } from '@pierre/trees';
   }
 
   async function renameFolderPath(sourcePath, destinationPath) {
+    if (isReadOnlyMode()) return;
     const source = normalizeFolderPath(sourcePath);
     const destination = normalizeFolderPath(destinationPath);
     if (!source || !destination || source === destination) return;
@@ -807,6 +818,7 @@ import { FileTree } from '@pierre/trees';
   }
 
   async function moveFileToDirectory(sourcePath, targetDirectory) {
+    if (isReadOnlyMode()) return;
     const file = getFileByPath(sourcePath);
     if (!file) return;
 
@@ -817,10 +829,12 @@ import { FileTree } from '@pierre/trees';
   }
 
   async function deleteSelectedPath() {
+    if (isReadOnlyMode()) return;
     await deleteTreeTarget(getSelectedTreeTarget());
   }
 
   async function deleteTreeTarget(target) {
+    if (isReadOnlyMode()) return;
     const selection = target || getSelectedTreeTarget();
     if (isReadOnlyTreeTarget(selection)) {
       alert('Hidden problem files are read-only in sessions. Edit them in the Problem Library.');
@@ -834,6 +848,7 @@ import { FileTree } from '@pierre/trees';
   }
 
   async function deleteFile(file) {
+    if (isReadOnlyMode()) return;
     if (!file) return;
 
     const files = getFileList();
@@ -860,6 +875,7 @@ import { FileTree } from '@pierre/trees';
   }
 
   async function deleteFolder(path) {
+    if (isReadOnlyMode()) return;
     const normalized = normalizeFolderPath(path);
     if (!normalized) return;
 
@@ -878,6 +894,7 @@ import { FileTree } from '@pierre/trees';
   }
 
   async function setActiveAsEntry() {
+    if (isReadOnlyMode()) return;
     if (getActiveHiddenFile()) {
       alert('Hidden problem files are not candidate entry files.');
       return;
@@ -887,6 +904,7 @@ import { FileTree } from '@pierre/trees';
   }
 
   async function setFileAsEntry(file) {
+    if (isReadOnlyMode()) return;
     if (!file || file.role === 'runtime') return;
     await state.sessionRef.child('workspace/entryFileId').set(file.id);
   }
@@ -895,6 +913,16 @@ import { FileTree } from '@pierre/trees';
     const file = state.workspace?.files?.[fileId];
     if (!file || state.pendingActiveFileId === fileId) return;
     if (fileId === state.workspace.activeFileId && !state.activeHiddenFileId) return;
+
+    if (isReadOnlyMode()) {
+      state.workspace.activeFileId = fileId;
+      state.activeHiddenFileId = null;
+      state.selectedPath = file.path;
+      state.options.onActiveFileChange?.(file, getSnapshot(file.id));
+      renderTree();
+      focusEditorSoon();
+      return;
+    }
 
     state.pendingActiveFileId = fileId;
     try {
@@ -928,6 +956,7 @@ import { FileTree } from '@pierre/trees';
   }
 
   async function updateActiveFileLanguage(language) {
+    if (isReadOnlyMode()) return;
     if (getActiveHiddenFile()) return;
     const active = getActiveFile();
     if (!active) return;
@@ -942,6 +971,7 @@ import { FileTree } from '@pierre/trees';
   }
 
   async function saveActiveSnapshot(content) {
+    if (isReadOnlyMode()) return;
     if (getActiveHiddenFile()) return;
     const active = getActiveFile();
     if (!active || active.readonly || active.role === 'runtime') return;
@@ -962,6 +992,7 @@ import { FileTree } from '@pierre/trees';
   }
 
   async function saveRuntimeFiles(runtimeFiles) {
+    if (isReadOnlyMode()) return;
     if (!Array.isArray(runtimeFiles) || !runtimeFiles.length) return;
 
     const existingPaths = new Set(getFileList().map(file => file.path));
@@ -1273,9 +1304,10 @@ import { FileTree } from '@pierre/trees';
     const file = target.isFolder ? null : getFileByPath(target.path);
     const hiddenFile = target.isFolder ? null : getHiddenFileByPath(target.path);
     const readOnlyTarget = isReadOnlyTreeTarget(target);
-    const canRenameTarget = !!treePath && !readOnlyTarget && (target.isFolder ? folderExists(target.path) : !!file);
-    const canDeleteTarget = !readOnlyTarget && (target.isFolder ? !!getFolderByPath(target.path) : !!file);
-    const canSetEntry = !!file && file.role !== 'runtime' && !hiddenFile;
+    const readOnlyMode = isReadOnlyMode();
+    const canRenameTarget = !readOnlyMode && !!treePath && !readOnlyTarget && (target.isFolder ? folderExists(target.path) : !!file);
+    const canDeleteTarget = !readOnlyMode && !readOnlyTarget && (target.isFolder ? !!getFolderByPath(target.path) : !!file);
+    const canSetEntry = !readOnlyMode && !!file && file.role !== 'runtime' && !hiddenFile;
 
     const menu = document.createElement('div');
     menu.className = 'workspace-context-menu';
@@ -1299,9 +1331,11 @@ import { FileTree } from '@pierre/trees';
 
     menu.append(
       createContextMenuButton('New File', {
+        disabled: readOnlyMode,
         onSelect: runAction(() => createFileInline(target))
       }),
       createContextMenuButton('New Folder', {
+        disabled: readOnlyMode,
         onSelect: runAction(() => createFolderInline(target))
       }),
       document.createElement('hr'),
@@ -1370,6 +1404,7 @@ import { FileTree } from '@pierre/trees';
         },
         renaming: {
           canRename(item) {
+            if (isReadOnlyMode()) return false;
             if (getHiddenFileByPath(item.path)) return false;
             if (item.isFolder && hiddenFolderExists(item.path) && !folderExists(item.path)) return false;
             return item.isFolder ? folderExists(item.path) : !!getFileByPath(item.path);
@@ -1387,10 +1422,11 @@ import { FileTree } from '@pierre/trees';
         },
         dragAndDrop: {
           canDrag(pathsToDrag) {
+            if (isReadOnlyMode()) return false;
             return pathsToDrag.every(path => !!getFileByPath(path) && !getHiddenFileByPath(path));
           },
           canDrop() {
-            return true;
+            return !isReadOnlyMode();
           },
           onDropComplete(event) {
             const targetDirectory = event.target.kind === 'directory'

@@ -16,6 +16,7 @@
   let isInitialized = false;
   let isEndingSession = false;
   let isNewSession = false;
+  let isReviewMode = false;
   let activeFileId = null;
   let activeFileMeta = null;
   let snapshotSaveTimer = null;
@@ -86,20 +87,21 @@
     }
     isInitialized = true;
     
-    const { userName, userEmail, sessionCode, isNew, isAdmin } = options;
+    const { userName, userEmail, sessionCode, isNew, isAdmin, isReview } = options;
     
     console.log('=== INITIALIZING SESSION (ONCE) ===');
     console.log('User:', userName, 'Code:', sessionCode, 'New:', isNew, 'Admin:', isAdmin);
     
     currentSessionCode = sessionCode;
     isNewSession = !!isNew;
+    isReviewMode = isReview === true;
     currentUser = {
       name: userName,
       displayName: formatPresenceDisplayName(userName, userEmail, isAdmin),
       id: 'user_' + Math.random().toString(36).substr(2, 9),
       color: generateUserColor(),
       isAdmin: isAdmin,
-      role: isAdmin ? 'interviewer' : 'candidate'
+      role: isReviewMode ? 'reviewer' : (isAdmin ? 'interviewer' : 'candidate')
     };
     
     // Initialize components
@@ -111,7 +113,19 @@
     const endSessionBtn = document.getElementById('end-session-btn');
     const resetSessionBtn = document.getElementById('reset-session-btn');
     
-    if (isAdmin) {
+    if (isReviewMode) {
+      console.log('Review mode detected - disabling live interview controls');
+      setupSessionInfo();
+      [endSessionBtn, resetSessionBtn, document.getElementById('run-btn'), document.getElementById('share-btn')].forEach(button => {
+        if (button) {
+          button.style.display = 'none';
+        }
+      });
+      const languageSelector = document.getElementById('language-selector');
+      if (languageSelector) {
+        languageSelector.disabled = true;
+      }
+    } else if (isAdmin) {
       console.log('Admin user detected - showing End Interview button');
       setupSessionInfo();
       
@@ -164,8 +178,8 @@
       behavioursEnabled: true
     });
 
-    // Ensure editor is not read-only
-    editor.setReadOnly(false);
+    // Access is finalized once the active workspace file loads.
+    editor.setReadOnly(isReviewMode);
     editor.renderer.setShowGutter(true);
     editor.focus();
 
@@ -253,8 +267,8 @@
     });
     
     try {
-      // Ensure editor is editable for all users
-      editor.setReadOnly(false);
+      // Access is finalized once the active workspace file loads.
+      editor.setReadOnly(isReviewMode);
 
       if (!window.CollabWorkspace || !window.CollabWorkspace.init) {
         throw new Error('Workspace editor module did not load');
@@ -264,6 +278,7 @@
         sessionRef,
         currentUser,
         isNew,
+        readOnly: isReviewMode,
         editor,
         getDefaultCode,
         getCurrentLanguage: () => document.getElementById('language-selector')?.value || 'javascript',
@@ -284,7 +299,9 @@
       });
       
       // Setup presence after the workspace is initialized.
-      setTimeout(() => setupPresenceOnce(), 100);
+      if (!isReviewMode) {
+        setTimeout(() => setupPresenceOnce(), 100);
+      }
       
       // Setup session info
       setupSessionInfo();
@@ -414,7 +431,7 @@
   }
 
   function isWritableWorkspaceFile(file) {
-    return !!file && file.readonly !== true && file.role !== 'runtime';
+    return !isReviewMode && !!file && file.readonly !== true && file.role !== 'runtime';
   }
 
   function applyEditorAccessForFile(file, shouldFocus = false) {
@@ -464,13 +481,14 @@
     updateCursorPosition();
     console.log('Opened workspace file:', file.path);
 
-    if (!isNewSession && !joinedNotificationShown) {
+    if (!isReviewMode && !isNewSession && !joinedNotificationShown) {
       joinedNotificationShown = true;
       showUserNotification(`You joined session ${currentSessionCode}`, 'join');
     }
   }
 
   function scheduleActiveSnapshotSave() {
+    if (isReviewMode) return;
     if (suppressSnapshotSave || !editor || !activeFileId || !window.CollabWorkspace?.isEnabled?.()) return;
     if (activeFileMeta?.readonly || activeFileMeta?.role === 'runtime') return;
 
@@ -481,6 +499,7 @@
   }
 
   async function saveActiveSnapshotNow() {
+    if (isReviewMode) return;
     clearTimeout(snapshotSaveTimer);
     if (suppressSnapshotSave || !editor || !activeFileId || !window.CollabWorkspace?.isEnabled?.()) return;
     if (activeFileMeta?.readonly || activeFileMeta?.role === 'runtime') return;
@@ -753,11 +772,21 @@
 
     sessionInfo.append(label, code);
 
-    if (currentUser?.isAdmin) {
-      const adminBadge = document.createElement('span');
-      adminBadge.className = 'session-role-pill';
-      adminBadge.textContent = 'Admin';
-      sessionInfo.appendChild(adminBadge);
+    if (isReviewMode || currentUser?.isAdmin) {
+      const roleBadge = document.createElement('span');
+      roleBadge.className = 'session-role-pill';
+      if (isReviewMode) {
+        roleBadge.classList.add('session-role-pill--review');
+      }
+      roleBadge.textContent = isReviewMode ? 'Review' : 'Admin';
+      sessionInfo.appendChild(roleBadge);
+    }
+
+    if (isReviewMode) {
+      const userCountEl = document.getElementById('user-count');
+      const usersList = document.getElementById('users-list');
+      if (userCountEl) userCountEl.textContent = 'Read-only ended session';
+      if (usersList) usersList.replaceChildren();
     }
   }
 
@@ -812,6 +841,7 @@
   }
 
   function publishRunResult(status, details = {}) {
+    if (isReviewMode) return Promise.resolve();
     if (!lastRunRef) return Promise.resolve();
 
     return lastRunRef.set({
@@ -841,7 +871,9 @@
       
       newLanguageSelector.addEventListener('change', function() {
         const language = this.value;
-        if (window.CollabWorkspace?.isEnabled?.()) {
+        if (isReviewMode) {
+          changeLanguage(language);
+        } else if (window.CollabWorkspace?.isEnabled?.()) {
           window.CollabWorkspace.updateActiveFileLanguage(language).catch(function(error) {
             console.warn('Could not update file language:', error);
           });
@@ -870,7 +902,9 @@
       
       newThemeSelector.addEventListener('change', function() {
         const theme = this.value;
-        settingsRef.child('theme').set(theme);
+        if (!isReviewMode) {
+          settingsRef.child('theme').set(theme);
+        }
         editor.setTheme(`ace/theme/${theme}`);
       });
     }
@@ -1008,6 +1042,7 @@
 
   // Share session
   function shareSession() {
+    if (isReviewMode) return;
     const shareMessage = `Join my coding session!\n\nSession Code: ${currentSessionCode}\n\nGo to: ${window.location.origin}\nEnter code: ${currentSessionCode}`;
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1021,6 +1056,7 @@
   
   // End session (admin only)
   async function endSession() {
+    if (isReviewMode) return;
     if (!currentUser || !currentUser.isAdmin) {
       console.error('Only admins can end sessions');
       return;
@@ -1084,6 +1120,7 @@
   }
 
   async function resetSessionWorkspace() {
+    if (isReviewMode) return;
     if (!currentUser || !currentUser.isAdmin) {
       console.error('Only admins can reset sessions');
       return;
@@ -1130,6 +1167,7 @@
   
   // Monitor for session termination
   function monitorSessionTermination() {
+    if (isReviewMode) return;
     if (!sessionRef) return;
     
     // Both admin and non-admin should monitor, but respond differently
@@ -1203,6 +1241,10 @@
 
   // Run code execution
   async function runCode() {
+    if (isReviewMode) {
+      showOutput('Review mode is read-only. Runs are disabled for ended sessions.', 'info');
+      return;
+    }
     const runBtn = document.getElementById('run-btn');
     const selectedLanguage = document.getElementById('language-selector').value;
     const code = editor.getValue();
