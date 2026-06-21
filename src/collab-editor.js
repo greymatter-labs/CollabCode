@@ -177,6 +177,7 @@ class CollabEditorAdapter {
     this.readOnlyBase = options.readOnly === true;
     this.projectSnapshotProvider = options.getProjectSnapshot || null;
     this.selectionDisposers = [];
+    this.layoutListener = () => this.layoutSoon();
 
     this.editor = monaco.editor.create(this.container, {
       automaticLayout: true,
@@ -207,6 +208,8 @@ class CollabEditorAdapter {
       this.selectionDisposers.push(this.editor.onDidChangeCursorPosition(options.onSelectionChange));
       this.selectionDisposers.push(this.editor.onDidChangeCursorSelection(options.onSelectionChange));
     }
+
+    window.addEventListener('collab:layout-resize', this.layoutListener);
   }
 
   getOrCreateModel(file, content) {
@@ -295,13 +298,14 @@ class CollabEditorAdapter {
       const color = sanitizeColor(state?.user?.color);
       rules.push(`
         .yRemoteSelection-${clientId} { background-color: ${alphaColor(color, 0.24)}; }
-        .yRemoteSelectionHead-${clientId} {
+        #firepad-container .yRemoteSelectionHead-${clientId} {
           border-left: 2px solid ${color};
           border-top: 2px solid ${color};
           border-bottom: 2px solid ${color};
           box-sizing: border-box;
+          pointer-events: auto;
         }
-        .yRemoteSelectionHead-${clientId}::after {
+        #firepad-container .yRemoteSelectionHead-${clientId}::after {
           content: "${String(state?.user?.name || 'Collaborator').replace(/["\\]/g, '')}";
           position: absolute;
           top: -18px;
@@ -312,6 +316,12 @@ class CollabEditorAdapter {
           color: #080909;
           font: 600 11px/15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
           white-space: nowrap;
+          pointer-events: auto;
+          transition: opacity .14s ease, transform .14s ease;
+        }
+        #firepad-container .yRemoteSelectionHead-${clientId}:hover::after {
+          opacity: .16;
+          transform: translateY(-1px);
         }
       `);
     });
@@ -377,6 +387,7 @@ class CollabEditorAdapter {
     this.binding?.destroy();
     this.bindAwarenessStyles(null);
     this.selectionDisposers.forEach(disposer => disposer.dispose?.());
+    window.removeEventListener('collab:layout-resize', this.layoutListener);
     this.editor.dispose();
   }
 }

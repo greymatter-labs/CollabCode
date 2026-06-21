@@ -5,9 +5,16 @@
   let usersRef = null;
   let sessionRef = null;
   let lastRunRef = null;
+  let runHistoryRef = null;
+  let outputInteractionRef = null;
+  let outputSelectionsRef = null;
+  let outputScrollRef = null;
   let problemSource = {};
   let problemMeta = {};
   let problemPanelOpen = null;
+  let problemPoppedOut = false;
+  let problemPopout = null;
+  let problemPopoutRect = null;
   let problemPromptHydrateKey = '';
   let currentSessionCode = null;
   let previousUsers = {};
@@ -18,6 +25,17 @@
   let activeFileId = null;
   let activeFileMeta = null;
   let joinedNotificationShown = false;
+  let lastRunFallback = null;
+  let outputRuns = [];
+  let outputScrollWriteTimer = null;
+  let outputSelectionWriteTimer = null;
+  let applyingRemoteOutputScroll = false;
+  let remoteOutputSelections = {};
+  let outputHighlightNames = new Set();
+
+  const MAX_RUN_HISTORY = 80;
+  const OUTPUT_SCROLL_SYNC_MS = 120;
+  const OUTPUT_SELECTION_SYNC_MS = 80;
 
   // Get default code for each language
   const getDefaultCode = (language) => {
@@ -171,6 +189,15 @@
       lastRunRef.off();
       lastRunRef = null;
     }
+    if (runHistoryRef) {
+      runHistoryRef.off();
+      runHistoryRef = null;
+    }
+    teardownOutputInteractionSync();
+    lastRunFallback = null;
+    outputRuns = [];
+    remoteOutputSelections = {};
+    clearOutputHighlights();
     
     // For non-admins joining, verify session exists first
     if (!isNew && !currentUser.isAdmin) {
@@ -191,6 +218,8 @@
     sessionRef = ref;
     usersRef = ref.child('users');
     lastRunRef = ref.child('lastRun');
+    runHistoryRef = ref.child('runHistory');
+    outputInteractionRef = ref.child('outputInteraction');
     
     // If creating a new session (admin only), mark it as active
     if (isNew && currentUser.isAdmin) {
@@ -265,6 +294,8 @@
 
       // Share the latest run result with every participant.
       setupLastRunSync();
+      setupRunHistorySync();
+      setupOutputInteractionSync();
 
       // Keep the problem prompt visible for both interviewers and candidates.
       setupProblemSidebarSync();
@@ -339,6 +370,7 @@
       button.style.display = 'none';
       button.classList.remove('active');
       button.setAttribute('aria-expanded', 'false');
+      hideProblemPopout();
       return;
     }
 
@@ -350,10 +382,251 @@
 
     title.textContent = data.title || 'Problem';
     prompt.textContent = data.prompt || 'No problem instructions were saved for this session.';
+    syncProblemPopoutContent(data);
     button.style.display = 'inline-flex';
+
+    if (problemPoppedOut) {
+      panel.style.display = 'none';
+      button.classList.add('active');
+      button.setAttribute('aria-expanded', 'true');
+      window.CollabPanelLayout?.refresh?.();
+      return;
+    }
+
     panel.style.display = problemPanelOpen ? 'flex' : 'none';
     button.classList.toggle('active', problemPanelOpen);
     button.setAttribute('aria-expanded', String(problemPanelOpen));
+  }
+
+  function setupProblemPopoutControls() {
+    const tab = document.getElementById('right-dock-tab-problem');
+    if (tab && tab.dataset.problemPopoutReady !== 'true') {
+      tab.dataset.problemPopoutReady = 'true';
+      tab.title = 'Double-click to pop out problem';
+      tab.addEventListener('dblclick', function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        popOutProblemPanel();
+      });
+    }
+
+    window.addEventListener('resize', constrainProblemPopout);
+  }
+
+  function ensureProblemPopout() {
+    if (problemPopout && document.body.contains(problemPopout)) return problemPopout;
+
+    problemPopout = document.createElement('section');
+    problemPopout.id = 'problem-popout';
+    problemPopout.className = 'problem-popout';
+    problemPopout.setAttribute('role', 'dialog');
+    problemPopout.setAttribute('aria-label', 'Problem prompt');
+    problemPopout.style.display = 'none';
+
+    const header = document.createElement('div');
+    header.className = 'problem-popout__header';
+
+    const titleLabel = document.createElement('span');
+    titleLabel.className = 'problem-popout__label';
+    titleLabel.append(createIcon('i-book'), document.createTextNode('Problem'));
+
+    const actions = document.createElement('div');
+    actions.className = 'problem-popout__actions';
+
+    const dockButton = document.createElement('button');
+    dockButton.className = 'problem-popout__button';
+    dockButton.type = 'button';
+    dockButton.title = 'Dock problem';
+    dockButton.setAttribute('aria-label', 'Dock problem');
+    dockButton.appendChild(createIcon('i-arrow-right'));
+    dockButton.addEventListener('click', dockProblemPopout);
+
+    const closeButton = document.createElement('button');
+    closeButton.className = 'problem-popout__button';
+    closeButton.type = 'button';
+    closeButton.title = 'Close problem popout';
+    closeButton.setAttribute('aria-label', 'Close problem popout');
+    closeButton.appendChild(createIcon('i-x'));
+    closeButton.addEventListener('click', dockProblemPopout);
+
+    actions.append(dockButton, closeButton);
+    header.append(titleLabel, actions);
+
+    const body = document.createElement('div');
+    body.className = 'problem-popout__body';
+
+    const title = document.createElement('h2');
+    title.id = 'problem-popout-title';
+
+    const prompt = document.createElement('pre');
+    prompt.id = 'problem-popout-prompt';
+
+    body.append(title, prompt);
+
+    const resizeHandle = document.createElement('span');
+    resizeHandle.className = 'problem-popout__resize';
+    resizeHandle.setAttribute('aria-hidden', 'true');
+
+    problemPopout.append(header, body, resizeHandle);
+    document.body.appendChild(problemPopout);
+
+    header.addEventListener('pointerdown', beginProblemPopoutDrag);
+    resizeHandle.addEventListener('pointerdown', beginProblemPopoutResize);
+    problemPopout.addEventListener('pointerdown', bringProblemPopoutForward);
+
+    return problemPopout;
+  }
+
+  function defaultProblemPopoutRect() {
+    const width = Math.min(560, Math.max(360, Math.round(window.innerWidth * 0.36)));
+    const height = Math.min(640, Math.max(340, Math.round(window.innerHeight * 0.62)));
+    return {
+      width,
+      height,
+      left: Math.max(16, window.innerWidth - width - 64),
+      top: Math.max(76, Math.min(150, Math.round((window.innerHeight - height) / 2)))
+    };
+  }
+
+  function clampProblemPopoutRect(rect) {
+    const minWidth = 320;
+    const minHeight = 260;
+    const margin = 12;
+    const width = Math.min(Math.max(rect.width, minWidth), Math.max(minWidth, window.innerWidth - margin * 2));
+    const height = Math.min(Math.max(rect.height, minHeight), Math.max(minHeight, window.innerHeight - margin * 2));
+    return {
+      width,
+      height,
+      left: Math.min(Math.max(rect.left, margin), Math.max(margin, window.innerWidth - width - margin)),
+      top: Math.min(Math.max(rect.top, margin), Math.max(margin, window.innerHeight - height - margin))
+    };
+  }
+
+  function applyProblemPopoutRect(rect) {
+    if (!problemPopout) return;
+    problemPopoutRect = clampProblemPopoutRect(rect || problemPopoutRect || defaultProblemPopoutRect());
+    problemPopout.style.left = `${problemPopoutRect.left}px`;
+    problemPopout.style.top = `${problemPopoutRect.top}px`;
+    problemPopout.style.width = `${problemPopoutRect.width}px`;
+    problemPopout.style.height = `${problemPopoutRect.height}px`;
+  }
+
+  function bringProblemPopoutForward() {
+    if (!problemPopout) return;
+    problemPopout.style.zIndex = String(90 + Date.now() % 1000);
+  }
+
+  function constrainProblemPopout() {
+    if (!problemPopout || problemPopout.style.display === 'none') return;
+    applyProblemPopoutRect(problemPopoutRect);
+  }
+
+  function beginProblemPopoutDrag(event) {
+    if (event.button !== undefined && event.button !== 0) return;
+    if (event.target.closest('button')) return;
+    event.preventDefault();
+    bringProblemPopoutForward();
+    const rect = problemPopoutRect || defaultProblemPopoutRect();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startLeft = rect.left;
+    const startTop = rect.top;
+
+    const onPointerMove = moveEvent => {
+      applyProblemPopoutRect({
+        ...rect,
+        left: startLeft + moveEvent.clientX - startX,
+        top: startTop + moveEvent.clientY - startY
+      });
+    };
+
+    const finish = () => {
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', finish);
+      document.removeEventListener('pointercancel', finish);
+      document.body.classList.remove('is-dragging-popout');
+    };
+
+    document.body.classList.add('is-dragging-popout');
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', finish);
+    document.addEventListener('pointercancel', finish);
+  }
+
+  function beginProblemPopoutResize(event) {
+    if (event.button !== undefined && event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    bringProblemPopoutForward();
+    const rect = problemPopoutRect || defaultProblemPopoutRect();
+    const startX = event.clientX;
+    const startY = event.clientY;
+
+    const onPointerMove = moveEvent => {
+      applyProblemPopoutRect({
+        ...rect,
+        width: rect.width + moveEvent.clientX - startX,
+        height: rect.height + moveEvent.clientY - startY
+      });
+    };
+
+    const finish = () => {
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', finish);
+      document.removeEventListener('pointercancel', finish);
+      document.body.classList.remove('is-resizing-popout');
+    };
+
+    document.body.classList.add('is-resizing-popout');
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', finish);
+    document.addEventListener('pointercancel', finish);
+  }
+
+  function syncProblemPopoutContent(data = getProblemSidebarData()) {
+    if (!problemPopout) return;
+    const title = problemPopout.querySelector('#problem-popout-title');
+    const prompt = problemPopout.querySelector('#problem-popout-prompt');
+    if (title) title.textContent = data.title || 'Problem';
+    if (prompt) prompt.textContent = data.prompt || 'No problem instructions were saved for this session.';
+  }
+
+  function hideProblemPopout() {
+    problemPoppedOut = false;
+    if (problemPopout) {
+      problemPopout.style.display = 'none';
+    }
+  }
+
+  function popOutProblemPanel() {
+    const data = getProblemSidebarData();
+    if (!data.hasProblem) return;
+
+    const popout = ensureProblemPopout();
+    syncProblemPopoutContent(data);
+    problemPoppedOut = true;
+    problemPanelOpen = false;
+    popout.style.display = 'flex';
+    applyProblemPopoutRect(problemPopoutRect || defaultProblemPopoutRect());
+    bringProblemPopoutForward();
+
+    const panel = document.getElementById('problem-panel');
+    if (panel) panel.style.display = 'none';
+    const outputPanel = document.getElementById('output-panel');
+    if (outputPanel) outputPanel.style.display = 'flex';
+    renderProblemSidebar();
+    renderOutputTimeline(getVisibleOutputRuns(), { preserveScroll: true, showWhenEmpty: true });
+    window.CollabPanelLayout?.selectRightTab?.('output');
+  }
+
+  function dockProblemPopout() {
+    problemPoppedOut = false;
+    if (problemPopout) {
+      problemPopout.style.display = 'none';
+    }
+    problemPanelOpen = true;
+    renderProblemSidebar();
+    window.CollabPanelLayout?.selectRightTab?.('problem');
   }
 
   async function maybeHydrateMissingProblemPrompt(data) {
@@ -721,8 +994,26 @@
     lastRunRef.off();
     lastRunRef.on('value', function(snapshot) {
       const run = snapshot.val();
-      if (!run) return;
-      renderSharedRun(run);
+      lastRunFallback = run ? normalizeRunRecord(run, 'last-run') : null;
+      if (!outputRuns.length) {
+        renderOutputTimeline(getVisibleOutputRuns(), { preserveScroll: true });
+      }
+    });
+  }
+
+  function setupRunHistorySync() {
+    if (!runHistoryRef) return;
+
+    runHistoryRef.off();
+    runHistoryRef.limitToLast(MAX_RUN_HISTORY).on('value', function(snapshot) {
+      const runs = [];
+      snapshot.forEach(function(child) {
+        runs.push(normalizeRunRecord(child.val(), child.key));
+      });
+      outputRuns = runs
+        .filter(Boolean)
+        .sort((a, b) => (a.sortTime || 0) - (b.sortTime || 0));
+      renderOutputTimeline(getVisibleOutputRuns(), { preserveScroll: true });
     });
   }
 
@@ -739,13 +1030,58 @@
     }
   }
 
-  function renderSharedRun(run) {
-    const outputPanel = document.getElementById('output-panel');
-    const outputText = document.getElementById('output-text');
-    const lastRunSummary = document.getElementById('last-run-summary');
-    if (!outputPanel || !outputText) return;
+  function createRunId() {
+    if (runHistoryRef?.push) return runHistoryRef.push().key;
+    return `run_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  }
 
-    const status = run.status === 'success' ? 'success' : run.status === 'running' ? 'info' : 'error';
+  function toRunTimestamp(value, fallback) {
+    const timestamp = Number(value);
+    return Number.isFinite(timestamp) ? timestamp : fallback;
+  }
+
+  function normalizeRunRecord(run, fallbackId) {
+    if (!run) return null;
+    const status = run.status || 'info';
+    const now = Date.now();
+    const createdAt = toRunTimestamp(run.createdAt, now);
+    const updatedAt = toRunTimestamp(run.updatedAt, createdAt);
+    return {
+      id: run.id || fallbackId || createRunId(),
+      status,
+      language: run.language || null,
+      entryPath: run.entryPath || null,
+      output: typeof run.output === 'string' ? run.output : '',
+      error: typeof run.error === 'string' ? run.error : '',
+      runtimeFileCount: Number(run.runtimeFileCount || 0),
+      executionTime: run.executionTime || null,
+      runById: run.runById || null,
+      runByName: run.runByName || 'Someone',
+      createdAt,
+      updatedAt,
+      sortTime: createdAt
+    };
+  }
+
+  function getVisibleOutputRuns() {
+    if (outputRuns.length) return outputRuns;
+    return lastRunFallback ? [lastRunFallback] : [];
+  }
+
+  function getRunStatusClass(status) {
+    if (status === 'success') return 'success';
+    if (status === 'running') return 'info';
+    if (status === 'error') return 'error';
+    return 'normal';
+  }
+
+  function getRunOutputText(run) {
+    if (!run) return '';
+    return run.output || run.error || '(No output)';
+  }
+
+  function getRunSummary(run) {
+    if (!run) return '';
     const runner = run.runByName || 'Someone';
     const entry = run.entryPath ? ` ${run.entryPath}` : '';
     const language = run.language ? ` ${run.language}` : '';
@@ -753,23 +1089,105 @@
     const runtimeFiles = run.runtimeFileCount
       ? ` | generated ${run.runtimeFileCount} file${run.runtimeFileCount === 1 ? '' : 's'}`
       : '';
-    const summary = `${run.status || 'run'} by ${runner}${language}${entry}${when ? ` at ${when}` : ''}${runtimeFiles}`;
+    return `${run.status || 'run'} by ${runner}${language}${entry}${when ? ` at ${when}` : ''}${runtimeFiles}`;
+  }
 
-    outputPanel.style.display = 'flex';
+  function showOutputPanel() {
+    const outputPanel = document.getElementById('output-panel');
+    if (outputPanel) outputPanel.style.display = 'flex';
     window.CollabPanelLayout?.selectRightTab?.('output');
-    if (lastRunSummary) {
-      lastRunSummary.textContent = summary;
-      lastRunSummary.className = status;
+  }
+
+  function renderOutputTimeline(runs, options = {}) {
+    const outputText = document.getElementById('output-text');
+    const outputContent = document.getElementById('output-content');
+    const lastRunSummary = document.getElementById('last-run-summary');
+    if (!outputText || !outputContent) return;
+
+    const normalizedRuns = (runs || []).filter(Boolean);
+    const wasNearBottom = outputContent.scrollHeight - outputContent.scrollTop - outputContent.clientHeight < 48;
+    const shouldPinToLatest = options.pinToLatest === true || (!options.preserveScroll && wasNearBottom);
+    const previousTop = outputContent.scrollTop;
+
+    const outputPanel = document.getElementById('output-panel');
+    const shouldShowPanel = normalizedRuns.length > 0 || options.showWhenEmpty === true || outputPanel?.style.display !== 'none';
+    if (shouldShowPanel) {
+      showOutputPanel();
     }
-    outputText.textContent = run.output || run.error || '(No output)';
-    outputText.className = status;
+
+    outputText.replaceChildren();
+
+    if (!normalizedRuns.length) {
+      const empty = document.createElement('div');
+      empty.className = 'output-empty';
+      empty.textContent = 'No runs yet.';
+      outputText.appendChild(empty);
+      if (lastRunSummary) {
+        lastRunSummary.textContent = 'Execution history';
+        lastRunSummary.className = 'normal';
+      }
+      clearOutputHighlights();
+      return;
+    }
+
+    normalizedRuns.forEach((run, index) => {
+      const status = getRunStatusClass(run.status);
+      const item = document.createElement('article');
+      item.className = `output-run output-run--${status}`;
+      item.dataset.runId = run.id;
+
+      const marker = document.createElement('div');
+      marker.className = 'output-run-marker';
+      marker.textContent = String(index + 1);
+
+      const content = document.createElement('div');
+      content.className = 'output-run-content';
+
+      const header = document.createElement('div');
+      header.className = 'output-run-header';
+
+      const title = document.createElement('div');
+      title.className = 'output-run-title';
+      title.textContent = run.status === 'running' ? 'Running' : run.status === 'success' ? 'Completed' : run.status === 'error' ? 'Failed' : 'Run';
+
+      const meta = document.createElement('div');
+      meta.className = 'output-run-meta';
+      meta.textContent = getRunSummary(run);
+
+      header.append(title, meta);
+
+      const body = document.createElement('pre');
+      body.className = `output-run-body ${status}`;
+      body.textContent = getRunOutputText(run);
+
+      content.append(header, body);
+      item.append(marker, content);
+      outputText.appendChild(item);
+    });
+
+    const latestRun = normalizedRuns[normalizedRuns.length - 1];
+    if (lastRunSummary) {
+      lastRunSummary.textContent = getRunSummary(latestRun);
+      lastRunSummary.className = getRunStatusClass(latestRun.status);
+    }
+
+    window.requestAnimationFrame(() => {
+      if (shouldPinToLatest) {
+        outputContent.scrollTop = outputContent.scrollHeight;
+      } else if (options.preserveScroll) {
+        outputContent.scrollTop = Math.min(previousTop, Math.max(0, outputContent.scrollHeight - outputContent.clientHeight));
+      }
+      renderOutputRemoteHighlights();
+    });
   }
 
   function publishRunResult(status, details = {}) {
     if (isReviewMode) return Promise.resolve();
-    if (!lastRunRef) return Promise.resolve();
+    if (!sessionRef) return Promise.resolve();
 
-    return lastRunRef.set({
+    const runId = details.runId || createRunId();
+    const runRecord = {
+      id: runId,
       status,
       language: details.language || null,
       entryPath: details.entryPath || null,
@@ -779,8 +1197,273 @@
       executionTime: details.executionTime || null,
       runById: currentUser?.id || null,
       runByName: currentUser?.name || null,
+      createdAt: details.createdAt || firebase.database.ServerValue.TIMESTAMP,
       updatedAt: firebase.database.ServerValue.TIMESTAMP
+    };
+    const updates = {
+      lastRun: runRecord,
+      [`runHistory/${runId}`]: runRecord
+    };
+
+    return sessionRef.update(updates);
+  }
+
+  function setupOutputInteractionSync() {
+    if (!outputInteractionRef || !currentUser || isReviewMode) return;
+
+    outputInteractionRef.off();
+    outputSelectionsRef = outputInteractionRef.child('selections');
+    outputScrollRef = outputInteractionRef.child('scroll');
+    const localSelectionRef = outputSelectionsRef.child(currentUser.id);
+
+    localSelectionRef.onDisconnect().remove();
+
+    outputSelectionsRef.on('value', function(snapshot) {
+      remoteOutputSelections = snapshot.val() || {};
+      renderOutputRemoteHighlights();
     });
+
+    outputScrollRef.on('value', function(snapshot) {
+      const data = snapshot.val();
+      applyRemoteOutputScroll(data);
+    });
+
+    attachOutputInteractionDomListeners();
+  }
+
+  function teardownOutputInteractionSync() {
+    if (outputInteractionRef) {
+      outputInteractionRef.off();
+    }
+    if (outputSelectionsRef) {
+      outputSelectionsRef.off();
+      outputSelectionsRef = null;
+    }
+    if (outputScrollRef) {
+      outputScrollRef.off();
+      outputScrollRef = null;
+    }
+    outputInteractionRef = null;
+    if (outputScrollWriteTimer) {
+      clearTimeout(outputScrollWriteTimer);
+      outputScrollWriteTimer = null;
+    }
+    if (outputSelectionWriteTimer) {
+      clearTimeout(outputSelectionWriteTimer);
+      outputSelectionWriteTimer = null;
+    }
+    applyingRemoteOutputScroll = false;
+  }
+
+  function attachOutputInteractionDomListeners() {
+    const outputContent = document.getElementById('output-content');
+    if (outputContent && outputContent.dataset.outputCollabReady !== 'true') {
+      outputContent.dataset.outputCollabReady = 'true';
+      outputContent.addEventListener('scroll', queueOutputScrollSync, { passive: true });
+    }
+
+    if (document.body.dataset.outputSelectionCollabReady !== 'true') {
+      document.body.dataset.outputSelectionCollabReady = 'true';
+      document.addEventListener('selectionchange', queueOutputSelectionSync);
+    }
+  }
+
+  function queueOutputScrollSync() {
+    if (!outputInteractionRef || !currentUser || isReviewMode || applyingRemoteOutputScroll) return;
+    if (outputScrollWriteTimer) return;
+
+    outputScrollWriteTimer = setTimeout(function() {
+      outputScrollWriteTimer = null;
+      const outputContent = document.getElementById('output-content');
+      if (!outputContent || document.getElementById('output-panel')?.style.display === 'none') return;
+
+      const maxScrollTop = Math.max(0, outputContent.scrollHeight - outputContent.clientHeight);
+      outputInteractionRef.child('scroll').set({
+        top: outputContent.scrollTop,
+        ratio: maxScrollTop ? outputContent.scrollTop / maxScrollTop : 0,
+        scrollHeight: outputContent.scrollHeight,
+        clientHeight: outputContent.clientHeight,
+        updatedBy: currentUser.id,
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      });
+    }, OUTPUT_SCROLL_SYNC_MS);
+  }
+
+  function applyRemoteOutputScroll(data) {
+    if (!data || !currentUser || data.updatedBy === currentUser.id) return;
+    const outputContent = document.getElementById('output-content');
+    if (!outputContent) return;
+
+    const maxScrollTop = Math.max(0, outputContent.scrollHeight - outputContent.clientHeight);
+    const ratio = Number(data.ratio);
+    const top = Number.isFinite(ratio) ? ratio * maxScrollTop : Number(data.top || 0);
+    applyingRemoteOutputScroll = true;
+    outputContent.scrollTop = Math.min(Math.max(0, top), maxScrollTop);
+    setTimeout(function() {
+      applyingRemoteOutputScroll = false;
+    }, OUTPUT_SCROLL_SYNC_MS + 30);
+  }
+
+  function getOutputRoot() {
+    return document.getElementById('output-text');
+  }
+
+  function getAbsoluteTextOffset(root, container, offset) {
+    if (!root || !container || (!root.contains(container) && root !== container)) return null;
+    const range = document.createRange();
+    range.selectNodeContents(root);
+    try {
+      range.setEnd(container, offset);
+      return range.toString().length;
+    } catch (error) {
+      return null;
+    } finally {
+      range.detach?.();
+    }
+  }
+
+  function getOutputSelectionOffsets() {
+    const root = getOutputRoot();
+    const selection = window.getSelection?.();
+    if (!root || !selection || selection.rangeCount === 0) return null;
+
+    const range = selection.getRangeAt(0);
+    if (range.collapsed) return null;
+    if ((!root.contains(range.startContainer) && root !== range.startContainer) ||
+        (!root.contains(range.endContainer) && root !== range.endContainer)) {
+      return null;
+    }
+
+    const start = getAbsoluteTextOffset(root, range.startContainer, range.startOffset);
+    const end = getAbsoluteTextOffset(root, range.endContainer, range.endOffset);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start === end) return null;
+
+    return {
+      start: Math.min(start, end),
+      end: Math.max(start, end),
+      textLength: root.textContent.length
+    };
+  }
+
+  function queueOutputSelectionSync() {
+    if (!outputInteractionRef || !currentUser || isReviewMode) return;
+    if (outputSelectionWriteTimer) {
+      clearTimeout(outputSelectionWriteTimer);
+    }
+
+    outputSelectionWriteTimer = setTimeout(function() {
+      outputSelectionWriteTimer = null;
+      const localSelectionRef = outputInteractionRef.child('selections').child(currentUser.id);
+      const range = getOutputSelectionOffsets();
+      if (!range) {
+        localSelectionRef.remove();
+        return;
+      }
+
+      localSelectionRef.set({
+        ...range,
+        userId: currentUser.id,
+        name: currentUser.name || 'Collaborator',
+        color: currentUser.color || '#7c87e8',
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      });
+    }, OUTPUT_SELECTION_SYNC_MS);
+  }
+
+  function getTextBoundaryAtOffset(root, offset) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node = walker.nextNode();
+    let remaining = Math.max(0, offset);
+    let lastNode = null;
+
+    while (node) {
+      const length = node.nodeValue.length;
+      if (remaining <= length) {
+        return { node, offset: remaining };
+      }
+      remaining -= length;
+      lastNode = node;
+      node = walker.nextNode();
+    }
+
+    if (lastNode) {
+      return { node: lastNode, offset: lastNode.nodeValue.length };
+    }
+    return null;
+  }
+
+  function sanitizeHighlightName(value) {
+    return `opencall-output-${String(value || 'user').replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  }
+
+  function colorWithAlpha(color, alpha) {
+    const fallback = 'rgba(124, 135, 232, .28)';
+    const value = String(color || '').trim();
+    if (!/^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(value)) return fallback;
+    const hex = value.length === 4
+      ? value.slice(1).split('').map(char => `${char}${char}`).join('')
+      : value.slice(1);
+    const numeric = Number.parseInt(hex, 16);
+    if (!Number.isFinite(numeric)) return fallback;
+    const red = (numeric >> 16) & 255;
+    const green = (numeric >> 8) & 255;
+    const blue = numeric & 255;
+    return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+  }
+
+  function getOutputHighlightStyleElement() {
+    let style = document.getElementById('output-collab-highlight-styles');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'output-collab-highlight-styles';
+      document.head.appendChild(style);
+    }
+    return style;
+  }
+
+  function clearOutputHighlights() {
+    if (window.CSS?.highlights) {
+      outputHighlightNames.forEach(name => CSS.highlights.delete(name));
+    }
+    outputHighlightNames = new Set();
+    const style = document.getElementById('output-collab-highlight-styles');
+    if (style) style.textContent = '';
+  }
+
+  function renderOutputRemoteHighlights() {
+    if (!window.CSS?.highlights || typeof window.Highlight !== 'function') return;
+
+    const root = getOutputRoot();
+    if (!root) return;
+
+    clearOutputHighlights();
+    const rules = [];
+    const textLength = root.textContent.length;
+
+    Object.entries(remoteOutputSelections || {}).forEach(([userId, selection]) => {
+      if (!selection || userId === currentUser?.id) return;
+      const start = Math.max(0, Math.min(Number(selection.start || 0), textLength));
+      const end = Math.max(0, Math.min(Number(selection.end || 0), textLength));
+      if (!Number.isFinite(start) || !Number.isFinite(end) || start === end) return;
+
+      const startBoundary = getTextBoundaryAtOffset(root, Math.min(start, end));
+      const endBoundary = getTextBoundaryAtOffset(root, Math.max(start, end));
+      if (!startBoundary || !endBoundary) return;
+
+      try {
+        const range = document.createRange();
+        range.setStart(startBoundary.node, startBoundary.offset);
+        range.setEnd(endBoundary.node, endBoundary.offset);
+        const name = sanitizeHighlightName(userId);
+        CSS.highlights.set(name, new Highlight(range));
+        outputHighlightNames.add(name);
+        rules.push(`::highlight(${name}) { background-color: ${colorWithAlpha(selection.color, 0.32)}; color: inherit; }`);
+      } catch (error) {
+        console.warn('Could not render shared output highlight:', error);
+      }
+    });
+
+    getOutputHighlightStyleElement().textContent = rules.join('\n');
   }
 
   // Settings sync (simplified)
@@ -870,6 +1553,11 @@
     const problemToggleBtn = document.getElementById('problem-toggle-btn');
     if (problemToggleBtn) {
       problemToggleBtn.addEventListener('click', function() {
+        if (problemPoppedOut) {
+          ensureProblemPopout().style.display = 'flex';
+          bringProblemPopoutForward();
+          return;
+        }
         if (window.CollabPanelLayout?.isRightTabAvailable?.('problem') &&
             !window.CollabPanelLayout?.isRightTabActive?.('problem')) {
           window.CollabPanelLayout.selectRightTab('problem');
@@ -890,6 +1578,8 @@
         renderProblemSidebar();
       });
     }
+
+    setupProblemPopoutControls();
 
     // Run button
     const runBtn = document.getElementById('run-btn');
@@ -1175,18 +1865,20 @@
       : null;
     const language = projectSnapshot?.entryLanguage || selectedLanguage;
     const entryPath = projectSnapshot?.entryPath || activeFileMeta?.path || 'current file';
+    const runId = createRunId();
+    const runCreatedAt = Date.now();
 
     // Check if language supports execution
     if (!CodeExecutor.isSupported(language)) {
       const message = `Language '${language}' does not support execution yet.`;
       showOutput(message, 'error');
-      await publishRunResult('error', { language, entryPath, error: message, output: message });
+      await publishRunResult('error', { runId, createdAt: runCreatedAt, language, entryPath, error: message, output: message });
       return;
     }
 
     // Show output panel
     showOutput('Running in Blaxel...', 'info');
-    await publishRunResult('running', { language, entryPath, output: 'Running in Blaxel...' });
+    await publishRunResult('running', { runId, createdAt: runCreatedAt, language, entryPath, output: 'Running in Blaxel...' });
     runBtn.disabled = true;
     runBtn.textContent = 'Running...';
 
@@ -1215,6 +1907,8 @@
         }
         showOutput(output, 'success');
         await publishRunResult('success', {
+          runId,
+          createdAt: runCreatedAt,
           language,
           entryPath,
           output,
@@ -1224,12 +1918,12 @@
       } else {
         const message = result.error || 'Execution failed';
         showOutput(message, 'error');
-        await publishRunResult('error', { language, entryPath, error: message, output: message });
+        await publishRunResult('error', { runId, createdAt: runCreatedAt, language, entryPath, error: message, output: message });
       }
     } catch (error) {
       const message = `Error: ${error.message}`;
       showOutput(message, 'error');
-      await publishRunResult('error', { language, entryPath, error: message, output: message });
+      await publishRunResult('error', { runId, createdAt: runCreatedAt, language, entryPath, error: message, output: message });
     } finally {
       runBtn.disabled = false;
       setRunButtonIdle(runBtn);
@@ -1238,27 +1932,48 @@
 
   // Show output panel
   function showOutput(text, type = 'normal') {
-    const outputPanel = document.getElementById('output-panel');
-    const outputText = document.getElementById('output-text');
-    
-    outputPanel.style.display = 'flex';
-    window.CollabPanelLayout?.selectRightTab?.('output');
-    outputText.textContent = text;
-    outputText.className = type;
+    const status = type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'info' ? 'running' : 'info';
+    const previewRun = normalizeRunRecord({
+      id: 'local-preview',
+      status,
+      language: document.getElementById('language-selector')?.value || null,
+      entryPath: activeFileMeta?.path || null,
+      output: String(text || ''),
+      runById: currentUser?.id || null,
+      runByName: currentUser?.name || 'You',
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    }, 'local-preview');
+
+    const runs = getVisibleOutputRuns().filter(run => run.id !== 'local-preview').concat(previewRun);
+    renderOutputTimeline(runs, { pinToLatest: true });
 
     // Show input section for languages that might need it
-    const language = document.getElementById('language-selector').value;
+    const language = document.getElementById('language-selector')?.value;
     const inputSection = document.getElementById('input-section');
-    if (['python', 'java', 'c_cpp', 'javascript', 'typescript'].includes(language)) {
+    if (inputSection && ['python', 'java', 'c_cpp', 'javascript', 'typescript'].includes(language)) {
       inputSection.style.display = 'block';
     }
   }
 
   // Clear output
   function clearOutput() {
-    const outputText = document.getElementById('output-text');
-    outputText.textContent = '';
-    outputText.className = '';
+    outputRuns = [];
+    lastRunFallback = null;
+    remoteOutputSelections = {};
+    clearOutputHighlights();
+    renderOutputTimeline([], { preserveScroll: false, showWhenEmpty: true });
+
+    if (!isReviewMode && sessionRef) {
+      const updates = {
+        lastRun: null,
+        runHistory: null,
+        'outputInteraction/selections': null
+      };
+      sessionRef.update(updates).catch(function(error) {
+        console.warn('Could not clear shared output history:', error);
+      });
+    }
   }
 
   // Hide output panel

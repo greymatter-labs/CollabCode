@@ -11,7 +11,7 @@
 
     <!-- styling -->
     <!-- Custom style -->
-    <link rel="stylesheet" href="styles/main.css?v=34">
+    <link rel="stylesheet" href="styles/main.css?v=35">
     <link rel="stylesheet" href="scripts/workspace.bundle.css?v=1">
     <!-- Linear-style design system: tokens.css -> components.css -> app/*.css (see styles/main.css) -->
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
@@ -832,7 +832,7 @@
                 </div>
                 <div id="last-run-summary"></div>
                 <div id="output-content">
-                  <pre id="output-text"></pre>
+                  <div id="output-text" class="output-timeline" aria-live="polite"></div>
                 </div>
                 <div id="input-section" style="display: none;">
                   <label>Input (stdin):</label>
@@ -937,8 +937,8 @@
     <!-- Core app scripts -->
     <script src="scripts/simple-templates.js?v=2"></script>
     <script src="scripts/custom-dialogs.js?v=3"></script>
-    <script src="scripts/workspace.bundle.js?v=9"></script>
-    <script src="scripts/firepad.js?v=22"></script>
+    <script src="scripts/workspace.bundle.js?v=10"></script>
+    <script src="scripts/firepad.js?v=23"></script>
     <script src="scripts/interview-notes.js?v=5"></script>
     <script src="scripts/panel-layout.js?v=2"></script>
     <script src="scripts/posthog-tracking.js?v=2"></script>
