@@ -209,6 +209,10 @@ class CollabEditorAdapter {
       this.selectionDisposers.push(this.editor.onDidChangeCursorSelection(options.onSelectionChange));
     }
 
+    if (typeof options.onChange === 'function') {
+      this.selectionDisposers.push(this.editor.onDidChangeModelContent(options.onChange));
+    }
+
     window.addEventListener('collab:layout-resize', this.layoutListener);
   }
 

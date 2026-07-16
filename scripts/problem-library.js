@@ -13,18 +13,6 @@
     loadingEditor: false
   };
 
-  const languageModes = {
-    javascript: 'ace/mode/javascript',
-    typescript: 'ace/mode/typescript',
-    python: 'ace/mode/python',
-    json: 'ace/mode/json',
-    markdown: 'ace/mode/markdown',
-    html: 'ace/mode/html',
-    css: 'ace/mode/css',
-    yaml: 'ace/mode/yaml',
-    text: 'ace/mode/text'
-  };
-
   function byId(id) {
     return document.getElementById(id);
   }
@@ -398,23 +386,25 @@
 
   function setEditorMode(language) {
     if (!state.editor) return;
-    state.editor.session.setMode(languageModes[language] || languageModes.text);
+    state.editor.setLanguage(language || 'text');
   }
 
   function ensureProblemEditor() {
-    if (state.editor || !window.ace || !byId('problemFileEditor')) return;
-    state.editor = ace.edit('problemFileEditor');
-    state.editor.setTheme('ace/theme/monokai');
-    state.editor.setOptions({
-      fontSize: '14px',
-      showPrintMargin: false,
-      wrap: true,
-      useWorker: false
-    });
-    state.editor.on('change', function() {
-      if (state.loadingEditor) return;
-      const file = getActiveFile();
-      if (file) file.content = state.editor.getValue();
+    if (state.editor) return;
+    const container = byId('problemFileEditor');
+    if (!container || !window.CollabEditor?.create) {
+      throw new Error('Problem editor module did not load');
+    }
+
+    state.editor = window.CollabEditor.create({
+      container,
+      theme: 'monokai',
+      fontSize: 14,
+      onChange() {
+        if (state.loadingEditor) return;
+        const file = getActiveFile();
+        if (file) file.content = state.editor.getValue();
+      }
     });
   }
 
@@ -489,7 +479,12 @@
       if (title) title.textContent = state.selectedFolderPath ? `${state.selectedFolderPath}/` : 'No file selected';
       if (pathInput) pathInput.value = '';
       if (visibilityInput) visibilityInput.value = 'editable';
-      if (state.editor) state.editor.setValue('', -1);
+      if (state.editor) {
+        state.loadingEditor = true;
+        state.editor.setValue('');
+        state.editor.setReadOnly(true);
+        state.loadingEditor = false;
+      }
       return;
     }
 
@@ -498,10 +493,18 @@
     if (visibilityInput) visibilityInput.value = file.visibility || 'editable';
     if (state.editor) {
       state.loadingEditor = true;
-      state.editor.setValue(file.content || '', -1);
-      setEditorMode(file.language || inferLanguage(file.path));
-      state.loadingEditor = false;
-      setTimeout(() => state.editor?.resize(), 0);
+      try {
+        const language = file.language || inferLanguage(file.path);
+        state.editor.openFile(
+          { id: file.id, path: file.path, language },
+          { content: file.content || '' }
+        );
+        setEditorMode(language);
+        state.editor.setReadOnly(false);
+      } finally {
+        state.loadingEditor = false;
+      }
+      state.editor.layoutSoon();
     }
   }
 
